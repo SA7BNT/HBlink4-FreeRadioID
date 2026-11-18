@@ -343,6 +343,14 @@ class RepeaterState:
 
     rpto_received: bool = False  # True if repeater sent RPTO to override config TGs
 
+    # How this login was authenticated: 'local', 'freeradioid' or 'guest'
+    auth_method: str = 'local'
+    # True while a FreeRadioID API lookup for this login is in flight
+    auth_pending: bool = False
+    # Guest logins (FreeRadioID active, default passphrase used) may only
+    # transmit to these 3-byte TGIDs. None = no extra restriction.
+    guest_tx_talkgroups: Optional[set] = None
+
     # Whether this repeater participates in unit (private) call routing. Seeded
     # from the matched pattern's `default_unit_calls` when the repeater connects,
     # and overridden by a `UNIT=true|false` entry in RPTO if present.

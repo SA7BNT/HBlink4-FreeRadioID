@@ -69,6 +69,10 @@ class RepeaterConfig:
     # Per-pattern default for unit (private) call participation. Repeaters can
     # override via UNIT=true|false in RPTO. Absent UNIT in RPTO = use this.
     default_unit_calls: bool = False
+    # FreeRadioID secure login (see hblink4/freeradioid.py). None = follow the
+    # global 'freeradioid.enabled' switch, False = never use it for this pattern
+    # (e.g. your own repeaters with a private passphrase).
+    freeradioid: Optional[bool] = None
 
 @dataclass
 class PatternMatch:

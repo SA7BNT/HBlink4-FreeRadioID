@@ -41,6 +41,7 @@ HBlink4 focuses on being an efficient **endpoint network server** with the follo
 - **Two-tier stream end detection (immediate terminator + timeout fallback)**
 - **Per-repeater DMRD translation** - slot/TGID remap and outbound rf_src override declared via RPTO (see [DMRD Translation](docs/dmrd_translation.md))
 - **OpenBridge (OBP) trunks** - stream-multiplexed, HMAC-authenticated server-to-server trunking to/from a core (e.g. HBlink3); many talkgroups over one socket (see [OpenBridge Trunks](docs/openbridge.md))
+- **FreeRadioID secure login** - optional verification of repeater/hotspot logins against personal FreeRadioID.net passwords, with guest access on the default passphrase (see [FreeRadioID](docs/freeradioid.md))
 - **Unit (private) call routing** - User cache with broadcast fallback, subscriber-pair hang time, cross-slot support, and optional forwarding over outbound server links (implicit reverse-path tree when peers are HBlink4)
 - Pattern-based repeater configuration and blacklisting
 - Per-slot transmission management
@@ -212,6 +213,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[Call Routing](docs/routing.md)** - Inbound/outbound filtering, contention, and assumed slot state
 - **[DMRD Translation](docs/dmrd_translation.md)** - Per-repeater slot/TGID remap and rf_src override (RPTO extended syntax)
 - **[OpenBridge Trunks](docs/openbridge.md)** - Stream-multiplexed server-to-server trunking (OBP): config, routing, dashboard, and the HBlink3-core/HBlink4-edge topology
+- **[FreeRadioID Secure Login](docs/freeradioid.md)** - Verify logins against FreeRadioID.net; guest talkgroups for the default passphrase
 - **[Stream Tracking](docs/stream_tracking.md)** - How DMR transmission streams are managed
 - **[Stream Tracking Diagrams](docs/stream_tracking_diagrams.md)** - Visual walkthrough of stream lifecycle and contention
 - **[Hang Time](docs/hang_time.md)** - Preventing conversation interruption

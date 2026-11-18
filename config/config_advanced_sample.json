@@ -91,6 +91,14 @@
             }
         ]
     },
+    "freeradioid": {
+        "_comment": "FreeRadioID.net secure login (see docs/freeradioid.md). When enabled, a repeater/hotspot may log in with the owner's personal FreeRadioID password; HBlink4 asks freeradioid.net for the expected hash. A login with the pattern's local passphrase still works but becomes a GUEST login whose TX is limited to guest_talkgroups (null = unrestricted, [] = no TX). Patterns can opt out with \"freeradioid\": false in their config.",
+        "enabled": false,
+        "api_url": "https://freeradioid.net/api/adn-login.php",
+        "timeout": 3.0,
+        "guest_talkgroups": [26501, 26502, 26503]
+    },
+
     "repeater_configurations": {
         "_comment": "Patterns are tried in order and the FIRST match wins -- a repeater matched by a pattern never falls through to 'default'. The example ranges below are invented; if you copy them unchanged and one of your own repeater IDs falls inside a range, that repeater will be required to use the example passphrase and will fail to connect. Delete the patterns you do not need.",
         "patterns": [

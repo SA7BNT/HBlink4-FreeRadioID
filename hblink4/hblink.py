@@ -51,6 +51,7 @@ from .constants import (
 from .access_control import RepeaterMatcher
 from .events import EventEmitter
 from .user_cache import UserCache
+from .freeradioid import FreeRadioIDAuth, AUTH_LOCAL, AUTH_FREERADIOID, AUTH_GUEST
 from .utils import (
     safe_decode_bytes, normalize_addr, rid_to_int, bytes_to_int, format_uptime,
     cleanup_old_logs, setup_logging, PeerAddress, detect_connection_type,
@@ -126,6 +127,9 @@ class HBProtocol(asyncio.DatagramProtocol):
         
         self._config = CONFIG
         self._matcher = RepeaterMatcher(CONFIG)
+        # FreeRadioID.net secure login (optional, off unless configured)
+        self._frid = FreeRadioIDAuth(CONFIG.get('freeradioid', {}), LOGGER)
+        self._auth_tasks: Set[asyncio.Task] = set()
         self._timeout_task = None
         self._stream_timeout_task = None
         self._user_cache_cleanup_task = None
@@ -236,6 +240,7 @@ class HBProtocol(asyncio.DatagramProtocol):
             'slot1_talkgroups': self._format_tg_json(repeater.slot1_talkgroups),
             'slot2_talkgroups': self._format_tg_json(repeater.slot2_talkgroups),
             'rpto_received': repeater.rpto_received,
+            'auth_method': repeater.auth_method,
             'translations': translations_list,
             'last_ping': repeater.last_ping,
             'missed_pings': repeater.missed_pings,
@@ -1644,6 +1649,11 @@ class HBProtocol(asyncio.DatagramProtocol):
                 # key instead of the declared local one.
                 return False
 
+        # FreeRadioID guest logins may only transmit to the guest talkgroups,
+        # whatever their subscription sets or RPTO say.
+        if repeater.guest_tx_talkgroups is not None and dst_id not in repeater.guest_tx_talkgroups:
+            return False
+
         # Get slot-specific talkgroup set from repeater state
         allowed_tgids = repeater.slot1_talkgroups if slot == 1 else repeater.slot2_talkgroups
         
@@ -2760,6 +2770,60 @@ class HBProtocol(asyncio.DatagramProtocol):
         self._send_packet(b''.join([RPTACK, salt_bytes]), addr)
         LOGGER.info(f'Repeater {rid_to_int(repeater_id)} login request from {ip}:{port}, sent salt: {repeater.salt}')
 
+    def _verify_login_hash(self, repeater_id: bytes, state: RepeaterState, auth_hash: bytes,
+                           repeater_config, addr: PeerAddress, finish) -> None:
+        """
+        Check an RPTK answer and call finish(auth_method) with 'local',
+        'freeradioid' or 'guest' on success, or finish(None) on failure.
+
+        Without FreeRadioID this is the plain HomeBrew check and finish() runs
+        synchronously. With FreeRadioID, a match on the local passphrase is a
+        guest login; otherwise the expected hash is fetched from freeradioid.net
+        in the background and finish() runs when it arrives. The caller's
+        finish() must re-check that `state` is still current, because the
+        repeater may have retried or been replaced while the lookup ran.
+        """
+        salt_bytes = state.salt.to_bytes(4, 'big')
+        local_hash = bytes.fromhex(sha256(b''.join([salt_bytes, repeater_config.passphrase.encode()])).hexdigest())
+        local_ok = compare_digest(auth_hash, local_hash)
+
+        if not self._frid.applies(repeater_config):
+            finish(AUTH_LOCAL if local_ok else None)
+            return
+        if local_ok:
+            finish(AUTH_GUEST)
+            return
+
+        state.auth_pending = True
+        radio_id = rid_to_int(repeater_id)
+        salt = state.salt
+
+        async def lookup():
+            try:
+                expected = await self._frid.fetch_expected_hash(radio_id, salt, addr[0])
+            except Exception as e:
+                LOGGER.warning(f'FreeRadioID: lookup for {radio_id} failed: {e}')
+                expected = None
+            finally:
+                state.auth_pending = False
+            ok = expected is not None and compare_digest(auth_hash, expected)
+            if not ok:
+                LOGGER.info(f'FreeRadioID: {radio_id} not verified (unknown ID, wrong password or API unavailable)')
+            finish(AUTH_FREERADIOID if ok else None)
+
+        task = asyncio.get_running_loop().create_task(lookup())
+        self._auth_tasks.add(task)
+        task.add_done_callback(self._auth_tasks.discard)
+
+    def _apply_auth_method(self, repeater: RepeaterState, method: str) -> None:
+        repeater.auth_method = method
+        repeater.guest_tx_talkgroups = self._frid.guest_talkgroups if method == AUTH_GUEST else None
+        if method == AUTH_GUEST:
+            LOGGER.info(f'Repeater {rid_to_int(repeater.repeater_id)} logged in as FreeRadioID GUEST '
+                        f'(default passphrase) - TX limited to guest talkgroups')
+        elif method == AUTH_FREERADIOID:
+            LOGGER.info(f'Repeater {rid_to_int(repeater.repeater_id)} verified by FreeRadioID')
+
     def _handle_takeover_auth_response(self, repeater_id: bytes, pending: RepeaterState,
                                        auth_hash: bytes, addr: PeerAddress) -> None:
         """
@@ -2767,22 +2831,18 @@ class HBProtocol(asyncio.DatagramProtocol):
         sockaddr. Only a correct passphrase earns the takeover; on every failure the
         pending state is discarded and the incumbent registration is left untouched.
         """
-        del self._pending_logins[repeater_id]
         ip, port = addr[0], addr[1]
 
-        try:
-            repeater_config = self._matcher.get_repeater_config(
-                rid_to_int(repeater_id), pending.get_callsign_str()
-            )
-            if repeater_config is None:
-                LOGGER.warning(f'Denied takeover of repeater {rid_to_int(repeater_id)} by {ip}:{port} '
-                               f'- no matching configuration; incumbent retained')
-                self._send_nak(repeater_id, addr, reason="No matching configuration")
-                return
+        if pending.auth_pending:
+            LOGGER.debug(f'Repeater {rid_to_int(repeater_id)} repeated RPTK while FreeRadioID lookup runs - ignored')
+            return
 
-            salt_bytes = pending.salt.to_bytes(4, 'big')
-            calc_hash = bytes.fromhex(sha256(b''.join([salt_bytes, repeater_config.passphrase.encode()])).hexdigest())
-            if auth_hash != calc_hash:
+        def finish(method: Optional[str]) -> None:
+            # The claimant may have expired or been superseded during a lookup.
+            if self._pending_logins.get(repeater_id) is not pending:
+                return
+            del self._pending_logins[repeater_id]
+            if method is None:
                 LOGGER.warning(f'Denied takeover of repeater {rid_to_int(repeater_id)} by {ip}:{port} '
                                f'- authentication failed; incumbent retained')
                 self._send_nak(repeater_id, addr, reason="Authentication failed")
@@ -2799,13 +2859,28 @@ class HBProtocol(asyncio.DatagramProtocol):
                 self._remove_repeater(repeater_id, "replaced_by_new_address")
                 self._send_nak(repeater_id, old_addr, reason="Replaced by new registration")
 
+            self._apply_auth_method(pending, method)
             pending.authenticated = True
             pending.connection_state = 'config'
             self._repeaters[repeater_id] = pending
             self._send_packet(b''.join([RPTACK, repeater_id]), addr)
             LOGGER.info(f'Repeater {rid_to_int(repeater_id)} authenticated successfully from {ip}:{port}')
 
+        try:
+            repeater_config = self._matcher.get_repeater_config(
+                rid_to_int(repeater_id), pending.get_callsign_str()
+            )
+            if repeater_config is None:
+                del self._pending_logins[repeater_id]
+                LOGGER.warning(f'Denied takeover of repeater {rid_to_int(repeater_id)} by {ip}:{port} '
+                               f'- no matching configuration; incumbent retained')
+                self._send_nak(repeater_id, addr, reason="No matching configuration")
+                return
+
+            self._verify_login_hash(repeater_id, pending, auth_hash, repeater_config, addr, finish)
+
         except Exception as e:
+            self._pending_logins.pop(repeater_id, None)
             LOGGER.error(f'Authentication error for repeater {rid_to_int(repeater_id)} from {ip}:{port}: {str(e)}')
             self._send_nak(repeater_id, addr)
 
@@ -2824,26 +2899,18 @@ class HBProtocol(asyncio.DatagramProtocol):
             LOGGER.warning(f'Auth response from repeater {rid_to_int(repeater_id)} in wrong state')
             self._send_nak(repeater_id, addr)
             return
-            
-        try:
-            # Get config for this repeater including its passphrase
-            repeater_config = self._matcher.get_repeater_config(
-                rid_to_int(repeater_id),
-                repeater.get_callsign_str()
-            )
-            
-            # If no matching configuration found, reject the connection
-            if repeater_config is None:
-                LOGGER.warning(f'Repeater {rid_to_int(repeater_id)} does not match any configured patterns and no default is set')
-                self._send_nak(repeater_id, addr, reason="No matching configuration")
-                self._remove_repeater(repeater_id, "no_config_match")
+
+        if repeater.auth_pending:
+            LOGGER.debug(f'Repeater {rid_to_int(repeater_id)} repeated RPTK while FreeRadioID lookup runs - ignored')
+            return
+
+        def finish(method: Optional[str]) -> None:
+            # A login retry replaces the RepeaterState; a stale answer must not
+            # authenticate the new one.
+            if self._repeaters.get(repeater_id) is not repeater or repeater.connection_state != 'login':
                 return
-            
-            # Validate the hash
-            salt_bytes = repeater.salt.to_bytes(4, 'big')
-            calc_hash = bytes.fromhex(sha256(b''.join([salt_bytes, repeater_config.passphrase.encode()])).hexdigest())
-            
-            if auth_hash == calc_hash:
+            if method is not None:
+                self._apply_auth_method(repeater, method)
                 repeater.authenticated = True
                 repeater.connection_state = 'config'
                 self._send_packet(b''.join([RPTACK, repeater_id]), addr)
@@ -2852,7 +2919,23 @@ class HBProtocol(asyncio.DatagramProtocol):
                 LOGGER.warning(f'Repeater {rid_to_int(repeater_id)} failed authentication')
                 self._send_nak(repeater_id, addr, reason="Authentication failed")
                 self._remove_repeater(repeater_id, "auth_failed")
-                
+
+        try:
+            # Get config for this repeater including its passphrase
+            repeater_config = self._matcher.get_repeater_config(
+                rid_to_int(repeater_id),
+                repeater.get_callsign_str()
+            )
+
+            # If no matching configuration found, reject the connection
+            if repeater_config is None:
+                LOGGER.warning(f'Repeater {rid_to_int(repeater_id)} does not match any configured patterns and no default is set')
+                self._send_nak(repeater_id, addr, reason="No matching configuration")
+                self._remove_repeater(repeater_id, "no_config_match")
+                return
+
+            self._verify_login_hash(repeater_id, repeater, auth_hash, repeater_config, addr, finish)
+
         except Exception as e:
             LOGGER.error(f'Authentication error for repeater {rid_to_int(repeater_id)}: {str(e)}')
             self._send_nak(repeater_id, addr)
