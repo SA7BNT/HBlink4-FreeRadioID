@@ -14,6 +14,29 @@
         "button_text": "Network Info",
         "url": "https://example.com/network-info"
     },
+    "auth": {
+        "_comment": "Login and user management (SQLite: dashboard/data/dashboard.db). The superadmin below is the only account set here; it logs into the admin area and creates admins and users there. Prefer password_hash over password: python3 -m dashboard.auth hash-password. public_dashboard=false means nothing is visible without login. IP addresses are only ever shown to admins.",
+        "superadmin": {
+            "username": "",
+            "password": "",
+            "password_hash": ""
+        },
+        "public_dashboard": true,
+        "session_hours": 12,
+        "remember_days": 30
+    },
+    "https": {
+        "_comment": "HTTPS with automatic Let's Encrypt certificates. Needs: sudo apt install certbot, the domain pointing to this server, and ports 80 and 443 open. Port 80 answers the Let's Encrypt challenge and redirects to HTTPS; web.port then also redirects. Renewal runs automatically. Use letsencrypt=false with cert_file/key_file for your own certificates; staging=true for testing.",
+        "enabled": false,
+        "domain": "dmr.die-n8schicht.de",
+        "email": "",
+        "port": 443,
+        "http_port": 80,
+        "letsencrypt": true,
+        "staging": false,
+        "cert_file": "",
+        "key_file": ""
+    },
     "refresh_interval": 1000,
     "max_events": 50,
     "web": {

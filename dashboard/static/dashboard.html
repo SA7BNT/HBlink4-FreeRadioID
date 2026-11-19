@@ -1274,6 +1274,177 @@
             .station-kpis { grid-template-columns: repeat(2, 1fr); padding: 14px 14px 4px; }
             .station-grid { grid-template-columns: 1fr; padding: 12px 14px 18px; }
         }
+
+        /* ============ Slimmer layout (v3) ============ */
+        body { padding: 12px; }
+        header { padding: 6px 12px; top: 8px; }
+        .logo { height: 44px; }
+        h1 { font-size: 21px; }
+        #serverName { font-size: 11px !important; margin-top: 1px !important; }
+        .section-header { margin: 16px 4px 8px; font-size: 12px; }
+        .stats-bar { gap: 10px; }
+        .stat-card { padding: 10px 14px; }
+        .stat-value { font-size: 22px; }
+        .repeater-card { margin-bottom: 8px; padding: 4px; }
+        .repeater-info { padding: 6px 10px; }
+        .repeater-header, .repeater-header-warning { font-size: 15px; margin-bottom: 4px; }
+        #lastHeardTable td { padding: 7px 12px !important; }
+        #lastHeardBody th { padding: 8px 12px !important; }
+
+        /* Detail view: fits a laptop screen without scrolling */
+        .modal-overlay { padding: 16px; }
+        .modal-content.station { width: min(1080px, 100%); max-width: 1080px; max-height: calc(100vh - 32px); overflow-y: auto; }
+        .station-hero {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 16px;
+            padding: 16px 56px 14px 18px;
+        }
+        .station-callsign { font-size: 25px; }
+        .station-sub { margin-top: 3px; font-size: 12px; }
+        .station-operator { margin-top: 3px; font-size: 13px; }
+        .station-pills { margin-top: 7px; gap: 6px; }
+        .pill { font-size: 11px; padding: 3px 10px; }
+        .station-hero .station-kpis {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(110px, auto));
+            gap: 6px;
+            padding: 0;
+            align-self: center;
+        }
+        .kpi { padding: 6px 10px; border-radius: 10px; }
+        .kpi-value { font-size: 15px; }
+        .kpi-label { font-size: 10px; margin-top: 0; }
+        .station-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 16px 16px; }
+        .station-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 0 8px; }
+        .tile { padding: 10px 12px; border-radius: 14px; }
+        .tile h3 { font-size: 11px; margin-bottom: 4px; }
+        .info-row { padding: 4px 0; font-size: 12.5px; gap: 10px; }
+        .tg-row { padding: 3px 0; }
+        .chip { font-size: 11.5px; padding: 2px 9px; }
+        @media (max-width: 980px) {
+            .station-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 700px) {
+            .station-hero {
+                grid-template-columns: auto minmax(0, 1fr);
+                text-align: left; gap: 12px; padding: 14px 48px 12px 14px;
+            }
+            .station-hero .avatar { --size: 52px !important; }
+            .station-sub, .station-pills { justify-content: flex-start; }
+            .station-hero .station-kpis { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); width: 100%; gap: 5px; }
+            .kpi { padding: 5px 6px; text-align: center; }
+            .kpi-value { font-size: 13px; }
+            .kpi-label { font-size: 9px; }
+            .slot-led { width: 6px; height: 6px; margin-right: 3px; }
+            .slot-led.second { margin-left: 5px; }
+            .station-grid, .station-grid.two { grid-template-columns: 1fr; gap: 8px; padding: 10px 10px 12px; }
+            .station-callsign { font-size: 22px; }
+            .tile { padding: 8px 10px; }
+            .info-row { padding: 3px 0; font-size: 12px; }
+        }
+
+        /* Header user area */
+        #userArea { display: flex; }
+        .hdr-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            border-radius: 999px; padding: 6px 13px;
+            font-weight: 600; font-size: 12px; font-family: inherit;
+            color: var(--text); cursor: pointer;
+            background: rgba(10, 132, 255, 0.25); border: 1px solid rgba(10, 132, 255, 0.5);
+        }
+        .hdr-btn:hover { background: rgba(10, 132, 255, 0.4); }
+        .hdr-btn.user { background: var(--glass-bg); border-color: var(--glass-border); padding: 3px 10px 3px 4px; }
+        .user-menu { position: relative; }
+        .user-dropdown {
+            display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 190px;
+            padding: 6px; border-radius: 14px; background: rgba(24, 30, 52, 0.95);
+            border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+            -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+        }
+        .user-menu.open .user-dropdown { display: block; }
+        .user-dropdown button {
+            display: block; width: 100%; text-align: left; padding: 8px 10px; border-radius: 9px;
+            background: none; border: none; color: var(--text); font-weight: 500; font-size: 13px; font-family: inherit; cursor: pointer;
+        }
+        .user-dropdown button:hover { background: rgba(255, 255, 255, 0.08); }
+        .role-tag {
+            font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+            border-radius: 999px; padding: 2px 7px; border: 1px solid var(--glass-border); color: var(--text-dim);
+        }
+        .role-superadmin { color: #ffcf6e; border-color: rgba(255, 159, 10, 0.55); background: rgba(255, 159, 10, 0.14); }
+        .role-admin { color: #9bd8ff; border-color: rgba(10, 132, 255, 0.55); background: rgba(10, 132, 255, 0.16); }
+        .role-user { color: var(--text-dim); }
+        .role-off { color: #ff9f97; border-color: rgba(255, 69, 58, 0.45); }
+        .hidden-ip { color: var(--text-dim); font-size: 0.95em; }
+
+        /* Forms */
+        .modal-content.small { width: min(380px, 100%); }
+        .login-card { display: flex; flex-direction: column; gap: 10px; padding: 26px 24px 22px; text-align: center; }
+        .login-card h2 { font-size: 19px; margin: 0; }
+        .login-logo { width: 64px; height: 64px; margin: 0 auto 2px; }
+        .login-card input:not([type=checkbox]), .inline-form input:not([type=checkbox]), .inline-form select {
+            width: 100%; padding: 9px 12px; border-radius: 10px; font-size: 14px; font-family: inherit;
+            color: var(--text); background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); outline: none;
+        }
+        .login-card input:focus, .inline-form input:focus, .inline-form select:focus { border-color: var(--accent); }
+        .inline-form select option { background: #1c2238; }
+        .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); justify-content: flex-start; }
+        .btn-primary {
+            border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer;
+            font-weight: 700; font-size: 14px; font-family: inherit; color: #fff;
+            background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+        }
+        .btn-primary:hover { filter: brightness(1.12); }
+        .btn-s {
+            padding: 6px 11px; font-size: 12px; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600;
+            color: var(--text); background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+        .btn-s.btn-primary { background: linear-gradient(135deg, #0a84ff, #5e5ce6); border: none; color: #fff; }
+        .btn-s.danger { color: #ff9f97; border-color: rgba(255, 69, 58, 0.45); }
+        .btn-s.danger:hover { background: rgba(255, 69, 58, 0.18); }
+        .form-error { color: #ff9f97; font-size: 13px; }
+        .small { font-size: 12px; }
+
+        /* Admin area */
+        .modal-content.admin { width: min(980px, 100%); max-width: 980px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+        .admin-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px 20px; }
+        .admin-head h2 { font-size: 19px; margin: 0; }
+        .tabs { display: flex; gap: 4px; padding: 4px 16px 10px; flex-wrap: wrap; border-bottom: 1px solid var(--glass-border); }
+        .tabs button {
+            padding: 6px 12px; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
+            background: none; color: var(--text-dim); font-weight: 600; font-size: 13px; font-family: inherit;
+        }
+        .tabs button.active { color: var(--text); background: rgba(255, 255, 255, 0.1); border-color: var(--glass-border); }
+        .admin-body { padding: 12px 16px 16px; overflow-y: auto; }
+        .inline-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .inline-form > input, .inline-form > select { flex: 1 1 140px; width: auto; padding: 7px 10px; font-size: 13px; }
+        .inline-form.create { padding: 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); margin-bottom: 10px; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .admin-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding: 6px 8px; }
+        .admin-table td { padding: 7px 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); vertical-align: middle; }
+        .admin-table td.actions { text-align: right; }
+        .admin-table tr.is-disabled td { opacity: 0.55; }
+        .admin-table tr.edit-row td { background: rgba(255, 255, 255, 0.03); border-top: none; }
+        .admin-table code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+        .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+        .avatar-item { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px;
+                       border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); }
+
+        .toast {
+            position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; z-index: 2000;
+            padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; pointer-events: none;
+            background: rgba(30, 36, 60, 0.95); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+            transition: all 0.25s ease;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .toast.ok { border-color: rgba(48, 209, 88, 0.6); }
+        .toast.err { border-color: rgba(255, 69, 58, 0.6); color: #ffb4ad; }
+        @media (max-width: 700px) {
+            .hdr-btn.user span:not(.avatar):not(.role-tag) { display: none; }
+            .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -1291,6 +1462,7 @@
                 <div class="connection-status clickable warning" id="wsStatus" title="Connecting to dashboard server...">Connecting...</div>
                 <div class="connection-status warning" id="hblinkStatus" title="Waiting for connection status...">Unknown</div>
                 <div class="audio-toggle disabled" id="audioToggle" title="Click to enable audio notifications">🔇 Notifications</div>
+                <div id="userArea"></div>
             </div>
         </header>
         
@@ -1472,6 +1644,8 @@
                 retransmitted_calls: 0
             },
             config: {},
+            me: null,              // logged-in user (null = anonymous)
+            publicDashboard: true,
             user_db_status: null
         };
         
@@ -1683,15 +1857,383 @@
             }
         }
         
+        // ================= Login, user menu, admin area =================
+        const ROLE_LABEL = { superadmin: 'Superadmin', admin: 'Admin', user: 'User' };
+
+        async function api(method, url, body, raw) {
+            const opts = { method, headers: { 'X-Dashboard': '1' }, credentials: 'same-origin' };
+            if (raw) { opts.body = raw; opts.headers['Content-Type'] = raw.type || 'application/octet-stream'; }
+            else if (body !== undefined) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+            const r = await fetch(url, opts);
+            let j = {};
+            try { j = await r.json(); } catch (e) { /* empty body */ }
+            if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+            return j;
+        }
+
+        function isAdmin() { return !!(state.me && (state.me.role === 'admin' || state.me.role === 'superadmin')); }
+        function fmtAddr(addr, port) {
+            if (!addr) return '<span class="hidden-ip" title="Visible to admins only">🔒 hidden</span>';
+            return escapeHtml(port ? `${addr}:${port}` : addr);
+        }
+        function fmtTime(ts) {
+            if (!ts) return '—';
+            const d = new Date(ts * 1000);
+            return d.toLocaleString([], { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function toast(msg, kind) {
+            let el = document.getElementById('toast');
+            if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+            el.className = `toast show ${kind || ''}`;
+            el.textContent = msg;
+            clearTimeout(el._t);
+            el._t = setTimeout(() => { el.className = 'toast'; }, 3200);
+        }
+
+        function openModal(html, cls, closable = true) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `<div class="modal-content ${cls || ''}" onclick="event.stopPropagation()">${html}</div>`;
+            const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = (e) => { if (e.key === 'Escape' && closable) close(); };
+            if (closable) modal.onclick = (e) => { if (e.target === modal) close(); };
+            document.addEventListener('keydown', onKey);
+            modal._close = close;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        async function loadMe() {
+            try {
+                const j = await fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.json());
+                state.me = j.user || null;
+                state.publicDashboard = j.public_dashboard !== false;
+            } catch (e) { state.me = null; }
+            renderUserArea();
+        }
+
+        function reconnectWS() {
+            clearTimeout(reconnectTimeout);
+            if (ws) { ws.onclose = null; try { ws.close(); } catch (e) {} }
+            connectWebSocket();
+        }
+
+        function renderUserArea() {
+            const el = document.getElementById('userArea');
+            if (!el) return;
+            if (!state.me) {
+                el.innerHTML = '<button class="hdr-btn" onclick="openLogin()">🔐 Login</button>';
+                return;
+            }
+            const u = state.me;
+            el.innerHTML = `
+                <div class="user-menu">
+                    <button class="hdr-btn user" onclick="this.parentElement.classList.toggle('open')">
+                        ${avatarHtml(u.dmr_id || 0, u.display_name || u.username, 22, u.dmr_id ? undefined : '')}
+                        <span>${escapeHtml(u.display_name || u.username)}</span>
+                        <span class="role-tag role-${u.role}">${ROLE_LABEL[u.role] || u.role}</span>
+                    </button>
+                    <div class="user-dropdown">
+                        ${isAdmin() ? '<button onclick="openAdmin()">⚙️ Admin area</button>' : ''}
+                        ${u.from_config ? '' : '<button onclick="openPasswordDialog()">🔑 Change password</button>'}
+                        <button onclick="logout()">↩︎ Log out</button>
+                    </div>
+                </div>`;
+        }
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('.user-menu.open').forEach(m => { if (!m.contains(e.target)) m.classList.remove('open'); });
+        });
+
+        function openLogin(gate = false) {
+            const m = openModal(`
+                <form class="login-card" onsubmit="event.preventDefault(); doLogin(this)">
+                    <img src="${escapeHtml(document.querySelector('.logo').src)}" class="login-logo" alt="">
+                    <h2>${escapeHtml(document.getElementById('dashboardTitle').textContent)}</h2>
+                    <p class="muted">${gate ? 'Please log in to view the dashboard.' : 'Log in to see IP addresses and the admin area.'}</p>
+                    <input name="username" placeholder="Username" autocomplete="username" required autofocus>
+                    <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+                    <label class="check"><input type="checkbox" name="remember"> Stay logged in</label>
+                    <div class="form-error" hidden></div>
+                    <button class="btn-primary" type="submit">Log in</button>
+                </form>`, 'small', !gate);
+            m.querySelector('input[name=username]').focus();
+        }
+
+        async function doLogin(form) {
+            const err = form.querySelector('.form-error');
+            err.hidden = true;
+            try {
+                const j = await api('POST', '/api/auth/login', {
+                    username: form.username.value, password: form.password.value, remember: form.remember.checked });
+                state.me = j.user;
+                form.closest('.modal-overlay').remove();
+                renderUserArea();
+                reconnectWS();
+                toast(`Welcome, ${j.user.display_name || j.user.username}`, 'ok');
+            } catch (e) {
+                err.textContent = e.message;
+                err.hidden = false;
+            }
+        }
+
+        async function logout() {
+            try { await api('POST', '/api/auth/logout'); } catch (e) {}
+            state.me = null;
+            renderUserArea();
+            if (!state.publicDashboard) { location.reload(); return; }
+            reconnectWS();
+            toast('Logged out');
+        }
+
+        function openPasswordDialog() {
+            openModal(`
+                <form class="login-card" onsubmit="event.preventDefault(); changePassword(this)">
+                    <h2>🔑 Change password</h2>
+                    <input name="old" type="password" placeholder="Current password" autocomplete="current-password" required>
+                    <input name="new" type="password" placeholder="New password (min. 8)" autocomplete="new-password" minlength="8" required>
+                    <input name="new2" type="password" placeholder="Repeat new password" autocomplete="new-password" required>
+                    <div class="form-error" hidden></div>
+                    <button class="btn-primary" type="submit">Save</button>
+                </form>`, 'small');
+        }
+
+        async function changePassword(form) {
+            const err = form.querySelector('.form-error');
+            err.hidden = true;
+            if (form.new.value !== form.new2.value) { err.textContent = 'Passwords do not match.'; err.hidden = false; return; }
+            try {
+                await api('POST', '/api/auth/password', { old: form.old.value, new: form.new.value });
+                form.closest('.modal-overlay').remove();
+                toast('Password changed', 'ok');
+            } catch (e) { err.textContent = e.message; err.hidden = false; }
+        }
+
+        // ---------- Admin area ----------
+        const ADMIN_TABS = [['users', '👥 Users'], ['sessions', '🔑 Sessions'], ['avatars', '🖼️ Avatars'],
+                            ['audit', '📜 Log'], ['system', '🖥️ System']];
+
+        function openAdmin(tab = 'users') {
+            const m = openModal(`
+                <div class="admin-head">
+                    <h2>⚙️ Admin area</h2>
+                    <button class="modal-close" aria-label="Close" onclick="this.closest('.modal-overlay')._close()">×</button>
+                </div>
+                <nav class="tabs">${ADMIN_TABS.map(([k, l]) => `<button data-tab="${k}" onclick="adminTab('${k}')">${l}</button>`).join('')}</nav>
+                <div class="admin-body" id="adminBody"></div>`, 'admin');
+            m.id = 'adminModal';
+            adminTab(tab);
+        }
+
+        async function adminTab(tab) {
+            document.querySelectorAll('#adminModal .tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            const body = document.getElementById('adminBody');
+            if (!body) return;
+            body.innerHTML = '<div class="muted">Loading…</div>';
+            try {
+                body.innerHTML = await ({ users: adminUsers, sessions: adminSessions, avatars: adminAvatars,
+                                          audit: adminAudit, system: adminSystem })[tab]();
+            } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
+        }
+
+        async function adminUsers() {
+            const { users } = await api('GET', '/api/admin/users');
+            const superMe = state.me.role === 'superadmin';
+            const roleOpts = (sel) => `<option value="user" ${sel === 'user' ? 'selected' : ''}>User</option>` +
+                (superMe ? `<option value="admin" ${sel === 'admin' ? 'selected' : ''}>Admin</option>` : '');
+            const rows = users.map(u => {
+                const locked = u.role === 'superadmin' || (u.role === 'admin' && !superMe);
+                return `
+                <tr data-id="${u.id}" class="${u.disabled ? 'is-disabled' : ''}">
+                    <td><span class="lh-user">${avatarHtml(u.dmr_id || 0, u.display_name || u.username, 26, u.dmr_id ? undefined : '')}
+                        <span><b>${escapeHtml(u.username)}</b>${u.display_name ? `<br><small class="muted">${escapeHtml(u.display_name)}</small>` : ''}</span></span></td>
+                    <td><span class="role-tag role-${u.role}">${ROLE_LABEL[u.role]}</span>${u.disabled ? ' <span class="role-tag role-off">disabled</span>' : ''}</td>
+                    <td>${u.dmr_id || '—'}</td>
+                    <td>${fmtTime(u.last_login)}</td>
+                    <td class="actions">${locked
+                        ? `<small class="muted">${u.role === 'superadmin' ? 'config.json' : 'superadmin only'}</small>`
+                        : `<button class="btn-s" onclick="editUserRow(${u.id})">Edit</button>`}</td>
+                </tr>
+                <tr class="edit-row" id="edit-${u.id}" hidden><td colspan="5">
+                    <form class="inline-form" onsubmit="event.preventDefault(); saveUser(${u.id}, this)">
+                        <input name="display_name" placeholder="Display name" value="${escapeHtml(u.display_name)}">
+                        <input name="dmr_id" placeholder="DMR-ID" inputmode="numeric" value="${u.dmr_id || ''}">
+                        <input name="password" type="password" placeholder="New password (optional)" autocomplete="new-password">
+                        <select name="role">${roleOpts(u.role)}</select>
+                        <label class="check"><input type="checkbox" name="disabled" ${u.disabled ? 'checked' : ''}> disabled</label>
+                        <button class="btn-primary btn-s" type="submit">Save</button>
+                        <button class="btn-s danger" type="button" onclick="deleteUser(${u.id}, this)">Delete</button>
+                    </form>
+                </td></tr>`;
+            }).join('');
+            return `
+                <form class="inline-form create" onsubmit="event.preventDefault(); createUser(this)">
+                    <input name="username" placeholder="Username" required autocomplete="off">
+                    <input name="display_name" placeholder="Display name">
+                    <input name="dmr_id" placeholder="DMR-ID" inputmode="numeric">
+                    <input name="password" type="password" placeholder="Password (min. 8)" minlength="8" required autocomplete="new-password">
+                    <select name="role">${roleOpts('user')}</select>
+                    <button class="btn-primary btn-s" type="submit">＋ Add user</button>
+                </form>
+                <table class="admin-table">
+                    <thead><tr><th>User</th><th>Role</th><th>DMR-ID</th><th>Last login</th><th></th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <p class="muted small">Admins see IP addresses and manage users and avatars. Only the superadmin
+                (set in <code>dashboard/config.json</code>) can create admins.</p>`;
+        }
+
+        function editUserRow(id) {
+            const row = document.getElementById(`edit-${id}`);
+            row.hidden = !row.hidden;
+        }
+
+        function formData(form) {
+            const d = {};
+            for (const el of form.elements) {
+                if (!el.name) continue;
+                d[el.name] = el.type === 'checkbox' ? el.checked : el.value.trim();
+            }
+            return d;
+        }
+
+        async function createUser(form) {
+            try {
+                const d = formData(form);
+                await api('POST', '/api/admin/users', { ...d, dmr_id: d.dmr_id || null });
+                toast(`User ${d.username} created`, 'ok');
+                adminTab('users');
+            } catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function saveUser(id, form) {
+            const d = formData(form);
+            const changes = { display_name: d.display_name, dmr_id: d.dmr_id || null, role: d.role, disabled: d.disabled };
+            if (d.password) changes.password = d.password;
+            try {
+                await api('PATCH', `/api/admin/users/${id}`, changes);
+                toast('Saved', 'ok');
+                adminTab('users');
+            } catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function deleteUser(id, btn) {
+            if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Really delete?'; return; }
+            try {
+                await api('DELETE', `/api/admin/users/${id}`);
+                toast('User deleted', 'ok');
+                adminTab('users');
+            } catch (e) { toast(e.message, 'err'); }
+        }
+
+        function shortUA(ua) {
+            if (!ua) return '—';
+            const b = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+            const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : '';
+            return `${b}${os ? ' · ' + os : ''}`;
+        }
+
+        async function adminSessions() {
+            const { sessions } = await api('GET', '/api/admin/sessions');
+            if (!sessions.length) return '<div class="muted">No active sessions.</div>';
+            return `<table class="admin-table">
+                <thead><tr><th>User</th><th>IP</th><th>Browser</th><th>Last active</th><th>Expires</th><th></th></tr></thead>
+                <tbody>${sessions.map(s => `<tr>
+                    <td><b>${escapeHtml(s.username)}</b> <span class="role-tag role-${s.role}">${ROLE_LABEL[s.role]}</span></td>
+                    <td><code>${escapeHtml(s.ip)}</code></td><td>${escapeHtml(shortUA(s.user_agent))}</td>
+                    <td>${fmtTime(s.last_seen)}</td><td>${fmtTime(s.expires_at)}</td>
+                    <td class="actions"><button class="btn-s danger" onclick="revokeSession('${s.id}')">Revoke</button></td>
+                </tr>`).join('')}</tbody></table>`;
+        }
+
+        async function revokeSession(id) {
+            try { await api('DELETE', `/api/admin/sessions/${id}`); toast('Session revoked', 'ok'); adminTab('sessions'); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function adminAvatars() {
+            const { avatars } = await api('GET', '/api/admin/avatars');
+            return `
+                <form class="inline-form create" onsubmit="event.preventDefault(); uploadAvatar(this)">
+                    <input name="dmr_id" placeholder="DMR-ID" inputmode="numeric" required>
+                    <input name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
+                    <button class="btn-primary btn-s" type="submit">⬆ Upload</button>
+                </form>
+                <p class="muted small">Your own avatars take priority over FreeRadioID. FreeRadioID currently only serves
+                its grey placeholder publicly; it is shown as initials. PNG, JPEG, GIF or WebP, max. 512 KB.</p>
+                <div class="avatar-grid">${avatars.length ? avatars.map(a => `
+                    <div class="avatar-item">
+                        ${avatarHtml(a.dmr_id, String(a.dmr_id), 64)}
+                        <b>${a.dmr_id}</b>
+                        <small class="muted">${fmtTime(a.updated_at)}</small>
+                        <button class="btn-s danger" onclick="deleteAvatar(${a.dmr_id})">Remove</button>
+                    </div>`).join('') : '<div class="muted">No own avatars yet.</div>'}</div>`;
+        }
+
+        async function uploadAvatar(form) {
+            const id = form.dmr_id.value.trim();
+            const file = form.file.files[0];
+            if (!file) return;
+            if (file.size > 512 * 1024) { toast('Image too large (max. 512 KB)', 'err'); return; }
+            try {
+                await api('PUT', `/api/admin/avatars/${encodeURIComponent(id)}`, undefined, file);
+                toast(`Avatar for ${id} saved`, 'ok');
+                adminTab('avatars');
+            } catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function deleteAvatar(id) {
+            try { await api('DELETE', `/api/admin/avatars/${id}`); toast('Avatar removed', 'ok'); adminTab('avatars'); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function adminAudit() {
+            const { audit } = await api('GET', '/api/admin/audit');
+            const labels = { login: '✅ Login', login_failed: '⛔ Failed login', logout: '↩︎ Logout',
+                             user_created: '➕ User created', user_updated: '✏️ User changed', user_deleted: '🗑 User deleted',
+                             password_changed: '🔑 Password changed', session_revoked: '🔑 Session revoked',
+                             avatar_set: '🖼️ Avatar set', avatar_deleted: '🖼️ Avatar removed' };
+            if (!audit.length) return '<div class="muted">Nothing logged yet.</div>';
+            return `<table class="admin-table">
+                <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>IP</th></tr></thead>
+                <tbody>${audit.map(a => `<tr>
+                    <td>${fmtTime(a.ts)}</td><td>${labels[a.action] || escapeHtml(a.action)}</td>
+                    <td>${escapeHtml(a.username)}</td><td>${escapeHtml(a.detail)}</td><td><code>${escapeHtml(a.ip)}</code></td>
+                </tr>`).join('')}</tbody></table>`;
+        }
+
+        async function adminSystem() {
+            const s = await api('GET', '/api/admin/system');
+            const yes = '<span class="auth-ok">yes</span>', no = '<span class="muted">no</span>';
+            return `<div class="station-grid two">
+                <section class="tile"><h3>🔒 HTTPS</h3>
+                    ${infoRow('Enabled', s.https_enabled ? yes : no)}
+                    ${infoRow('This page over HTTPS', s.served_over_https ? yes : '<span class="auth-guest">no</span>')}
+                    ${infoRow('Domain', escapeHtml(s.domain || '—'))}
+                    ${infoRow('Certificate', s.letsencrypt ? "Let's Encrypt (automatic)" : 'own files')}
+                    ${infoRow('Valid until', escapeHtml(s.cert_expires || '—'))}
+                </section>
+                <section class="tile"><h3>👥 Access</h3>
+                    ${infoRow('Public dashboard', s.public_dashboard ? 'yes (anyone can view)' : 'no (login required)')}
+                    ${infoRow('Superadmin', escapeHtml(s.superadmin || '— not set —'))}
+                    ${infoRow('Accounts', s.users)}
+                    ${infoRow('Own avatars', s.avatars)}
+                    ${infoRow('IP addresses', 'admins only')}
+                </section></div>
+                <p class="muted small">These settings live in <code>dashboard/config.json</code> (sections <code>auth</code> and
+                <code>https</code>); restart the dashboard after changing them.</p>`;
+        }
+
         // ---------- Station detail view ----------
         function escapeHtml(v) {
             return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
+        // Avatars come through the dashboard server: own uploads first, then
+        // FreeRadioID (its grey placeholder counts as "no avatar" -> initials).
         function avatarUrl(radioId) {
-            const tpl = (state.config && state.config.freeradioid && state.config.freeradioid.avatar_url !== undefined)
-                ? state.config.freeradioid.avatar_url : 'https://freeradioid.net/avatar-{id}.png';
-            return tpl ? tpl.replace('{id}', radioId) : '';
+            if (!radioId || (state.config && state.config.freeradioid && state.config.freeradioid.avatars === false)) return '';
+            return `/api/avatar/${encodeURIComponent(radioId)}`;
         }
 
         // Avatar with an initials fallback if the image cannot load
@@ -1799,7 +2341,7 @@
                 <div class="modal-content station" onclick="event.stopPropagation()">
                     <button class="modal-close" aria-label="Close" onclick="this.closest('.modal-overlay').remove()">×</button>
                     <div class="station-hero ${ac.auth_method ? 'auth-' + ac.auth_method : ''}">
-                        ${avatarHtml(details.repeater_id, details.callsign, 92, frid && frid.avatar !== undefined ? frid.avatar : undefined)}
+                        ${avatarHtml(details.repeater_id, details.callsign, 64)}
                         <div class="station-title">
                             <div class="station-callsign">${escapeHtml(details.callsign || 'Unknown')}</div>
                             <div class="station-sub">
@@ -1811,13 +2353,13 @@
                             ${operatorLine ? `<div class="station-operator">${operatorLine}</div>` : ''}
                             <div class="station-pills">${authPill}${regPill}</div>
                         </div>
-                    </div>
-
                     <div class="station-kpis">
-                        <div class="kpi"><div class="kpi-value">${formatDuration(conn.uptime_seconds || 0)}</div><div class="kpi-label">Uptime</div></div>
-                        <div class="kpi"><div class="kpi-value">${escapeHtml(st.total_streams_today ?? 0)}</div><div class="kpi-label">Calls today</div></div>
-                        <div class="kpi"><div class="kpi-value"><span class="slot-led ${st.slot1_active ? 'on' : ''}"></span>TS1 <span class="slot-led second ${st.slot2_active ? 'on' : ''}"></span>TS2</div><div class="kpi-label">Activity</div></div>
-                        <div class="kpi"><div class="kpi-value ${conn.missed_pings > 0 ? 'warn' : ''}">${escapeHtml(conn.missed_pings ?? 0)}</div><div class="kpi-label">Missed pings</div></div>
+                            <div class="kpi"><div class="kpi-value">${formatDuration(conn.uptime_seconds || 0)}</div><div class="kpi-label">Uptime</div></div>
+                            <div class="kpi"><div class="kpi-value">${escapeHtml(st.total_streams_today ?? 0)}</div><div class="kpi-label">Calls today</div></div>
+                            <div class="kpi"><div class="kpi-value"><span class="slot-led ${st.slot1_active ? 'on' : ''}"></span>TS1 <span class="slot-led second ${st.slot2_active ? 'on' : ''}"></span>TS2</div><div class="kpi-label">Activity</div></div>
+                            <div class="kpi"><div class="kpi-value ${conn.missed_pings > 0 ? 'warn' : ''}">${escapeHtml(conn.missed_pings ?? 0)}</div><div class="kpi-label">Missed pings</div></div>
+                        </div>
+
                     </div>
 
                     <div class="station-grid">
@@ -1837,7 +2379,7 @@
 
                         <section class="tile">
                             <h3>📡 Connection</h3>
-                            ${infoRow('Address', `<code>${escapeHtml(conn.address)}</code>`)}
+                            ${infoRow('Address', conn.address ? `<code>${escapeHtml(conn.address)}</code>` : fmtAddr(''))}
                             ${infoRow('Last ping', lastPing)}
                             ${infoRow('Software', escapeHtml(md.software_id))}
                             ${infoRow('Package', escapeHtml(md.package_id))}
@@ -2358,7 +2900,7 @@
                             <div class="${headerClass}">↔️ ${o.connection_name}
                                 <span style="font-weight:400;color:#94a3b8">(NetID ${o.network_id})</span></div>
                             <div style="color:#94a3b8;font-size:11px;margin:2px 0">
-                                ${o.remote_address}:${o.remote_port} · up ${upDur} ·
+                                ${fmtAddr(o.remote_address, o.remote_port)} · up ${upDur} ·
                                 ${o.preserve_source_peer ? 'preserves source peer' : 'network_id in RptrId'}</div>
                             <div style="font-size:10px;margin-top:4px">
                                 <span style="color:#94a3b8">TGs:</span> ${tgList}</div>
@@ -2427,10 +2969,8 @@
                     statusText = o.disconnect_reason;
                 } else if (o.status === 'error' && o.error_message) {
                     statusText = o.error_message;
-                } else if (o.status === 'connected') {
-                    statusText = `${o.remote_address}:${o.remote_port}`;
                 } else {
-                    statusText = `${o.remote_address}:${o.remote_port}`;
+                    statusText = fmtAddr(o.remote_address, o.remote_port);
                 }
                 
                 // Find active streams for this outbound connection (by connection_name.slot key)
@@ -3094,7 +3634,7 @@
         function formatEventData(type, data) {
             switch(type) {
                 case 'repeater_connected':
-                    return `Repeater ${data.radio_id} (${data.callsign || 'UNKNOWN'}) connected from ${data.address}`;
+                    return `Repeater ${data.radio_id} (${data.callsign || 'UNKNOWN'}) connected${data.address ? ' from ' + data.address : ''}`;
                 case 'repeater_disconnected':
                     return `Repeater ${data.repeater_id} (${data.callsign || 'UNKNOWN'}) disconnected - ${data.reason || 'unknown reason'}`;
                 case 'stream_start':
@@ -3316,9 +3856,16 @@
         initCollapsibles();
         loadConfig();
         if (new URLSearchParams(location.search).has('demo')) {
+            renderUserArea();
             loadDemo();
         } else {
-            connectWebSocket();
+            loadMe().then(() => {
+                if (!state.publicDashboard && !state.me) {
+                    openLogin(true);       // private dashboard: login first
+                } else {
+                    connectWebSocket();
+                }
+            });
         }
     </script>
 </body>

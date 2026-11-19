@@ -72,6 +72,41 @@ Replace the HBlink logo and the browser tab icon with your own:
 Put the files in `dashboard/static/` or use full URLs. If `favicon` is empty,
 the logo is used. Leave both empty for the default DMR Die N8schicht logo.
 
+### Login, Users and Admin Area
+
+```json
+{
+    "auth": {
+        "superadmin": {"username": "admin", "password_hash": "scrypt$..."},
+        "public_dashboard": true,
+        "session_hours": 12,
+        "remember_days": 30
+    }
+}
+```
+
+The superadmin exists only in this file (`python -m dashboard.auth hash-password`
+prints a hash). It logs in through **🔐 Login** and manages admins and users in the
+admin area. Users, sessions, the audit log and own avatars are stored in SQLite
+(`dashboard/data/dashboard.db`). **IP addresses are removed server-side from every
+API response and WebSocket message for everyone except admins.** With
+`public_dashboard: false` nothing is visible without a login.
+
+### HTTPS with Let's Encrypt
+
+```json
+{
+    "https": {"enabled": true, "domain": "dmr.example.org", "email": "you@example.org",
+              "port": 443, "http_port": 80}
+}
+```
+
+Needs `sudo apt install certbot`, the domain pointing to the server, ports 80/443
+open, and the `CAP_NET_BIND_SERVICE` line from `hblink4-dash.service`. Port 80
+answers the ACME challenge and redirects to HTTPS; certificates live in
+`dashboard/data/letsencrypt/` and are renewed and reloaded automatically. Use
+`"letsencrypt": false` with `cert_file`/`key_file` for your own certificates.
+
 ### FreeRadioID Avatars, Profiles and ID Lists
 
 ```json
@@ -85,6 +120,8 @@ the logo is used. Leave both empty for the default DMR Die N8schicht logo.
 ```
 
 Avatars appear in the station detail view and Last Heard (`""` turns them off).
+They are fetched through `GET /api/avatar/{id}`: own uploads (admin area) first,
+then FreeRadioID, whose grey placeholder is treated as "no avatar".
 The detail view shows the FreeRadioID profile of the station (cached for an
 hour; `GET /api/freeradioid/{id}`). The IDs registered at FreeRadioID are
 downloaded with the callsign database (`user_database.freeradioid`), marked

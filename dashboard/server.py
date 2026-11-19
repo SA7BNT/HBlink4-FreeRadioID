@@ -14,8 +14,8 @@ import atexit
 from datetime import datetime, date, timedelta
 from collections import deque
 from typing import Dict, List, Set, Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Body
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import logging
@@ -30,6 +30,7 @@ if __package__ in (None, ""):
     import dashboard  # noqa: F401  (parent package must be in sys.modules)
 
 from .user_db import UserDatabase, compute_next_refresh_seconds, _age_str
+from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +77,25 @@ def load_config() -> dict:
                 "callsign_regex": None,
                 "radio_id_ranges": None
             }
+        },
+        # Login, user management and who may see what
+        "auth": {
+            "superadmin": {"username": "", "password": "", "password_hash": ""},
+            "public_dashboard": True,
+            "session_hours": 12,
+            "remember_days": 30
+        },
+        # HTTPS with automatic Let's Encrypt certificates (see dashboard/tls.py)
+        "https": {
+            "enabled": False,
+            "domain": "",
+            "email": "",
+            "port": 443,
+            "http_port": 80,
+            "letsencrypt": True,
+            "staging": False,
+            "cert_file": "",
+            "key_file": ""
         },
         # FreeRadioID.net integration: avatars and live profile lookups
         "freeradioid": {
@@ -138,6 +158,10 @@ class DashboardState:
         # Loaded from disk snapshot on startup; populated/refreshed by
         # user_db_refresh_task() registered in startup_event().
         self.user_db = UserDatabase(self._data_dir)
+
+        # Users, sessions, audit log and avatars (SQLite)
+        self.auth = AuthStore(self._data_dir / "dashboard.db")
+        self.auth.sync_superadmin((dashboard_config.get("auth") or {}).get("superadmin") or {})
 
         # Load persisted data
         self._load_persisted_data()
@@ -975,35 +999,362 @@ class EventReceiver:
         state.websocket_clients -= disconnected
 
 
+# ======================================================================
+# Authentication, IP visibility, user management
+# ======================================================================
+SESSION_COOKIE = "n8dash_session"
+_PUBLIC_CONFIG_KEYS = ("server_name", "server_description", "dashboard_title", "logo", "favicon",
+                       "announcement", "network_info", "refresh_interval", "max_events")
+_redact_memo: tuple = (None, None)
+
+
+def _auth_cfg() -> dict:
+    return dashboard_config.get("auth") or {}
+
+
+def _public_dashboard() -> bool:
+    return bool(_auth_cfg().get("public_dashboard", True))
+
+
+def _client_ip(conn) -> str:
+    return conn.client.host if conn.client else ""
+
+
+def current_user(conn) -> Optional[dict]:
+    """User of a Request or WebSocket from its session cookie (or None)."""
+    return state.auth.session_user(conn.cookies.get(SESSION_COOKIE))
+
+
+def is_admin(user: Optional[dict]) -> bool:
+    return bool(user and user.get("role") in ADMIN_ROLES)
+
+
+def view_for(user: Optional[dict], data):
+    """IP addresses are for admins only."""
+    return data if is_admin(user) else redact_ips(data)
+
+
+def _redact_text(text: str) -> str:
+    global _redact_memo
+    if _redact_memo[0] is text:
+        return _redact_memo[1]
+    try:
+        out = json.dumps(redact_ips(json.loads(text)))
+    except ValueError:
+        out = text
+    _redact_memo = (text, out)
+    return out
+
+
+class ClientSocket:
+    """A dashboard WebSocket that redacts IP addresses for non-admins."""
+
+    def __init__(self, ws: WebSocket, token: Optional[str], user: Optional[dict]):
+        self.ws = ws
+        self.token = token
+        self.user = user
+        self._checked = datetime.now().timestamp()
+
+    @property
+    def admin(self) -> bool:
+        now = datetime.now().timestamp()
+        if self.token and now - self._checked > 60:   # session revoked or demoted?
+            self.user = state.auth.session_user(self.token)
+            self._checked = now
+        return is_admin(self.user)
+
+    async def send_text(self, text: str):
+        await self.ws.send_text(text if (text == 'pong' or self.admin) else _redact_text(text))
+
+    async def send_json(self, obj):
+        await self.ws.send_json(obj if self.admin else redact_ips(obj))
+
+
+def _require_user(request: Request) -> dict:
+    user = current_user(request)
+    if not user:
+        raise _HTTPError(401, "Please log in.")
+    return user
+
+
+def _require_admin(request: Request) -> dict:
+    user = _require_user(request)
+    if not is_admin(user):
+        raise _HTTPError(403, "Admins only.")
+    return user
+
+
+class _HTTPError(Exception):
+    def __init__(self, status: int, message: str):
+        self.status, self.message = status, message
+
+
+@app.exception_handler(_HTTPError)
+async def _http_error_handler(request: Request, exc: _HTTPError):
+    return JSONResponse({"error": exc.message}, status_code=exc.status)
+
+
+@app.exception_handler(AuthError)
+async def _auth_error_handler(request: Request, exc: AuthError):
+    return JSONResponse({"error": str(exc)}, status_code=400)
+
+
+@app.middleware("http")
+async def _security_middleware(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/"):
+        # CSRF: state-changing calls must come from our own page (custom header +
+        # SameSite=Strict cookie).
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and request.headers.get("x-dashboard") != "1":
+            return JSONResponse({"error": "Missing X-Dashboard header."}, status_code=403)
+        # Private dashboard: everything but login and branding needs a session.
+        if (not _public_dashboard() and not path.startswith("/api/auth/") and path != "/api/config"
+                and not current_user(request)):
+            return JSONResponse({"error": "Please log in."}, status_code=401)
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    if request.url.scheme == "https":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=15552000")
+    return response
+
+
+def _set_session_cookie(request: Request, response: Response, token: str, max_age: Optional[int]):
+    response.set_cookie(SESSION_COOKIE, token, max_age=max_age, httponly=True, samesite="strict",
+                        secure=request.url.scheme == "https", path="/")
+
+
+@app.post("/api/auth/login")
+async def auth_login(request: Request, body: dict = Body(...)):
+    remember = bool(body.get("remember"))
+    hours = float(_auth_cfg().get("remember_days", 30)) * 24 if remember else float(_auth_cfg().get("session_hours", 12))
+    token, user = await asyncio.to_thread(
+        state.auth.login, str(body.get("username") or ""), str(body.get("password") or ""),
+        _client_ip(request), request.headers.get("user-agent", ""), hours)
+    logger.info(f"🔐 Login: {user['username']} ({user['role']}) from {_client_ip(request)}")
+    response = JSONResponse({"user": user})
+    _set_session_cookie(request, response, token, int(hours * 3600) if remember else None)
+    return response
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(request: Request):
+    user = current_user(request)
+    state.auth.logout(request.cookies.get(SESSION_COOKIE))
+    if user:
+        state.auth.audit("logout", user["username"], "", _client_ip(request))
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return response
+
+
+@app.get("/api/auth/me")
+async def auth_me(request: Request):
+    return {"user": current_user(request), "public_dashboard": _public_dashboard(),
+            "https": request.url.scheme == "https"}
+
+
+@app.post("/api/auth/password")
+async def auth_password(request: Request, body: dict = Body(...)):
+    user = _require_user(request)
+    await asyncio.to_thread(state.auth.change_own_password, user, str(body.get("old") or ""),
+                            str(body.get("new") or ""), _client_ip(request))
+    return {"ok": True}
+
+
+@app.get("/api/admin/users")
+async def admin_users(request: Request):
+    _require_admin(request)
+    return {"users": state.auth.list_users()}
+
+
+@app.post("/api/admin/users")
+async def admin_create_user(request: Request, body: dict = Body(...)):
+    actor = _require_admin(request)
+    user = await asyncio.to_thread(
+        state.auth.create_user, actor, str(body.get("username") or ""), str(body.get("password") or ""),
+        str(body.get("role") or "user"), str(body.get("display_name") or ""), body.get("dmr_id"),
+        _client_ip(request))
+    return {"user": user}
+
+
+@app.patch("/api/admin/users/{user_id}")
+async def admin_update_user(user_id: int, request: Request, body: dict = Body(...)):
+    actor = _require_admin(request)
+    allowed = {k: body[k] for k in ("password", "role", "display_name", "dmr_id", "disabled") if k in body}
+    user = await asyncio.to_thread(state.auth.update_user, actor, user_id, allowed, _client_ip(request))
+    return {"user": user}
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, request: Request):
+    actor = _require_admin(request)
+    state.auth.delete_user(actor, user_id, _client_ip(request))
+    return {"ok": True}
+
+
+@app.get("/api/admin/sessions")
+async def admin_sessions(request: Request):
+    _require_admin(request)
+    return {"sessions": state.auth.list_sessions()}
+
+
+@app.delete("/api/admin/sessions/{session_id}")
+async def admin_revoke_session(session_id: str, request: Request):
+    actor = _require_admin(request)
+    state.auth.revoke_session(session_id)
+    state.auth.audit("session_revoked", actor["username"], session_id, _client_ip(request))
+    return {"ok": True}
+
+
+@app.get("/api/admin/audit")
+async def admin_audit(request: Request):
+    _require_admin(request)
+    return {"audit": state.auth.audit_log()}
+
+
+@app.get("/api/admin/system")
+async def admin_system(request: Request):
+    _require_admin(request)
+    https_cfg = dashboard_config.get("https") or {}
+    info = {"https_enabled": bool(https_cfg.get("enabled")), "domain": https_cfg.get("domain", ""),
+            "letsencrypt": bool(https_cfg.get("letsencrypt", True)), "served_over_https": request.url.scheme == "https",
+            "cert_expires": None, "public_dashboard": _public_dashboard(),
+            "superadmin": ((_auth_cfg().get("superadmin") or {}).get("username") or ""),
+            "users": len(state.auth.list_users()), "avatars": len(state.auth.list_avatars())}
+    if _tls_manager is not None and _tls_manager.have_cert():
+        try:
+            import ssl as _ssl
+            info["cert_expires"] = _ssl._ssl._test_decode_cert(_tls_manager.cert_file).get("notAfter")
+        except Exception:
+            pass
+    return info
+
+
+@app.get("/api/admin/avatars")
+async def admin_avatars(request: Request):
+    _require_admin(request)
+    return {"avatars": state.auth.list_avatars()}
+
+
+@app.put("/api/admin/avatars/{dmr_id}")
+async def admin_put_avatar(dmr_id: int, request: Request):
+    actor = _require_admin(request)
+    if not 1 <= dmr_id <= 16777215:
+        raise _HTTPError(400, "Invalid DMR-ID.")
+    data = await request.body()
+    if len(data) > 512 * 1024:
+        raise _HTTPError(413, "Image too large (max 512 KB).")
+    mime = sniff_image(data)
+    if not mime:
+        raise _HTTPError(415, "Only PNG, JPEG, GIF or WebP images.")
+    state.auth.set_avatar(dmr_id, mime, data, actor["username"])
+    _avatar_cache.pop(dmr_id, None)
+    state.auth.audit("avatar_set", actor["username"], str(dmr_id), _client_ip(request))
+    return {"ok": True}
+
+
+@app.delete("/api/admin/avatars/{dmr_id}")
+async def admin_delete_avatar(dmr_id: int, request: Request):
+    actor = _require_admin(request)
+    state.auth.delete_avatar(dmr_id)
+    _avatar_cache.pop(dmr_id, None)
+    state.auth.audit("avatar_deleted", actor["username"], str(dmr_id), _client_ip(request))
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- avatars
+# Own uploads first, then FreeRadioID. FreeRadioID answers every unknown ID
+# with the same grey placeholder, which is treated as "no avatar" so the page
+# can show initials instead. Proxying also keeps viewers' IPs away from
+# third parties.
+_avatar_cache: Dict[int, tuple] = {}        # dmr_id -> (ts, mime|None, bytes|None)
+_avatar_placeholder: Dict[str, Optional[str]] = {"md5": None}
+_avatar_sem = asyncio.Semaphore(4)
+_AVATAR_TTL_HIT, _AVATAR_TTL_MISS = 6 * 3600, 6 * 3600
+
+
+def _fetch_bytes(url: str, limit: int = 1024 * 1024) -> Optional[bytes]:
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "HBlink4-Dashboard avatar proxy"})
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        if resp.status != 200:
+            return None
+        return resp.read(limit + 1)[:limit]
+
+
+def _fetch_freeradioid_avatar(dmr_id: int) -> tuple:
+    import hashlib as _hl
+    tpl = (dashboard_config.get("freeradioid") or {}).get("avatar_url", "https://freeradioid.net/avatar-{id}.png")
+    if not tpl:
+        return None, None
+    if _avatar_placeholder["md5"] is None:
+        ph = _fetch_bytes(tpl.replace("{id}", "0"))
+        _avatar_placeholder["md5"] = _hl.md5(ph).hexdigest() if ph else ""
+    data = _fetch_bytes(tpl.replace("{id}", str(dmr_id)))
+    if not data or _hl.md5(data).hexdigest() == _avatar_placeholder["md5"]:
+        return None, None
+    mime = sniff_image(data)
+    return (mime, data) if mime else (None, None)
+
+
+@app.get("/api/avatar/{dmr_id}")
+async def get_avatar(dmr_id: int):
+    own = state.auth.get_avatar(dmr_id)
+    if own:
+        return Response(own[1], media_type=own[0], headers={"Cache-Control": "public, max-age=300"})
+    now = datetime.now().timestamp()
+    cached = _avatar_cache.get(dmr_id)
+    if not cached or now - cached[0] > (_AVATAR_TTL_HIT if cached[1] else _AVATAR_TTL_MISS):
+        async with _avatar_sem:
+            try:
+                mime, data = await asyncio.to_thread(_fetch_freeradioid_avatar, dmr_id)
+            except Exception as e:
+                logger.debug(f"Avatar fetch for {dmr_id} failed: {e}")
+                mime, data = (cached[1], cached[2]) if cached else (None, None)
+        cached = (now, mime, data)
+        _avatar_cache[dmr_id] = cached
+        if len(_avatar_cache) > 5000:
+            _avatar_cache.pop(next(iter(_avatar_cache)))
+    if cached[1]:
+        return Response(cached[2], media_type=cached[1], headers={"Cache-Control": "public, max-age=3600"})
+    return Response(status_code=404, headers={"Cache-Control": "public, max-age=3600"})
+
+
 # REST API endpoints
 @app.get("/api/config")
 async def get_config():
-    """Get dashboard configuration"""
-    return dashboard_config
+    """Public part of the dashboard configuration (no secrets)."""
+    cfg = {k: dashboard_config[k] for k in _PUBLIC_CONFIG_KEYS if k in dashboard_config}
+    frid = dashboard_config.get("freeradioid") or {}
+    cfg["freeradioid"] = {"avatars": bool(frid.get("avatar_url", True))}
+    cfg["public_dashboard"] = _public_dashboard()
+    return cfg
 
 
 @app.get("/api/repeaters")
-async def get_repeaters():
+async def get_repeaters(request: Request):
     """Get all connected repeaters"""
-    return {"repeaters": list(state.repeaters.values())}
+    return view_for(current_user(request), {"repeaters": list(state.repeaters.values())})
 
 
 @app.get("/api/outbounds")
-async def get_outbounds():
+async def get_outbounds(request: Request):
     """Get all outbound connections"""
-    return {"outbounds": list(state.outbounds.values())}
+    return view_for(current_user(request), {"outbounds": list(state.outbounds.values())})
 
 
 @app.get("/api/streams")
-async def get_streams():
+async def get_streams(request: Request):
     """Get all active streams"""
-    return {"streams": list(state.streams.values())}
+    return view_for(current_user(request), {"streams": list(state.streams.values())})
 
 
 @app.get("/api/events")
-async def get_events(limit: int = 100):
+async def get_events(request: Request, limit: int = 100):
     """Get recent events"""
-    return {"events": list(state.events)[-limit:]}
+    return view_for(current_user(request), {"events": list(state.events)[-limit:]})
 
 
 @app.get("/api/stats")
@@ -1069,7 +1420,7 @@ async def freeradioid_profile(radio_id: int) -> Optional[dict]:
     if profile is not None:
         profile = dict(profile)
         profile["registered"] = profile.get("registered") or state.user_db.is_frid(radio_id)
-        profile["avatar"] = cfg.get("avatar_url", "https://freeradioid.net/avatar-{id}.png").replace("{id}", str(radio_id))
+        profile["avatar"] = f"/api/avatar/{radio_id}"
     return profile
 
 
@@ -1080,10 +1431,14 @@ async def get_freeradioid_profile(radio_id: int):
 
 
 @app.get("/api/repeater/{repeater_id}")
-async def get_repeater_details(repeater_id: int):
+async def get_repeater_details(repeater_id: int, request: Request):
+    return view_for(current_user(request), await _repeater_details(repeater_id))
+
+
+async def _repeater_details(repeater_id: int):
     """Get detailed information about a specific repeater"""
     if repeater_id not in state.repeaters:
-        return {"error": "Repeater not found"}, 404
+        raise _HTTPError(404, "Repeater not found")
     
     repeater = state.repeaters[repeater_id]
     details = state.repeater_details.get(repeater_id, {})
@@ -1191,7 +1546,14 @@ async def get_repeater_details(repeater_id: int):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket connection for real-time updates"""
+    token = websocket.cookies.get(SESSION_COOKIE)
+    user = state.auth.session_user(token)
+    if not _public_dashboard() and not user:
+        await websocket.close(code=4401)
+        return
     await websocket.accept()
+    raw_ws = websocket
+    websocket = ClientSocket(raw_ws, token, user)
     state.websocket_clients.add(websocket)
     logger.info(f"🌐 WebSocket client connected (total: {len(state.websocket_clients)})")
     
@@ -1218,7 +1580,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # Keep connection alive (client can send ping)
-            data = await websocket.receive_text()
+            data = await raw_ws.receive_text()
             if data == 'ping':
                 await websocket.send_text('pong')
     except WebSocketDisconnect:
@@ -1446,35 +1808,112 @@ def save_persistent_data():
 atexit.register(save_persistent_data)  # Fallback for emergency exit
 
 
+_tls_manager = None   # dashboard.tls.CertManager when HTTPS is enabled
+
+
+class _Server:
+    """uvicorn.Server without its own signal handling: several servers share one process."""
+
+    @staticmethod
+    def make(app_, **kwargs):
+        import contextlib
+        import uvicorn
+
+        class S(uvicorn.Server):
+            @contextlib.contextmanager
+            def capture_signals(self):
+                yield
+
+        kwargs.setdefault("log_level", "info")
+        kwargs.setdefault("access_log", False)
+        kwargs.setdefault("loop", "asyncio")   # uvloop breaks Unix socket connections
+        return S(uvicorn.Config(app_, **kwargs))
+
+
+async def _serve(host: str, port: int):
+    """Start the dashboard over HTTP, or over HTTPS with Let's Encrypt."""
+    import signal
+    global _tls_manager
+    https_cfg = dashboard_config.get("https") or {}
+    servers = []
+    loop = asyncio.get_running_loop()
+
+    def stop_all():
+        for srv in servers:
+            srv.should_exit = True
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop_all)
+        except (NotImplementedError, RuntimeError):
+            pass
+
+    async def start(srv):
+        servers.append(srv)
+        task = asyncio.create_task(srv.serve())
+        while not srv.started and not task.done():
+            await asyncio.sleep(0.05)
+        return task
+
+    tasks = []
+    main_tls = False
+    if https_cfg.get("enabled"):
+        from .tls import CertManager, build_http_app
+        _tls_manager = cm = CertManager(https_cfg, state._data_dir)
+        http_port = int(https_cfg.get("http_port", 80))
+        http_app = build_http_app(cm, redirect=True)
+        try:
+            tasks.append(await start(_Server.make(http_app, host=host, port=http_port, lifespan="off")))
+            print(f"HTTP on port {http_port}: Let's Encrypt challenges + redirect to HTTPS")
+        except Exception as e:
+            logger.error(f"🔒 Cannot listen on port {http_port}: {e} (needs CAP_NET_BIND_SERVICE)")
+        if not cm.have_cert():
+            await cm.obtain()
+        if cm.have_cert():
+            main_tls = True
+            main = _Server.make(app, host=host, port=cm.https_port,
+                                ssl_certfile=cm.cert_file, ssl_keyfile=cm.key_file)
+            tasks.append(await start(main))
+            print(f"Dashboard on {cm.https_url()}")
+            if port not in (http_port, cm.https_port):
+                # The old plain-HTTP port now just redirects
+                tasks.append(await start(_Server.make(http_app, host=host, port=port, lifespan="off")))
+
+            async def renew_loop():
+                while True:
+                    await asyncio.sleep(12 * 3600)
+                    if await cm.renew() and main.config.ssl is not None:
+                        main.config.ssl.load_cert_chain(cm.cert_file, cm.key_file)
+                        logger.info("🔒 Renewed certificate loaded")
+            tasks.append(asyncio.create_task(renew_loop()))
+        else:
+            logger.error("🔒 No certificate: serving the dashboard over plain HTTP until the problem is fixed")
+    if not main_tls:
+        tasks.append(await start(_Server.make(app, host=host, port=port)))
+        print(f"Dashboard on http://{host}:{port}")
+    print("Press CTRL+C to stop\n")
+    # Wait until a server ends (shutdown signal), then stop the rest
+    await asyncio.wait([t for t in tasks], return_when=asyncio.FIRST_COMPLETED)
+    stop_all()
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+
 def run():
     """Console-script entry point (hblink4-dashboard).
 
     Bind address and port come from the 'web' section of config.json; optional
-    CLI arguments override them for one-off/development runs.
+    CLI arguments override them for one-off/development runs. With https.enabled
+    the dashboard is served over HTTPS (see dashboard/tls.py).
 
     The app object is passed to uvicorn rather than the "dashboard.server:app"
     import string so this module is not executed a second time under a different
     name -- two copies would mean two DashboardState objects and two atexit
     saves, the later one clobbering the real data.
     """
-    import uvicorn
-
     web_config = dashboard_config.get('web', {})
     host = sys.argv[1] if len(sys.argv) > 1 else web_config.get('bind', '0.0.0.0')
     port = int(sys.argv[2]) if len(sys.argv) > 2 else int(web_config.get('port', 8080))
-
-    print(f"Starting HBlink4 Dashboard on http://{host}:{port}")
-    print("Press CTRL+C to stop")
-    print()
-
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level="info",
-        access_log=False,  # Disable access logging (reduces log clutter)
-        loop="asyncio"     # Disable uvloop - it breaks Unix socket connections
-    )
+    asyncio.run(_serve(host, port))
 
 
 if __name__ == "__main__":

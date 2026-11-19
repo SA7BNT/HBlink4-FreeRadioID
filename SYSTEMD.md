@@ -225,3 +225,13 @@ Common issues:
 - Both services have `Restart=always` for automatic recovery
 - Logs are sent to systemd journal, not file-based logging
 - Services run with the same privileges as the `cort` user
+
+## HTTPS on ports 80/443
+
+`hblink4-dash.service` contains `AmbientCapabilities=CAP_NET_BIND_SERVICE` so the
+dashboard can listen on ports 80 and 443 for HTTPS with Let's Encrypt without
+running as root (see `dashboard/README.md`). If you installed the unit before this
+line existed, run `sudo ./scripts/install_services.sh` again or add the two
+capability lines to `/etc/systemd/system/hblink4-dash.service`, then
+`sudo systemctl daemon-reload && sudo systemctl restart hblink4-dash`.
+

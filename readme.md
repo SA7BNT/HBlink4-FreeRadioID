@@ -9,6 +9,8 @@ Dieser Fork von [n0mjs710/HBlink4](https://github.com/n0mjs710/HBlink4) läuft a
 - **FreeRadioID Secure Login**: Repeater und Hotspots können sich mit dem persönlichen Passwort von [FreeRadioID.net](https://freeradioid.net/betatest.html) anmelden. Wer das öffentliche Standard-Passwort benutzt, kommt als **Gast** rein und darf nur auf die Gast-Talkgroups senden.
 - **Überarbeitetes Dashboard** im Glass-Look, für Smartphone und Desktop. Jede Verbindung zeigt ein Badge mit ihrer Login-Art. Logo und Favicon lassen sich frei einstellen.
 - **FreeRadioID-Daten im Dashboard**: Avatare und Profile von FreeRadioID.net, dazu die DMR-ID-Listen von FreeRadioID. Darin stehen auch Nicht-Amateurfunk-IDs, zum Beispiel 100001. Die Detailansicht jeder Station ist neu gestaltet.
+- **Benutzerverwaltung und Adminbereich** (SQLite) mit einem Superadmin aus der Config. **IP-Adressen sehen nur eingeloggte Admins.**
+- **HTTPS mit Let's Encrypt**: Das Zertifikat wird automatisch geholt und automatisch erneuert.
 
 Alles andere entspricht dem Original. Die englische Original-Anleitung folgt weiter unten.
 
@@ -18,6 +20,104 @@ Alles andere entspricht dem Original. Die englische Original-Anleitung folgt wei
   <img src="docs/images/dashboard-mobile.png" alt="Dashboard am Smartphone" width="22%">
 </p>
 
+## Anmeldung und Benutzerverwaltung
+
+Oben rechts im Dashboard gibt es **🔐 Login**. Nach dem Einloggen erscheint dort dein Name mit Menü: Adminbereich, Passwort ändern und Abmelden.
+
+<p align="center">
+  <img src="docs/images/login.png" alt="Login" width="30%">
+  &nbsp;
+  <img src="docs/images/user-menu.png" alt="Benutzermenü" width="62%">
+</p>
+
+| Rolle | Darf |
+|---|---|
+| **Superadmin** | alles; legt Admins an. Er wird **nur** in `dashboard/config.json` festgelegt und kann im Web nicht gelöscht oder herabgestuft werden. |
+| **Admin** | sieht **IP-Adressen**; verwaltet Benutzer (Rolle *User*), Sitzungen und Avatare; liest das Protokoll |
+| **User** | darf das Dashboard sehen, wenn es nicht öffentlich ist (`public_dashboard: false`), aber keine IP-Adressen |
+| nicht eingeloggt | sieht das öffentliche Dashboard **ohne IP-Adressen** |
+
+**IP-Adressen werden auf dem Server entfernt**, nicht nur im Browser versteckt. Das gilt für jede API-Antwort und jede Live-Nachricht an Nicht-Admins: Repeater, Hotspots, Outbound- und OpenBridge-Verbindungen und Ereignisse. Wo sonst die Adresse steht, sehen Nicht-Admins *🔒 hidden*.
+
+### Superadmin festlegen
+
+In `dashboard/config.json`:
+
+```json
+"auth": {
+    "superadmin": {
+        "username": "admin",
+        "password_hash": "scrypt$16384$8$1$…"
+    },
+    "public_dashboard": true,
+    "session_hours": 12,
+    "remember_days": 30
+}
+```
+
+Den Hash erzeugst du so (das Passwort wird nicht angezeigt):
+
+```bash
+./venv/bin/python -m dashboard.auth hash-password
+```
+
+Statt `password_hash` geht auch `"password": "…"` im Klartext. Das Dashboard warnt dann im Log. Nach jeder Änderung startest du das Dashboard neu (`sudo systemctl restart hblink4-dash`). Hast du das Passwort vergessen, trägst du einfach ein neues ein.
+
+### Adminbereich
+
+<p align="center"><img src="docs/images/admin-users.png" alt="Adminbereich: Benutzer" width="80%"></p>
+
+- **Users**: Benutzer anlegen, bearbeiten (Name, DMR-ID, Rolle, neues Passwort), sperren und löschen. Wer gesperrt wird oder ein neues Passwort bekommt, wird sofort abgemeldet.
+- **Sessions**: alle aktiven Anmeldungen mit IP und Browser; jede lässt sich beenden
+- **Avatars**: eigene Avatarbilder pro DMR-ID hochladen (PNG, JPEG, GIF oder WebP, max. 512 KB). Sie haben Vorrang vor FreeRadioID.
+- **Log**: Anmeldungen, fehlgeschlagene Logins und alle Änderungen
+- **System**: HTTPS-Status, Ablaufdatum des Zertifikats und Zugriffseinstellungen
+
+<p align="center">
+  <img src="docs/images/admin-sessions.png" alt="Sitzungen" width="49%">
+  <img src="docs/images/admin-system.png" alt="System" width="49%">
+</p>
+
+Alles liegt in einer SQLite-Datenbank unter `dashboard/data/dashboard.db`: Benutzer, Sitzungen, Protokoll und Avatare. Die Datei ist von git ausgenommen. Zum Sichern kopierst du sie einfach.
+
+**Sicherheit:**
+- Passwörter werden mit scrypt gehasht.
+- Sitzungs-Cookies sind `HttpOnly` und `SameSite=Strict`, unter HTTPS zusätzlich `Secure`.
+- Nach 5 Fehlversuchen ist der Login 15 Minuten gesperrt.
+- Ändernde Anfragen brauchen einen eigenen Header (Schutz gegen CSRF).
+- `/api/config` gibt keine Geheimnisse mehr heraus.
+
+## HTTPS mit Let's Encrypt
+
+Das Dashboard holt sich das Zertifikat selbst und erneuert es automatisch. Voraussetzungen:
+
+1. Die Domain (z. B. `dmr.die-n8schicht.de`) zeigt auf den Server.
+2. **TCP 80 und 443** sind offen bzw. weitergeleitet (`sudo ufw allow 80/tcp && sudo ufw allow 443/tcp`).
+3. certbot ist installiert: `sudo apt install certbot`
+4. Die Dienstdatei ist neu installiert, damit das Dashboard ohne root auf Port 80 und 443 darf: `sudo ./scripts/install_services.sh`
+
+Dann in `dashboard/config.json`:
+
+```json
+"https": {
+    "enabled": true,
+    "domain": "dmr.die-n8schicht.de",
+    "email": "deine@mail.de",
+    "port": 443,
+    "http_port": 80
+}
+```
+
+Danach `sudo systemctl restart hblink4-dash`. Was dann passiert:
+
+- Port 80 beantwortet die Let's-Encrypt-Prüfung und leitet alles andere auf **https://** um.
+- Der alte Port 8080 leitet ebenfalls auf HTTPS um.
+- certbot läuft als Dashboard-Benutzer und legt seine Dateien in `dashboard/data/letsencrypt/` ab. root ist nicht nötig.
+- Zweimal am Tag wird die Erneuerung geprüft. Ein neues Zertifikat wird ohne Neustart geladen.
+- Klappt das Zertifikat nicht, läuft das Dashboard weiter über HTTP auf Port 8080. Der Grund steht im Log (`journalctl -u hblink4-dash`). Nach der Korrektur startest du den Dienst neu.
+
+Zum Testen setzt du `"staging": true`, dann gibt es ein Test-Zertifikat ohne Rate-Limit. Eigene Zertifikate gehen mit `"letsencrypt": false` plus `cert_file` und `key_file`.
+
 ## Detailansicht einer Station
 
 Ein Klick auf das Rufzeichen öffnet die Detailansicht:
@@ -25,6 +125,8 @@ Ein Klick auf das Rufzeichen öffnet die Detailansicht:
 - **Kopfbereich**: Avatar von FreeRadioID, Rufzeichen, ID, Typ, Online-Status, Name und Ort aus dem FreeRadioID-Profil sowie die Login-Art
 - **Kennzahlen**: Uptime, Anrufe heute, Aktivität auf TS1 und TS2, verpasste Pings
 - **Kacheln**: Talkgroups als Chips, Zugang, Verbindung, Funkdaten, Standort mit Link zu OpenStreetMap und das FreeRadioID-Profil
+
+Die Ansicht ist kompakt: Am Desktop passt alles ohne Scrollen auf den Bildschirm, mit drei Kacheln pro Reihe und den Kennzahlen im Kopfbereich.
 
 <p align="center">
   <img src="docs/images/station-detail-desktop.png" alt="Detailansicht am Desktop" width="72%">
@@ -40,7 +142,7 @@ Das Dashboard nutzt die [FreeRadioID-API](https://freeradioid.net/api-index.html
 
 | Quelle | Wofür |
 |---|---|
-| `avatar-<ID>.png` | Avatar in der Detailansicht und in **Last Heard**. Kann ein Bild nicht geladen werden, erscheinen die Initialen. |
+| `avatar-<ID>.png` | Avatar in der Detailansicht und in **Last Heard**. Der Abruf läuft über den Dashboard-Server (`/api/avatar/<ID>`), damit die IPs der Besucher nicht an Dritte gehen. |
 | `api/dmr/user/?id=<ID>` | Profil (Name, Ort, Land, registriert) in der Detailansicht. Wird eine Stunde zwischengespeichert. |
 | `api/local_subscriber_ids.json` | Liste der bei FreeRadioID registrierten IDs (rund 400). Sie wird täglich geladen, ohne Länderfilter. Die IDs bekommen in **Last Heard** den Tag `FRID`, und ihre Rufzeichen werden auch angezeigt, wenn sie in der radioid.net-Liste fehlen. |
 | `api/subscriber_ids.csv` | Optional: die Gesamtliste von FreeRadioID (radioid.net plus FreeRadioID) als Hauptquelle statt radioid.net |
@@ -61,6 +163,8 @@ Einstellungen in `dashboard/config.json`. Alles ist ohne Eintrag schon aktiv:
 
 - Mit `source_url` auf die FreeRadioID-CSV wechselst du die Hauptliste. Ohne diese Zeile bleibt radioid.net die Hauptliste.
 - `"avatar_url": ""` schaltet die Avatare ab, `"profile_lookup": false` die Profilabfrage.
+
+> **Hinweis zu den Avataren:** Stand November 2026 liefert FreeRadioID für **jede** ID nur seinen grauen Platzhalter aus. Geprüft habe ich alle 405 registrierten IDs und die Kontonummern 1–400. Hochgeladene Profilbilder sind dort offenbar nur eingeloggt sichtbar. Das Dashboard erkennt den Platzhalter und zeigt stattdessen die Initialen. Sobald FreeRadioID echte Bilder öffentlich ausliefert, erscheinen sie automatisch. Bis dahin lädst du eigene Avatare im Adminbereich hoch (Reiter *Avatars*).
 
 ## Login-Arten im Dashboard
 

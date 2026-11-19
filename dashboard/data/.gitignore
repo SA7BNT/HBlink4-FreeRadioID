@@ -2,3 +2,7 @@
 # These files contain runtime data and should not be versioned
 *.json
 *.tmp
+# Users, sessions, avatars (SQLite) and certificates: never commit
+dashboard.db*
+letsencrypt/
+freeradioid_users.json
