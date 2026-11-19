@@ -276,3 +276,10 @@ sudo rm -f /tmp/hblink4.sock
 sudo systemctl start hblink4 hblink4-dash
 ```
 
+## Health check
+
+`sudo ./scripts/check.sh` checks the services (state, restart count, last
+errors), both config files (JSON with line/column), file ownership, the event
+socket, the ports and the Python environment, and prints a fix for every problem.
+It changes nothing.
+

@@ -95,6 +95,9 @@ class UserDatabase:
         """FreeRadioID registration of this ID, or None if not registered there."""
         return self._frid.get(radio_id)
 
+    def frid_ids(self) -> list:
+        return list(self._frid)
+
     def is_frid(self, radio_id: int) -> bool:
         return radio_id in self._frid
 

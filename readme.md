@@ -170,7 +170,15 @@ Stürzt einer der beiden Prozesse ab, beendet `run_all.sh` auch den anderen und 
 
 `scripts/install_services.sh` erkennt fremde Dateien und alte Sockets selbst und bietet an, das zu korrigieren.
 
-**Fehlersuche, wenn die Dienste nicht starten:**
+**Schnelle Diagnose:** `sudo ./scripts/check.sh` prüft alles auf einmal und schlägt zu jedem Problem die Lösung vor. Es ändert dabei nichts.
+
+- Dienste: Status und letzte Fehlermeldungen
+- Configs: Gültigkeit des JSON, mit Zeile und Spalte
+- Dateibesitzer und Socket
+- belegte Ports
+- Python-Module
+
+**Fehlersuche von Hand, wenn die Dienste nicht starten:**
 
 ```bash
 sudo systemctl stop hblink4 hblink4-dash          # alles anhalten
@@ -205,14 +213,20 @@ Das Dashboard nutzt die [FreeRadioID-API](https://freeradioid.net/api-index.html
 
 | Quelle | Wofür |
 |---|---|
-| `api/idimg-<ID>.png` | Avatar pro DMR-ID, dasselbe Bild wie auf den FreeRadioID-Profilseiten, in der Detailansicht und in **Last Heard**. Der Dashboard-Server holt es (`/api/avatar/<ID>`), verkleinert es von 500×500 px (~750 KB) auf 192 px WebP (~6–10 KB) und speichert es einen Tag lang in `dashboard/data/avatars/`. Die IPs der Besucher gehen so nicht an Dritte. |
+| `api/idimg-<ID>.png` | Avatar pro DMR-ID, dasselbe Bild wie auf den FreeRadioID-Profilseiten, in der Detailansicht und in **Last Heard**. Es wird **nur für bei FreeRadioID registrierte IDs** geholt, und zwar zusammen mit der ID-Liste. Dabei wird es von 500×500 px (~750 KB) auf 192 px WebP (~6–10 KB) verkleinert und **in SQLite** (`dashboard.db`) gespeichert. Das Dashboard liefert es dann sofort aus der Datenbank (`/api/avatar/<ID>`); die IPs der Besucher gehen nicht an Dritte. |
 | `api/dmr/user/?id=<ID>` | Profil (Name, Ort, Land, registriert) in der Detailansicht. Wird eine Stunde zwischengespeichert. |
 | `api/local_subscriber_ids.json` | Liste der bei FreeRadioID registrierten IDs (rund 400). Sie wird täglich geladen, ohne Länderfilter. Die IDs bekommen in **Last Heard** den Tag `FRID`, und ihre Rufzeichen werden auch angezeigt, wenn sie in der radioid.net-Liste fehlen. |
 | `api/subscriber_ids.csv` | Optional: die Gesamtliste von FreeRadioID (radioid.net plus FreeRadioID) als Hauptquelle statt radioid.net |
 
 Alles ist von Anfang an aktiv. Umschalten kannst du es im Adminbereich unter **Settings**, in den Abschnitten *FreeRadioID* und *Callsign database*: Avatare und Profilabfrage an/aus, FreeRadioID-ID-Liste, und ob radioid.net oder die FreeRadioID-Gesamtliste die Hauptquelle ist.
 
-> **Avatare:** Von den 405 bei FreeRadioID registrierten IDs haben derzeit 157 ein eigenes Bild (Stand November 2026). Für IDs ohne Bild liefert FreeRadioID einen grauen Platzhalter. Das Dashboard erkennt ihn und zeigt stattdessen die Initialen. Neue oder geänderte Avatare erscheinen spätestens nach einem Tag.
+> **Avatare:** Von den 405 bei FreeRadioID registrierten IDs haben derzeit 157 ein eigenes Bild (Stand November 2026); zusammen belegen sie gut 1 MB in der Datenbank. Der erste Abgleich nach dem Start dauert etwa eine Minute und läuft im Hintergrund.
+>
+> - **IDs ohne Bild:** FreeRadioID liefert einen grauen Platzhalter, das Dashboard zeigt stattdessen Initialen. Diese IDs werden täglich neu geprüft (je ~5 KB).
+> - **Vorhandene Bilder:** werden wöchentlich aktualisiert.
+> - **Nicht registrierte IDs:** werden nie bei FreeRadioID angefragt.
+>
+> Wie viele Avatare gespeichert sind, steht im Adminbereich unter *System*.
 
 ## Login-Arten im Dashboard
 

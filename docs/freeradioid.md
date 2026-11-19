@@ -84,7 +84,7 @@ in the `repeater_connected` events and in `/api/repeaters` and
 
 The dashboard also uses the [FreeRadioID API](https://freeradioid.net/api-index.html):
 
-* **Avatars** (`api/idimg-<id>.png`, the per-ID image of the FreeRadioID profile pages), proxied by the dashboard (`/api/avatar/{id}`), scaled from 500×500 PNG (~750 KB) to 192 px WebP and cached for a day in `dashboard/data/avatars/`. IDs without an avatar return a grey placeholder there; the dashboard shows initials instead.
+* **Avatars** (`api/idimg-<id>.png`, the per-ID image of the FreeRadioID profile pages), only for registered IDs: fetched with the ID list, scaled from 500×500 PNG (~750 KB) to 192 px WebP and stored in SQLite; served by `/api/avatar/{id}`. FreeRadioID's grey placeholder for IDs without an image means initials. Placeholders are re-checked daily, images weekly.
 * **Profiles** (`api/dmr/user/?id=<id>`, cached for an hour) in the detail view, also at `GET /api/freeradioid/{id}`
 * **Registered IDs** (`api/local_subscriber_ids.json`), loaded daily without a country filter and tagged `FRID` in Last Heard
 * **Combined list** (`api/subscriber_ids.csv`, header-less) usable as `user_database.source_url`

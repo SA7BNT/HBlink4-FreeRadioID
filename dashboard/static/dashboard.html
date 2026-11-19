@@ -2319,6 +2319,8 @@
                     ${infoRow('Accounts', s.users)}
                     ${infoRow('IP addresses', 'admins only')}
                     ${infoRow('Runs as', s.systemd ? 'systemd service' : 'manually (run_all.sh)')}
+                    ${infoRow('FreeRadioID IDs', s.frid_ids)}
+                    ${infoRow('Avatars cached', s.frid_avatars)}
                 </section></div>
                 <div class="set-actions" style="justify-content:flex-start">
                     <button class="btn-s" onclick="adminTab('settings')">⚙️ Change settings</button>

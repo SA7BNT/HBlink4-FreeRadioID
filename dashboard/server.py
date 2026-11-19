@@ -32,6 +32,7 @@ if __package__ in (None, ""):
 from .user_db import UserDatabase, compute_next_refresh_seconds, _age_str
 from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
 from .settings import SettingsStore, SettingsError, FIELD_BY_KEY
+from .avatars import AvatarStore, DEFAULT_URL as FRID_AVATAR_URL
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -206,6 +207,15 @@ class DashboardState:
         _ensure_writable(self._data_dir)
         self.auth = AuthStore(self._data_dir / "dashboard.db")
         self.auth.sync_superadmin((dashboard_config.get("auth") or {}).get("superadmin") or {})
+
+        # FreeRadioID avatars, cached in the same database
+        self.avatars = AvatarStore(
+            self.auth, lambda: (dashboard_config.get("freeradioid") or {}).get("avatar_url", FRID_AVATAR_URL))
+        try:   # the file cache of an earlier version is no longer used
+            import shutil as _shutil
+            _shutil.rmtree(self._data_dir / "avatars", ignore_errors=True)
+        except Exception:
+            pass
 
         # Settings: seeded from config.json on the first start, SQLite afterwards
         self.settings = SettingsStore(self.auth)
@@ -1281,6 +1291,7 @@ async def admin_system(request: Request):
             "cert_expires": None, "public_dashboard": _public_dashboard(),
             "superadmin": ((_auth_cfg().get("superadmin") or {}).get("username") or ""),
             "users": len(state.auth.list_users()), "systemd": bool(os.environ.get("INVOCATION_ID")),
+            "frid_ids": len(state.user_db.frid_ids()), "frid_avatars": state.avatars.stats()["with_avatar"],
             "version": "HBlink4-FreeRadioID"}
     if _tls_manager is not None and _tls_manager.have_cert():
         try:
@@ -1293,7 +1304,7 @@ async def admin_system(request: Request):
 
 # ---------------------------------------------------------------- settings
 _USERDB_KEYS = {"user_database.source_url", "user_database.filter.countries",
-                "user_database.freeradioid.enabled"}
+                "user_database.freeradioid.enabled", "freeradioid.avatars"}
 
 
 async def _after_settings_change(changed: List[str]):
@@ -1316,6 +1327,7 @@ async def _refresh_userdb_now(trigger: str):
     state.user_db.meta.last_modified_header = ""
     status = await state.user_db.refresh_from_upstream(udb_cfg)
     await broadcast_user_db_status(trigger=trigger, status=status)
+    asyncio.create_task(sync_avatars(trigger))
 
 
 @app.get("/api/admin/settings")
@@ -1383,127 +1395,42 @@ async def admin_restart(request: Request):
 
 
 # ---------------------------------------------------------------- avatars
-# From FreeRadioID (api/idimg-<dmr_id>.png, the image its profile pages show
-# per DMR-ID). Unknown IDs get a grey placeholder there, which is treated as
-# "no avatar" so the page shows initials. Originals are 500x500 PNGs of about
-# 750 KB, so they are shrunk (Pillow) and kept in dashboard/data/avatars/.
+# Only for IDs registered at FreeRadioID, served from SQLite (see dashboard/avatars.py).
 # Proxying also keeps viewers' IPs away from third parties.
-FRID_AVATAR_URL = "https://freeradioid.net/api/idimg-{id}.png"
-_OLD_AVATAR_URLS = ("https://freeradioid.net/avatar-{id}.png",)
-_avatar_miss: Dict[int, float] = {}          # dmr_id -> time of last "no avatar" answer
-_avatar_placeholder: Dict[str, Optional[str]] = {"md5": None}
-_avatar_sem = asyncio.Semaphore(4)
-_AVATAR_TTL_HIT, _AVATAR_TTL_MISS, _AVATAR_SIZE = 24 * 3600, 12 * 3600, 192
+def _avatars_enabled() -> bool:
+    frid = dashboard_config.get("freeradioid") or {}
+    return bool(frid.get("avatars", True) and frid.get("avatar_url", True))
 
 
-def _avatar_dir() -> Path:
-    d = state._data_dir / "avatars"
-    d.mkdir(parents=True, exist_ok=True)
-    return d
-
-
-def _avatar_template() -> str:
-    tpl = (dashboard_config.get("freeradioid") or {}).get("avatar_url", FRID_AVATAR_URL)
-    # avatar-<n>.png is per FreeRadioID *account*, not per DMR-ID: always the placeholder
-    return FRID_AVATAR_URL if tpl in _OLD_AVATAR_URLS else tpl
-
-
-def _fetch_bytes(url: str, limit: int = 4 * 1024 * 1024) -> Optional[bytes]:
-    import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "HBlink4-Dashboard avatar proxy"})
-    with urllib.request.urlopen(req, timeout=8) as resp:
-        if resp.status != 200:
-            return None
-        return resp.read(limit + 1)[:limit]
-
-
-def _shrink(data: bytes) -> tuple:
-    """(mime, bytes) scaled down to _AVATAR_SIZE; the original if Pillow is missing."""
+async def sync_avatars(trigger: str = ""):
+    """Fetch new/stale avatars of all FreeRadioID-registered IDs into SQLite."""
+    if not _avatars_enabled():
+        return
+    ids = state.user_db.frid_ids()
+    if not ids:
+        return
     try:
-        from PIL import Image
-        import io as _io
-        im = Image.open(_io.BytesIO(data))
-        im = im.convert("RGBA") if im.mode in ("P", "LA", "RGBA") else im.convert("RGB")
-        im.thumbnail((_AVATAR_SIZE, _AVATAR_SIZE), Image.LANCZOS)
-        out = _io.BytesIO()
-        im.save(out, "WEBP", quality=82, method=4)
-        return "image/webp", out.getvalue()
-    except Exception:
-        return sniff_image(data), data
-
-
-def _fetch_freeradioid_avatar(dmr_id: int) -> tuple:
-    import hashlib as _hl
-    tpl = _avatar_template()
-    if not tpl:
-        return None, None
-    if _avatar_placeholder["md5"] is None:
-        ph = _fetch_bytes(tpl.replace("{id}", "0"))
-        _avatar_placeholder["md5"] = _hl.md5(ph).hexdigest() if ph else ""
-    data = _fetch_bytes(tpl.replace("{id}", str(dmr_id)))
-    if not data or _hl.md5(data).hexdigest() == _avatar_placeholder["md5"] or not sniff_image(data):
-        return None, None
-    return _shrink(data)
-
-
-def _cached_avatar(dmr_id: int, max_age: float) -> Optional[tuple]:
-    for ext, mime in (("webp", "image/webp"), ("png", "image/png"), ("jpg", "image/jpeg"), ("gif", "image/gif")):
-        f = _avatar_dir() / f"{dmr_id}.{ext}"
-        try:
-            if datetime.now().timestamp() - f.stat().st_mtime < max_age:
-                return mime, f.read_bytes()
-        except OSError:
-            continue
-    return None
-
-
-def _store_avatar(dmr_id: int, mime: str, data: bytes) -> None:
-    ext = {"image/webp": "webp", "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif"}.get(mime, "png")
-    d = _avatar_dir()
-    for old in d.glob(f"{dmr_id}.*"):
-        old.unlink(missing_ok=True)
-    tmp = d / f".{dmr_id}.{ext}.tmp"
-    tmp.write_bytes(data)
-    os.replace(tmp, d / f"{dmr_id}.{ext}")
+        await state.avatars.sync(ids)
+    except Exception as e:
+        logger.warning(f"🖼️ Avatar sync failed ({trigger}): {e}")
 
 
 @app.get("/api/avatar/{dmr_id}")
 async def get_avatar(dmr_id: int):
-    headers_miss = {"Cache-Control": "public, max-age=3600"}
-    if not (dashboard_config.get("freeradioid") or {}).get("avatars", True) or not 1 <= dmr_id <= 16777215:
-        return Response(status_code=404, headers=headers_miss)
-    now = datetime.now().timestamp()
-    fresh = _cached_avatar(dmr_id, _AVATAR_TTL_HIT)
-    if fresh:
-        return Response(fresh[1], media_type=fresh[0], headers={"Cache-Control": "public, max-age=86400"})
-    if now - _avatar_miss.get(dmr_id, 0) < _AVATAR_TTL_MISS:
-        return Response(status_code=404, headers=headers_miss)
-    async with _avatar_sem:
-        fresh = _cached_avatar(dmr_id, _AVATAR_TTL_HIT)      # another request may have fetched it
-        if not fresh:
-            try:
-                mime, data = await asyncio.to_thread(_fetch_freeradioid_avatar, dmr_id)
-            except Exception as e:
-                logger.debug(f"Avatar fetch for {dmr_id} failed: {e}")
-                stale = _cached_avatar(dmr_id, float("inf"))   # FreeRadioID down: keep the old one
-                if stale:
-                    return Response(stale[1], media_type=stale[0], headers={"Cache-Control": "public, max-age=600"})
-                mime, data = None, None
-            if mime and data:
-                try:
-                    await asyncio.to_thread(_store_avatar, dmr_id, mime, data)
-                except OSError as e:
-                    logger.debug(f"Could not cache avatar {dmr_id}: {e}")
-                fresh = (mime, data)
-                _avatar_miss.pop(dmr_id, None)
-            else:
-                for old in _avatar_dir().glob(f"{dmr_id}.*"):
-                    old.unlink(missing_ok=True)
-                _avatar_miss[dmr_id] = now
-                if len(_avatar_miss) > 20000:
-                    _avatar_miss.clear()
-                return Response(status_code=404, headers=headers_miss)
-    return Response(fresh[1], media_type=fresh[0], headers={"Cache-Control": "public, max-age=86400"})
+    miss = Response(status_code=404, headers={"Cache-Control": "public, max-age=3600"})
+    if not _avatars_enabled() or not state.user_db.is_frid(dmr_id):
+        return miss       # not registered at FreeRadioID: no avatar, no request to FreeRadioID
+    hit = state.avatars.get(dmr_id)
+    if hit is None:       # registered but not synced yet: fetch this one now
+        try:
+            await asyncio.to_thread(state.avatars.fetch_one, dmr_id)
+        except Exception as e:
+            logger.debug(f"Avatar {dmr_id}: {e}")
+            return miss
+        hit = state.avatars.get(dmr_id)
+    if not hit or not hit[0]:
+        return miss
+    return Response(hit[2], media_type=hit[1] or "image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 # REST API endpoints
@@ -1900,11 +1827,13 @@ async def user_db_refresh_task():
         )
         status = await state.user_db.refresh_from_upstream(udb_cfg)
         await broadcast_user_db_status(trigger="startup", status=status)
+        asyncio.create_task(sync_avatars("startup"))
     else:
         frid_age = state.user_db.frid_age_hours()
         if frid_age is None or frid_age >= startup_threshold_h:
             status = await state.user_db.refresh_freeradioid(udb_cfg)
             await broadcast_user_db_status(trigger="startup", status=status)
+        asyncio.create_task(sync_avatars("startup"))
 
     while True:
         # Compute next scheduled refresh.
@@ -1926,6 +1855,7 @@ async def user_db_refresh_task():
 
         status = await state.user_db.refresh_from_upstream(udb_cfg)
         await broadcast_user_db_status(trigger="scheduled", status=status)
+        asyncio.create_task(sync_avatars("scheduled"))
 
 
 async def broadcast_user_db_status(trigger: str, status: str):

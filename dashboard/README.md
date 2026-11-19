@@ -132,10 +132,11 @@ answers the ACME challenge and redirects to HTTPS; certificates live in
 ```
 
 Avatars appear in the station detail view and Last Heard (`""` turns them off).
-They are fetched through `GET /api/avatar/{id}` from FreeRadioID
-(`api/idimg-<id>.png`), scaled to 192 px WebP with Pillow and cached for a day in
-`dashboard/data/avatars/`; FreeRadioID's grey placeholder for IDs without an
-avatar is treated as "no avatar" (initials are shown).
+Only IDs registered at FreeRadioID have avatars. During the FreeRadioID ID sync
+the dashboard downloads their `api/idimg-<id>.png`, scales it to 192 px WebP
+(Pillow) and stores it in SQLite (`dashboard.db`); `GET /api/avatar/{id}` answers
+from the database. FreeRadioID's grey placeholder means "no avatar" (initials are
+shown); those IDs are re-checked daily, real avatars weekly.
 The detail view shows the FreeRadioID profile of the station (cached for an
 hour; `GET /api/freeradioid/{id}`). The IDs registered at FreeRadioID are
 downloaded with the callsign database (`user_database.freeradioid`), marked
