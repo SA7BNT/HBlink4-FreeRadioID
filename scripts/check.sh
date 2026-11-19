@@ -45,6 +45,13 @@ if command -v systemctl >/dev/null 2>&1 && [ -f /etc/systemd/system/hblink4.serv
             journalctl -u "$svc" -n 4 --no-pager -o short-iso 2>/dev/null | awk '{t=substr($1,6,11); $1=$2=$3=""; sub(/^ +/,""); print "        " t "  " $0}'
         fi
     done
+    # The dashboard's stop watchdog writes a traceback when a stop got stuck
+    STUCK="$(journalctl -u hblink4-dash -n 2000 --no-pager -o cat 2>/dev/null | awk '/Timeout \(0:00:08\)!/{buf=""; on=1} on{buf=buf $0 "\n"} END{printf "%s", buf}' | head -n 40)"
+    if [ -n "$STUCK" ]; then
+        warn "the dashboard's last stop got stuck; the watchdog ended it after 8 s. Where it hung:"
+        echo "$STUCK" | grep -E 'Timeout|File "|Thread' | head -n 25 | sed 's/^/        /'
+        fix "please send this block to the developer"
+    fi
     echo "      service user: ${SVC_USER}"
 else
     warn "systemd services not installed (sudo ./scripts/install_services.sh)"

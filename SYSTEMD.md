@@ -291,6 +291,12 @@ versions waited for those downloads, so `systemctl stop/restart` could hang in
 "deactivating"). `hblink4-dash.service` also sets `TimeoutStopSec=20` as a safety
 net; run `sudo ./scripts/install_services.sh` again to get it.
 
+On a stop signal the dashboard logs `🛑 Stop signal received` and
+`🛑 Servers stopped, exiting`. A watchdog ends the process after 8 seconds at
+the latest and then writes all thread tracebacks to the journal
+(`Timeout (0:00:08)!`), so a stuck stop shows exactly where it hung;
+`scripts/check.sh` prints that block.
+
 With HTTPS enabled but no certificate yet, the dashboard starts on its plain web
 port immediately and requests the certificate in the background.
 

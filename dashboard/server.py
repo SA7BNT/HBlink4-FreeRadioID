@@ -1974,6 +1974,15 @@ async def _serve(host: str, port: int):
     stopping = asyncio.Event()
 
     def stop_all():
+        if not stopping.is_set():
+            logger.info("🛑 Stop signal received, shutting down …")
+            # Watchdog: whatever happens, the process is gone after 8 s, and if it
+            # gets that far the journal shows where it was stuck.
+            import faulthandler
+            try:
+                faulthandler.dump_traceback_later(8, exit=True)
+            except Exception:
+                pass
         stopping.set()
         for srv in servers:
             srv.should_exit = True
@@ -2064,7 +2073,10 @@ async def _serve(host: str, port: int):
     # Servers shut down gracefully (lifespan shutdown saves the data)
     pending = [t for t in tasks if not t.done()]
     if pending:
-        await asyncio.wait(pending, timeout=10)
+        done, still = await asyncio.wait(pending, timeout=5)
+        if still:
+            logger.warning(f"🛑 {len(still)} server(s) did not stop within 5 s - exiting anyway")
+    logger.info("🛑 Servers stopped, exiting")
     # asyncio.run() would now wait for worker threads that are still
     # downloading (callsign list, avatars) -- minutes on a slow line, which made
     # "systemctl stop/restart" hang. Everything is saved; leave right here.
@@ -2074,8 +2086,8 @@ async def _serve(host: str, port: int):
 def _hard_exit(code: int):
     try:
         save_persistent_data()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Saving data on exit failed: {e}")
     try:
         state.auth._db.close()
     except Exception:
