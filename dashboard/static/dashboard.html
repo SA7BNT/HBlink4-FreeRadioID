@@ -801,6 +801,269 @@
             margin-bottom: 4px;
             color: #475569;  /* Dark blue/gray for disconnected/connecting */
         }
+
+        /* ================================================================
+           Liquid-Glass theme (layered over the base styles above)
+           ================================================================ */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.055);
+            --glass-bg-strong: rgba(255, 255, 255, 0.09);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.18);
+            --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+            --glass-blur: blur(22px) saturate(170%);
+            --radius-lg: 22px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            --accent: #5ac8fa;
+            --green: #30d158;
+            --amber: #ffd60a;
+            --text: #f5f7fb;
+            --text-dim: rgba(235, 240, 250, 0.62);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+            padding: 16px;
+            background:
+                radial-gradient(1100px 700px at 8% -10%, rgba(10, 132, 255, 0.35), transparent 60%),
+                radial-gradient(900px 650px at 100% 0%, rgba(191, 90, 242, 0.28), transparent 60%),
+                radial-gradient(900px 700px at 50% 110%, rgba(48, 209, 88, 0.18), transparent 60%),
+                linear-gradient(180deg, #070b17 0%, #0b1224 100%);
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Shared glass surface */
+        header, .card, .stat-card, .repeater-card, .modal-content, .event {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: var(--glass-blur);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+        }
+
+        header {
+            position: sticky;
+            top: 10px;
+            z-index: 50;
+            border-radius: var(--radius-lg);
+            padding: 10px 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: rgba(20, 26, 45, 0.55);
+        }
+
+        .logo { height: 52px; filter: drop-shadow(0 4px 12px rgba(90, 200, 250, 0.35)); }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #ffffff 0%, #9bd8ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        #serverName { color: var(--text-dim) !important; }
+
+        .status-badges { flex-wrap: wrap; }
+        .connection-status, .audio-toggle, .network-info-btn {
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            -webkit-backdrop-filter: var(--glass-blur);
+            backdrop-filter: var(--glass-blur);
+        }
+        .connection-status.connected { background: rgba(48, 209, 88, 0.22); color: #7ef0a0; border-color: rgba(48, 209, 88, 0.45); }
+        .connection-status.warning { background: rgba(255, 214, 10, 0.18); color: #ffe36a; border-color: rgba(255, 214, 10, 0.4); }
+        .connection-status.disconnected { background: rgba(255, 69, 58, 0.22); color: #ff8a80; border-color: rgba(255, 69, 58, 0.45); }
+        .audio-toggle.disabled { background: var(--glass-bg); color: var(--text-dim); border-color: var(--glass-border); }
+        .audio-toggle.enabled { background: rgba(191, 90, 242, 0.3); color: #e5b8ff; border-color: rgba(191, 90, 242, 0.55); }
+        .network-info-btn { background: rgba(10, 132, 255, 0.28); border-color: rgba(10, 132, 255, 0.5); }
+
+        .section-header {
+            color: var(--text-dim);
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            margin: 22px 4px 10px;
+        }
+        .section-header [id$="Count"] { color: var(--accent) !important; }
+
+        /* Statistics */
+        .stats-bar {
+            grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+            gap: 12px;
+        }
+        .stat-card {
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            transition: transform 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-label { color: var(--text-dim); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+        .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+        .stat-sub { font-size: 13px; font-weight: 600; color: var(--amber); margin-left: 2px; }
+        .stat-card.stat-frid {
+            background: linear-gradient(135deg, rgba(48, 209, 88, 0.22), rgba(48, 209, 88, 0.06));
+            border-color: rgba(48, 209, 88, 0.38);
+        }
+        .stat-card.stat-frid .stat-value { font-size: 20px; color: #8af5ab; }
+
+        /* Section bodies */
+        .card { border-radius: var(--radius-lg); padding: 12px; }
+        /* Connection lists: the tiles are the glass, not the wrapper */
+        #repeatersBody, #hotspotsBody, #networksBody, #unknownBody, #outboundBody, #openbridgeBody {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            padding: 0;
+        }
+
+        /* Connection tiles */
+        .repeater-card {
+            border-radius: var(--radius-md);
+            padding: 6px;
+            margin-bottom: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .repeater-card:hover { transform: translateY(-1px); }
+        .repeater-info { padding: 8px 10px; }
+        .repeater-header, .repeater-header-warning {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            border-radius: 10px;
+            padding: 2px 6px;
+            margin: 0 -6px 6px;
+            display: inline-block;
+        }
+        .repeater-header { color: var(--text); }
+        .repeater-header:hover, .repeater-header-warning:hover { background: rgba(255, 255, 255, 0.08); }
+        .repeater-header-warning { color: var(--amber); }
+        .rid {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 2px 8px;
+            margin-left: 4px;
+            vertical-align: 2px;
+        }
+        .repeater-meta { font-size: 0.75em; gap: 4px 12px; }
+        .repeater-meta-label { color: var(--text-dim); }
+        @media (max-width: 1024px) {
+            .repeater-info { border-bottom: 1px solid var(--glass-border) !important; }
+        }
+
+        /* FreeRadioID login state */
+        .auth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 3px 10px;
+            margin: 0 0 8px 6px;
+            vertical-align: 3px;
+            white-space: nowrap;
+        }
+        .auth-badge.frid {
+            color: #a6ffc0;
+            background: rgba(48, 209, 88, 0.2);
+            border: 1px solid rgba(48, 209, 88, 0.5);
+            box-shadow: 0 0 14px rgba(48, 209, 88, 0.25);
+        }
+        .auth-badge.guest {
+            color: #ffe68a;
+            background: rgba(255, 214, 10, 0.14);
+            border: 1px solid rgba(255, 214, 10, 0.4);
+        }
+        .repeater-card.auth-freeradioid {
+            border-color: rgba(48, 209, 88, 0.42);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), inset 3px 0 0 rgba(48, 209, 88, 0.85), var(--glass-shadow);
+        }
+        .repeater-card.auth-guest {
+            box-shadow: inset 0 1px 0 var(--glass-highlight), inset 3px 0 0 rgba(255, 214, 10, 0.7), var(--glass-shadow);
+        }
+        .auth-ok { color: #8af5ab !important; font-weight: 600; }
+        .auth-guest { color: #ffe36a !important; font-weight: 600; }
+        .lh-frid { font-size: 0.9em; }
+
+        /* Timeslots */
+        .slot {
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-left: 3px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+        }
+        .slot.receiving { border-left-color: var(--green); background: linear-gradient(90deg, rgba(48, 209, 88, 0.2), rgba(0, 0, 0, 0.2) 70%); }
+        .slot.transmitting { border-left-color: #ff453a; background: linear-gradient(90deg, rgba(255, 69, 58, 0.2), rgba(0, 0, 0, 0.2) 70%); }
+        .slot.hang_time { border-left-color: #5e5ce6; background: linear-gradient(90deg, rgba(94, 92, 230, 0.2), rgba(0, 0, 0, 0.2) 70%); }
+        .slot-col-label { color: var(--text-dim); font-size: 8.5px; }
+        .slot-col-value.empty { color: rgba(255, 255, 255, 0.28); font-style: normal; }
+        .slot-col-value.highlight { color: var(--accent); }
+        .slot-status-badge { border-radius: 999px; font-size: 8px; padding: 3px 8px; }
+        .slot-status-badge.idle { background: rgba(255, 255, 255, 0.08); color: var(--text-dim); }
+        .slot-status-badge.receiving { background: var(--green); color: #052e12; }
+        .slot-status-badge.transmitting { background: #ff453a; }
+        .slot-status-badge.hang_time { background: #5e5ce6; }
+
+        /* Last Heard table (overrides inline styles) */
+        #lastHeardBody { padding: 4px; overflow: hidden; }
+        #lastHeardBody table { border-collapse: separate !important; border-spacing: 0; }
+        #lastHeardBody thead tr { background: rgba(255, 255, 255, 0.06) !important; }
+        #lastHeardBody th {
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 12px !important;
+        }
+        #lastHeardBody thead th:first-child { border-top-left-radius: var(--radius-sm); }
+        #lastHeardBody thead th:last-child { border-top-right-radius: var(--radius-sm); }
+        #lastHeardTable tr { border-bottom: none !important; transition: background 0.15s ease; }
+        #lastHeardTable td { padding: 10px 12px !important; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+        #lastHeardTable tr:last-child td { border-bottom: none; }
+        #lastHeardTable tr:hover { background: rgba(255, 255, 255, 0.05); }
+
+        /* Events */
+        .event {
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: none;
+        }
+        .event .type { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
+
+        /* Modal */
+        .modal-overlay { background: rgba(3, 6, 15, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+        .modal-content { background: rgba(28, 34, 56, 0.72); border-radius: var(--radius-lg); }
+        .modal-header { background: rgba(28, 34, 56, 0.85); border-bottom-color: var(--glass-border); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+        .modal-header h2 { color: var(--text); }
+        .modal-close { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
+        .modal-table td { border-bottom-color: rgba(255, 255, 255, 0.07); }
+        .modal-table td:first-child { color: var(--text-dim); }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            header { top: 6px; padding: 8px 12px; }
+            .logo { height: 40px; }
+            h1 { font-size: 20px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .stat-value { font-size: 20px; }
+            .stat-card.stat-frid .stat-value { font-size: 16px; }
+            .stat-card.stat-frid .stat-sub { display: block; margin: 2px 0 0; font-size: 12px; }
+            .connection-status, .audio-toggle, .network-info-btn { padding: 5px 10px; font-size: 11px; }
+        }
     </style>
 </head>
 <body>
@@ -847,6 +1110,10 @@
             <div class="stat-card">
                 <div class="stat-label">Total Traffic Today</div>
                 <div class="stat-value" id="statTotalDuration">0:00:00</div>
+            </div>
+            <div class="stat-card stat-frid" id="statFridCard" style="display: none;" title="Logins verified by FreeRadioID.net / guest logins on the default passphrase">
+                <div class="stat-label">🛡️ FreeRadioID</div>
+                <div class="stat-value"><span id="statFrid">0</span><span class="stat-sub" id="statFridGuests"></span></div>
             </div>
         </div>
         
@@ -1229,6 +1496,10 @@
                                 <h3>🔐 Access Control</h3>
                                 <table class="modal-table">
                                     <tr>
+                                        <td>Login:</td>
+                                        <td class="${details.access_control.auth_method === 'freeradioid' ? 'auth-ok' : details.access_control.auth_method === 'guest' ? 'auth-guest' : ''}">${authLabel(details.access_control.auth_method)}</td>
+                                    </tr>
+                                    <tr>
                                         <td>Connection Category:</td>
                                         <td class="modal-highlight">${details.access_control.connection_category}</td>
                                     </tr>
@@ -1481,6 +1752,37 @@
                 (stats.retransmitted_calls || 0).toLocaleString();
             document.getElementById('statTotalDuration').textContent = 
                 formatDuration(stats.total_duration_today || 0);
+
+            // FreeRadioID: tile appears as soon as the server reports auth methods
+            const inbound = Array.isArray(repeaters) ? repeaters : Object.values(repeaters || {});
+            const fridSeen = inbound.some(r => r.auth_method === 'freeradioid' || r.auth_method === 'guest');
+            const fridCard = document.getElementById('statFridCard');
+            if (fridCard) {
+                fridCard.style.display = fridSeen ? '' : 'none';
+                const verified = inbound.filter(r => r.auth_method === 'freeradioid').length;
+                const guests = inbound.filter(r => r.auth_method === 'guest').length;
+                document.getElementById('statFrid').textContent = `${verified} verified`;
+                document.getElementById('statFridGuests').textContent = guests ? ` · ${guests} guest` : '';
+            }
+        }
+
+        // Login badge for a connection (FreeRadioID secure login)
+        function authBadge(r) {
+            if (r.auth_method === 'freeradioid') {
+                return '<span class="auth-badge frid" title="Login verified by FreeRadioID.net – full access">🛡️ FreeRadioID ✓</span>';
+            }
+            if (r.auth_method === 'guest') {
+                return '<span class="auth-badge guest" title="Logged in with the default passphrase – TX limited to guest talkgroups">👤 Guest</span>';
+            }
+            return '';
+        }
+
+        function authLabel(method) {
+            return {
+                freeradioid: '🛡️ FreeRadioID verified (full access)',
+                guest: '👤 Guest – default passphrase, TX limited to guest talkgroups',
+                local: '🔑 Server passphrase',
+            }[method] || '🔑 Server passphrase';
         }
         
         function updateRepeaters(repeaters) {
@@ -1591,11 +1893,12 @@
                 const { rf1, rf2 } = rfTgLists(r.slot1_talkgroups, r.slot2_talkgroups, r.translations);
 
                 return `
-                    <div class="repeater-card" data-repeater-id="${r.repeater_id}">
+                    <div class="repeater-card ${r.auth_method ? 'auth-' + r.auth_method : ''}" data-repeater-id="${r.repeater_id}">
                         <div class="repeater-info">
                             <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
-                                ${icon} ${xlateBadge}${r.callsign || 'Unknown'} (${r.repeater_id})
+                                ${icon} ${xlateBadge}${r.callsign || 'Unknown'} <span class="rid">${r.repeater_id}</span>
                             </div>
+                            ${authBadge(r)}
                             <div class="repeater-meta">
                                 <!-- Row 1: Location / TX / TS1 -->
                                 <div class="repeater-meta-item">
@@ -2232,7 +2535,9 @@
                 const srcXlateEmoji = xlate
                     ? ` <span title="Translated: RF TS${xlate[0]}/TG${xlate[1]} ↔ Net TS${xlate[2]}/TG${xlate[3]}">🔀</span>`
                     : '';
-                const source = (user.source_name || user.repeater_id || '-') + srcXlateEmoji;
+                const srcFrid = srcRepeater && srcRepeater.auth_method === 'freeradioid'
+                    ? '&nbsp;<span class="lh-frid" title="Source logged in via FreeRadioID">🛡️</span>' : '';
+                const source = (user.source_name || user.repeater_id || '-') + srcXlateEmoji + srcFrid;
 
                 // Destination rendering composes two dimensions so both are
                 // visible at a glance:
@@ -2731,13 +3036,13 @@
                   rx_freq: '448800000', tx_freq: '443800000',
                   connected_at: now - 3672, missed_pings: 0,
                   slot1_talkgroups: [31], slot2_talkgroups: [3120, 3100],
-                  translations: [], rpto_received: false },
+                  translations: [], rpto_received: false, auth_method: 'freeradioid' },
                 { repeater_id: 3112002, callsign: 'KD0XYZ', location: 'Lawrence, KS',
                   status: 'connected', connection_type: 'hotspot',
                   rx_freq: '', tx_freq: '',
                   connected_at: now - 1245, missed_pings: 0,
                   slot1_talkgroups: [3100], slot2_talkgroups: [3120],
-                  translations: [], rpto_received: true },
+                  translations: [], rpto_received: true, auth_method: 'guest' },
                 { repeater_id: 3112003, callsign: 'N0MJS', location: 'Wichita, KS',
                   status: 'connected', connection_type: 'repeater',
                   rx_freq: '449500000', tx_freq: '444500000',
