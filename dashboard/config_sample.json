@@ -45,6 +45,18 @@
             "countries": ["United States", "Canada"],
             "callsign_regex": null,
             "radio_id_ranges": null
+        },
+        "freeradioid": {
+            "_comment": "Also loads the IDs registered at FreeRadioID.net (no country filter, ~400 IDs incl. non-amateur IDs) and marks them in Last Heard. To use FreeRadioID's combined list (radioid.net + FreeRadioID) as the main source instead, set source_url above to https://freeradioid.net/api/subscriber_ids.csv",
+            "enabled": true,
+            "url": "https://freeradioid.net/api/local_subscriber_ids.json"
         }
+    },
+
+    "freeradioid": {
+        "_comment": "Avatars and profiles from FreeRadioID.net in the station detail view and Last Heard. {id} is replaced by the radio ID. Set avatar_url to \"\" to turn avatars off, profile_lookup to false to stop live profile lookups.",
+        "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+        "profile_lookup": true,
+        "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
     }
 }

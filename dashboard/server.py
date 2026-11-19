@@ -76,6 +76,12 @@ def load_config() -> dict:
                 "callsign_regex": None,
                 "radio_id_ranges": None
             }
+        },
+        # FreeRadioID.net integration: avatars and live profile lookups
+        "freeradioid": {
+            "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+            "profile_lookup": True,
+            "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
         }
     }
     
@@ -776,6 +782,7 @@ class EventReceiver:
                         'talkgroup': data.get('dst_id', 0),
                         'call_type': data.get('call_type', 'group'),  # "group" or "private" (addressing)
                         'is_data': data.get('is_data', False),  # voice vs data (payload kind)
+                        'frid': state.user_db.is_frid(src_id),  # registered at FreeRadioID.net
                         'last_heard': event['timestamp'],
                         'active': True  # Mark as currently active
                     }
@@ -1009,6 +1016,69 @@ async def get_stats():
     }
 
 
+# ---------------------------------------------------------------- FreeRadioID
+_frid_profile_cache: Dict[int, tuple] = {}   # radio_id -> (timestamp, profile or None)
+_FRID_PROFILE_TTL = 3600
+
+
+def _frid_profile_fetch_sync(radio_id: int) -> Optional[dict]:
+    import urllib.request
+    cfg = dashboard_config.get("freeradioid", {}) or {}
+    url = cfg.get("profile_url", "https://freeradioid.net/api/dmr/user/?id={id}").replace("{id}", str(radio_id))
+    req = urllib.request.Request(url, headers={"User-Agent": "HBlink4-Dashboard FreeRadioID"})
+    with urllib.request.urlopen(req, timeout=4) as resp:
+        raw = json.loads(resp.read(65536).decode("utf-8", errors="replace"))
+    results = raw.get("results") or []
+    if not results:
+        return None
+    r = results[0]
+    return {
+        "registered": bool(raw.get("reg")),
+        "callsign": r.get("callsign") or "",
+        "name": " ".join(x for x in (r.get("fname"), r.get("surname")) if x) or "",
+        "city": r.get("city") or "",
+        "state": r.get("state") if isinstance(r.get("state"), str) else "",
+        "country": r.get("country") or "",
+        "remarks": r.get("remarks") or "",
+    }
+
+
+async def freeradioid_profile(radio_id: int) -> Optional[dict]:
+    """
+    FreeRadioID profile for a radio ID: live API (cached for an hour), falling
+    back to the downloaded registry. None if FreeRadioID knows nothing about it.
+    """
+    cfg = dashboard_config.get("freeradioid", {}) or {}
+    profile = None
+    if cfg.get("profile_lookup", True):
+        cached = _frid_profile_cache.get(radio_id)
+        if cached and datetime.now().timestamp() - cached[0] < _FRID_PROFILE_TTL:
+            profile = cached[1]
+        else:
+            try:
+                profile = await asyncio.to_thread(_frid_profile_fetch_sync, radio_id)
+            except Exception as e:
+                logger.debug(f"FreeRadioID profile lookup for {radio_id} failed: {e}")
+                profile = cached[1] if cached else None
+            else:
+                _frid_profile_cache[radio_id] = (datetime.now().timestamp(), profile)
+    if profile is None:
+        reg = state.user_db.frid_info(radio_id)
+        if reg:
+            profile = {**reg, "registered": True, "remarks": ""}
+    if profile is not None:
+        profile = dict(profile)
+        profile["registered"] = profile.get("registered") or state.user_db.is_frid(radio_id)
+        profile["avatar"] = cfg.get("avatar_url", "https://freeradioid.net/avatar-{id}.png").replace("{id}", str(radio_id))
+    return profile
+
+
+@app.get("/api/freeradioid/{radio_id}")
+async def get_freeradioid_profile(radio_id: int):
+    """FreeRadioID profile (name, location, registration, avatar) for a radio ID."""
+    return {"radio_id": radio_id, "profile": await freeradioid_profile(radio_id)}
+
+
 @app.get("/api/repeater/{repeater_id}")
 async def get_repeater_details(repeater_id: int):
     """Get detailed information about a specific repeater"""
@@ -1108,6 +1178,7 @@ async def get_repeater_details(repeater_id: int):
             "software_id": repeater.get('software_id') or details.get('software_id', ''),
             "package_id": repeater.get('package_id') or details.get('package_id', '')
         },
+        "freeradioid": await freeradioid_profile(repeater_id),
         "statistics": {
             "total_streams_today": total_streams,
             "slot1_active": slot1_active,
@@ -1283,6 +1354,11 @@ async def user_db_refresh_task():
         )
         status = await state.user_db.refresh_from_upstream(udb_cfg)
         await broadcast_user_db_status(trigger="startup", status=status)
+    else:
+        frid_age = state.user_db.frid_age_hours()
+        if frid_age is None or frid_age >= startup_threshold_h:
+            status = await state.user_db.refresh_freeradioid(udb_cfg)
+            await broadcast_user_db_status(trigger="startup", status=status)
 
     while True:
         # Compute next scheduled refresh.

@@ -79,3 +79,17 @@ with 🛡️.
 The data comes from the `auth_method` field (`local`, `freeradioid` or `guest`)
 in the `repeater_connected` events and in `/api/repeaters` and
 `/api/repeater/{id}` (`access_control.auth_method`).
+
+## FreeRadioID data in the dashboard
+
+The dashboard also uses the [FreeRadioID API](https://freeradioid.net/api-index.html):
+
+* **Avatars** (`avatar-<id>.png`) in the station detail view and Last Heard, with an initials fallback
+* **Profiles** (`api/dmr/user/?id=<id>`, cached for an hour) in the detail view, also at `GET /api/freeradioid/{id}`
+* **Registered IDs** (`api/local_subscriber_ids.json`), loaded daily without a country filter and tagged `FRID` in Last Heard
+* **Combined list** (`api/subscriber_ids.csv`, header-less) usable as `user_database.source_url`
+
+![Station detail](images/station-detail-desktop.png)
+
+See `dashboard/config_sample.json` (`freeradioid` and `user_database.freeradioid`) for the settings.
+

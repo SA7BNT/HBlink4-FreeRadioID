@@ -8,6 +8,7 @@ Dieser Fork von [n0mjs710/HBlink4](https://github.com/n0mjs710/HBlink4) läuft a
 
 - **FreeRadioID Secure Login**: Repeater und Hotspots können sich mit dem persönlichen Passwort von [FreeRadioID.net](https://freeradioid.net/betatest.html) anmelden. Wer das öffentliche Standard-Passwort benutzt, kommt als **Gast** rein und darf nur auf die Gast-Talkgroups senden.
 - **Überarbeitetes Dashboard** im Glass-Look, für Smartphone und Desktop. Jede Verbindung zeigt ein Badge mit ihrer Login-Art. Logo und Favicon lassen sich frei einstellen.
+- **FreeRadioID-Daten im Dashboard**: Avatare und Profile von FreeRadioID.net, dazu die DMR-ID-Listen von FreeRadioID. Darin stehen auch Nicht-Amateurfunk-IDs, zum Beispiel 100001. Die Detailansicht jeder Station ist neu gestaltet.
 
 Alles andere entspricht dem Original. Die englische Original-Anleitung folgt weiter unten.
 
@@ -16,6 +17,50 @@ Alles andere entspricht dem Original. Die englische Original-Anleitung folgt wei
   &nbsp;
   <img src="docs/images/dashboard-mobile.png" alt="Dashboard am Smartphone" width="22%">
 </p>
+
+## Detailansicht einer Station
+
+Ein Klick auf das Rufzeichen öffnet die Detailansicht:
+
+- **Kopfbereich**: Avatar von FreeRadioID, Rufzeichen, ID, Typ, Online-Status, Name und Ort aus dem FreeRadioID-Profil sowie die Login-Art
+- **Kennzahlen**: Uptime, Anrufe heute, Aktivität auf TS1 und TS2, verpasste Pings
+- **Kacheln**: Talkgroups als Chips, Zugang, Verbindung, Funkdaten, Standort mit Link zu OpenStreetMap und das FreeRadioID-Profil
+
+<p align="center">
+  <img src="docs/images/station-detail-desktop.png" alt="Detailansicht am Desktop" width="72%">
+  &nbsp;
+  <img src="docs/images/station-detail-mobile.png" alt="Detailansicht am Smartphone" width="22%">
+</p>
+
+Mit `Esc`, mit dem ✕ oder mit einem Klick daneben schließt du die Ansicht.
+
+## FreeRadioID: Avatare, Profile und DMR-ID-Listen
+
+Das Dashboard nutzt die [FreeRadioID-API](https://freeradioid.net/api-index.html):
+
+| Quelle | Wofür |
+|---|---|
+| `avatar-<ID>.png` | Avatar in der Detailansicht und in **Last Heard**. Kann ein Bild nicht geladen werden, erscheinen die Initialen. |
+| `api/dmr/user/?id=<ID>` | Profil (Name, Ort, Land, registriert) in der Detailansicht. Wird eine Stunde zwischengespeichert. |
+| `api/local_subscriber_ids.json` | Liste der bei FreeRadioID registrierten IDs (rund 400). Sie wird täglich geladen, ohne Länderfilter. Die IDs bekommen in **Last Heard** den Tag `FRID`, und ihre Rufzeichen werden auch angezeigt, wenn sie in der radioid.net-Liste fehlen. |
+| `api/subscriber_ids.csv` | Optional: die Gesamtliste von FreeRadioID (radioid.net plus FreeRadioID) als Hauptquelle statt radioid.net |
+
+Einstellungen in `dashboard/config.json`. Alles ist ohne Eintrag schon aktiv:
+
+```json
+"user_database": {
+    "source_url": "https://freeradioid.net/api/subscriber_ids.csv",
+    "filter": { "countries": ["Germany", "Austria", "Switzerland"] },
+    "freeradioid": { "enabled": true }
+},
+"freeradioid": {
+    "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+    "profile_lookup": true
+}
+```
+
+- Mit `source_url` auf die FreeRadioID-CSV wechselst du die Hauptliste. Ohne diese Zeile bleibt radioid.net die Hauptliste.
+- `"avatar_url": ""` schaltet die Avatare ab, `"profile_lookup": false` die Profilabfrage.
 
 ## Login-Arten im Dashboard
 

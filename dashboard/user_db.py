@@ -76,12 +76,27 @@ class UserDatabase:
         self._meta_path = self._data_dir / "user_db.meta.json"
         self._data: Dict[int, str] = {}
         self._meta = UserDbMeta()
+        # FreeRadioID.net registered IDs: {radio_id: {callsign, name, city, state, country}}
+        self._frid_path = self._data_dir / "freeradioid_users.json"
+        self._frid: Dict[int, dict] = {}
+        self._frid_refresh_ts: float = 0.0
         self._lock = asyncio.Lock()  # Serializes refresh attempts
 
     # ---------------------------------------------------------------- reads
 
     def get(self, radio_id: int, default: str = "") -> str:
-        return self._data.get(radio_id, default)
+        cs = self._data.get(radio_id)
+        if cs:
+            return cs
+        frid = self._frid.get(radio_id)
+        return frid.get("callsign", default) if frid else default
+
+    def frid_info(self, radio_id: int) -> Optional[dict]:
+        """FreeRadioID registration of this ID, or None if not registered there."""
+        return self._frid.get(radio_id)
+
+    def is_frid(self, radio_id: int) -> bool:
+        return radio_id in self._frid
 
     def __len__(self) -> int:
         return len(self._data)
@@ -94,6 +109,8 @@ class UserDatabase:
         """Serializable meta for WebSocket / API exposure."""
         d = asdict(self._meta)
         d["loaded_rows"] = len(self._data)
+        d["freeradioid_rows"] = len(self._frid)
+        d["freeradioid_refresh_timestamp"] = self._frid_refresh_ts
         return d
 
     # -------------------------------------------------- startup / disk load
@@ -113,6 +130,16 @@ class UserDatabase:
                     })
             except Exception as e:
                 logger.warning(f"⚠️ Could not parse user_db meta file: {e}")
+
+        if self._frid_path.exists():
+            try:
+                with open(self._frid_path) as f:
+                    raw = json.load(f)
+                self._frid = {int(k): v for k, v in raw.get("users", {}).items()}
+                self._frid_refresh_ts = float(raw.get("refresh_timestamp", 0))
+                logger.info(f"🛡️ Loaded FreeRadioID registry: {len(self._frid):,} IDs")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not load FreeRadioID registry: {e}")
 
         if self._snapshot_path.exists():
             try:
@@ -159,7 +186,54 @@ class UserDatabase:
             return "busy"
 
         async with self._lock:
-            return await asyncio.to_thread(self._refresh_sync, config)
+            status = await asyncio.to_thread(self._refresh_sync, config)
+            # FreeRadioID registry is independent of the main source: a 304 or
+            # failure there must not stop it.
+            frid_cfg = config.get("freeradioid", {}) or {}
+            if frid_cfg.get("enabled", True):
+                await asyncio.to_thread(self._refresh_frid_sync, config)
+            return status
+
+    def frid_age_hours(self) -> Optional[float]:
+        if not self._frid_refresh_ts:
+            return None
+        return (time.time() - self._frid_refresh_ts) / 3600.0
+
+    async def refresh_freeradioid(self, config: dict) -> str:
+        """Refresh only the FreeRadioID registry (used at startup)."""
+        if not (config.get("freeradioid", {}) or {}).get("enabled", True):
+            return "disabled"
+        return await asyncio.to_thread(self._refresh_frid_sync, config)
+
+    def _refresh_frid_sync(self, config: dict) -> str:
+        """Download the list of FreeRadioID-registered IDs (small, ~70 KB)."""
+        frid_cfg = config.get("freeradioid", {}) or {}
+        url = frid_cfg.get("url", "https://freeradioid.net/api/local_subscriber_ids.json")
+        user_agent = config.get("user_agent", "HBlink4-Dashboard")
+        try:
+            status, body, _ = _http_get_with_conditional(url, user_agent=user_agent)
+            if status != 200:
+                raise ValueError(f"HTTP {status}")
+            users = parse_freeradioid_json(body)
+            if not users:
+                raise ValueError("empty list")
+        except Exception as e:
+            logger.warning(f"⚠️ FreeRadioID registry refresh failed: {e} (keeping {len(self._frid)} IDs)")
+            return "error"
+        self._frid = users
+        self._frid_refresh_ts = time.time()
+        try:
+            self._data_dir.mkdir(parents=True, exist_ok=True)
+            tmp = self._frid_path.with_suffix(".json.tmp")
+            with open(tmp, "w") as f:
+                json.dump({"refresh_timestamp": self._frid_refresh_ts, "source_url": url,
+                           "users": {str(k): v for k, v in users.items()}},
+                          f, separators=(",", ":"))
+            os.replace(tmp, self._frid_path)
+        except Exception as e:
+            logger.debug(f"Could not write FreeRadioID registry: {e}")
+        logger.info(f"🛡️ FreeRadioID registry refreshed: {len(users):,} registered IDs")
+        return "ok"
 
     def _refresh_sync(self, config: dict) -> str:
         """Blocking refresh pipeline — runs off the event loop."""
@@ -311,7 +385,13 @@ def filter_rows_from_csv_bytes(body: bytes, filter_cfg: dict) -> Dict[int, str]:
                 continue
 
     text = body.decode("utf-8", errors="replace")
-    reader = csv.DictReader(io.StringIO(text))
+    first = text.lstrip("\ufeff").split("\n", 1)[0]
+    if first.split(",", 1)[0].strip().isdigit():
+        # Header-less FreeRadioID CSV (api/subscriber_ids.csv):
+        # id,callsign,first_name,city,state,country
+        reader = csv.DictReader(io.StringIO(text, newline=""), fieldnames=list(_FRID_CSV_FIELDS))
+    else:
+        reader = csv.DictReader(io.StringIO(text))
 
     required = {"RADIO_ID", "CALLSIGN", "COUNTRY"}
     if not reader.fieldnames or not required.issubset(reader.fieldnames):
@@ -343,6 +423,36 @@ def filter_rows_from_csv_bytes(body: bytes, filter_cfg: dict) -> Dict[int, str]:
 
         out[radio_id] = callsign
 
+    return out
+
+
+_FRID_CSV_FIELDS = ("RADIO_ID", "CALLSIGN", "FIRST_NAME", "CITY", "STATE", "COUNTRY")
+
+
+def parse_freeradioid_json(body: bytes) -> Dict[int, dict]:
+    """
+    Parse FreeRadioID's local_subscriber_ids.json:
+        {"count": N, "results": [{"id", "callsign", "fname", "city", "state", "country", ...}]}
+    """
+    raw = json.loads(body.decode("utf-8", errors="replace"))
+    rows = raw.get("results", []) if isinstance(raw, dict) else raw
+    out: Dict[int, dict] = {}
+    for r in rows:
+        try:
+            rid = int(r["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        callsign = str(r.get("callsign") or "").strip()
+        if not callsign:
+            continue
+        state = r.get("state")
+        out[rid] = {
+            "callsign": callsign,
+            "name": str(r.get("fname") or r.get("name") or "").strip(),
+            "city": str(r.get("city") or "").strip(),
+            "state": state.strip() if isinstance(state, str) else "",
+            "country": str(r.get("country") or "").strip(),
+        }
     return out
 
 

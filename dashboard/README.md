@@ -72,6 +72,26 @@ Replace the HBlink logo and the browser tab icon with your own:
 Put the files in `dashboard/static/` or use full URLs. If `favicon` is empty,
 the logo is used. Leave both empty for the default DMR Die N8schicht logo.
 
+### FreeRadioID Avatars, Profiles and ID Lists
+
+```json
+{
+    "freeradioid": {
+        "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+        "profile_lookup": true,
+        "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
+    }
+}
+```
+
+Avatars appear in the station detail view and Last Heard (`""` turns them off).
+The detail view shows the FreeRadioID profile of the station (cached for an
+hour; `GET /api/freeradioid/{id}`). The IDs registered at FreeRadioID are
+downloaded with the callsign database (`user_database.freeradioid`), marked
+`FRID` in Last Heard, and resolve even if the main list filters them out. The
+header-less FreeRadioID CSV (`https://freeradioid.net/api/subscriber_ids.csv`)
+can be used as `user_database.source_url`.
+
 ### Network Info Button
 
 Add an optional "Network Info" button to the dashboard header that links users to your network's information page:
