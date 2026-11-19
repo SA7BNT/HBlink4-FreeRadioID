@@ -261,3 +261,18 @@ second HBlink4 exits with "Address already in use" and systemd keeps restarting
 the services. `run_all.sh` now refuses to start while the services are active or
 a port is taken, and stops both programs as soon as one of them exits.
 
+## "attempt to write a readonly database"
+
+Files created by a start as root (dashboard/data/dashboard.db, statistics,
+logs/hblink.log, /tmp/hblink4.sock) cannot be written by the service user, and
+the services fail in a restart loop. The dashboard and HBlink4 now name the
+files and print the fix; `install_services.sh` offers `chown -R` and removes a
+foreign socket. By hand:
+
+```bash
+sudo systemctl stop hblink4 hblink4-dash
+sudo chown -R adn:adn /opt/HBlink4          # your service user and path
+sudo rm -f /tmp/hblink4.sock
+sudo systemctl start hblink4 hblink4-dash
+```
+

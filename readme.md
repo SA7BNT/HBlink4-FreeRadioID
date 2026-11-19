@@ -159,6 +159,17 @@ Laufen beide gleichzeitig, wollen zwei HBlink4 denselben UDP-Port 62031 und zwei
 
 Stürzt einer der beiden Prozesse ab, beendet `run_all.sh` auch den anderen und sagt, welcher es war.
 
+**Typische Fehlermeldungen:**
+
+| Meldung im Log | Ursache | Lösung (als root) |
+|---|---|---|
+| `attempt to write a readonly database` bzw. `cannot write these files` | Das Dashboard wurde einmal als root gestartet. Datenbank und Statistik gehören jetzt root, der Dienst läuft aber als `adn`. | `chown -R adn:adn /opt/HBlink4`, dann `systemctl restart hblink4-dash` |
+| `cannot write logs/hblink.log` | dasselbe für das HBlink4-Log | `chown -R adn:adn /opt/HBlink4` |
+| `/tmp/hblink4.sock belongs to root` | Die Verbindung zwischen HBlink4 und Dashboard stammt noch von einem root-Start. Das Dashboard zeigt dann keine Daten vom DMR-Server. | `rm -f /tmp/hblink4.sock && systemctl restart hblink4-dash hblink4` |
+| `Address already in use` | HBlink4 oder das Dashboard läuft doppelt, oder ein anderer DMR-Server belegt den Port | siehe oben, nur einen Startweg nutzen |
+
+`scripts/install_services.sh` erkennt fremde Dateien und alte Sockets selbst und bietet an, das zu korrigieren.
+
 **Fehlersuche, wenn die Dienste nicht starten:**
 
 ```bash

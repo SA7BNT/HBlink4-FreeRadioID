@@ -6,6 +6,8 @@ application state or class instances. These are pure functions that
 can be used throughout the codebase.
 """
 import logging
+import sys
+import os
 import logging.handlers
 import pathlib
 from typing import Tuple, Union
@@ -278,6 +280,17 @@ def setup_logging(config: dict, logger_name: str = __name__) -> logging.Logger:
     # Clean up old log files
     cleanup_old_logs(log_path.parent, max_days, logger)
     
+    # A log file left behind by a start as root cannot be opened by the service
+    # user; say so plainly instead of dying with a PermissionError traceback.
+    for f in [log_path.parent, *(p for p in [log_path] if p.exists())]:
+        if not os.access(f, os.W_OK):
+            import getpass
+            me = getpass.getuser()
+            print(f"✗ HBlink4 (running as {me}) cannot write {f} - it was probably created by a start "
+                  f"as root. Fix as root: chown -R {me}:{me} {log_path.parent.parent.resolve()}",
+                  file=sys.stderr)
+            sys.exit(1)
+
     # Configure rotating file handler with date-based suffix
     file_handler = logging.handlers.TimedRotatingFileHandler(
         str(log_path),

@@ -166,12 +166,36 @@ SVC_GROUP="${SVC_GROUP:-$DEFAULT_GROUP}"
 id "$SVC_USER" >/dev/null 2>&1 || die "No such user: $SVC_USER"
 getent group "$SVC_GROUP" >/dev/null 2>&1 || die "No such group: $SVC_GROUP"
 
-# The service user must be able to write persistence and logs.
-if [ "$(id -u)" -eq 0 ] && command -v runuser >/dev/null 2>&1; then
-    if ! runuser -u "$SVC_USER" -- test -w "$REPO_ROOT" 2>/dev/null; then
-        warn "$SVC_USER cannot write to $REPO_ROOT"
-        warn "The dashboard needs write access for dashboard/data/ and logs/."
+# The service user must own the checkout: the dashboard writes dashboard/data/
+# (SQLite users/settings database, statistics, certificates) and HBlink4 writes
+# logs/. Files left by a start as root make the services crash in a loop
+# ("attempt to write a readonly database"). Offer to fix that here.
+if [ "$(id -u)" -eq 0 ]; then
+    FOREIGN="$(find "$REPO_ROOT" -path "$REPO_ROOT/venv" -prune -o ! -user "$SVC_USER" -print 2>/dev/null | head -n 1000 | wc -l)"
+    if [ "$FOREIGN" -gt 0 ]; then
+        warn "$FOREIGN file(s) in $REPO_ROOT do not belong to $SVC_USER (e.g. from a start as root):"
+        find "$REPO_ROOT" -path "$REPO_ROOT/venv" -prune -o ! -user "$SVC_USER" -print 2>/dev/null \
+            | grep -E '/(dashboard/data|logs)(/|$)' | head -n 5 | sed 's/^/    /'
+        read -r -p "Give the whole directory to $SVC_USER:$SVC_GROUP now (chown -R)? [Y/n]: " DO_CHOWN
+        case "$DO_CHOWN" in
+            [nN]*) warn "Not changed. The services will fail until $SVC_USER can write dashboard/data/ and logs/." ;;
+            *)     chown -R "$SVC_USER:$SVC_GROUP" "$REPO_ROOT" && ok "chown -R $SVC_USER:$SVC_GROUP $REPO_ROOT" ;;
+        esac
     fi
+fi
+
+# Same for the event socket between HBlink4 and the dashboard: one left in /tmp
+# by root cannot be replaced by the service user (sticky /tmp).
+if [ "$(id -u)" -eq 0 ]; then
+    for sock in /tmp/hblink4.sock; do
+        if [ -S "$sock" ] && [ "$(stat -c %U "$sock")" != "$SVC_USER" ]; then
+            if command -v systemctl >/dev/null 2>&1 && [ "$LIVE_INSTALL" = 1 ]; then
+                systemctl stop hblink4-dash 2>/dev/null || true
+            fi
+            SOCK_OWNER="$(stat -c %U "$sock" 2>/dev/null || echo 'another user')"
+            rm -f "$sock" && ok "removed $sock (left by $SOCK_OWNER)"
+        fi
+    done
 fi
 
 echo

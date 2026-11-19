@@ -130,6 +130,44 @@ dashboard_config = load_config()
 import copy as _copy
 _file_config = _copy.deepcopy(dashboard_config)
 
+def _ensure_writable(data_dir: Path) -> None:
+    """
+    The dashboard must own its data files. A start as root (run_all.sh, or the
+    server by hand) leaves root-owned files behind that the service user cannot
+    write -- SQLite then fails with "attempt to write a readonly database".
+    Explain that with the exact fix instead of a traceback, and stop.
+    """
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    bad = []
+    if not os.access(data_dir, os.W_OK):
+        bad.append(data_dir)
+    for f in data_dir.iterdir() if data_dir.is_dir() else []:
+        if f.is_file() and not os.access(f, os.W_OK):
+            bad.append(f)
+    if not bad:
+        return
+    import getpass
+    try:
+        me = getpass.getuser()
+    except Exception:
+        me = str(os.getuid())
+    root = data_dir.parent.parent
+    logger.error("❌ The dashboard (running as %s) cannot write these files:", me)
+    for f in bad[:10]:
+        try:
+            owner = f.owner()
+        except Exception:
+            owner = "?"
+        logger.error(f"     {f}  (owner: {owner})")
+    logger.error("   They were probably created by a start as root. Fix (as root):")
+    logger.error(f"     chown -R {me}:{me} {root}")
+    logger.error("   and from now on start only the services (systemctl), or run_all.sh as that user.")
+    sys.exit(1)
+
+
 # In-memory state (could be Redis/database for persistence)
 class DashboardState:
     """Maintains state for the dashboard"""
@@ -163,7 +201,8 @@ class DashboardState:
         # user_db_refresh_task() registered in startup_event().
         self.user_db = UserDatabase(self._data_dir)
 
-        # Users, sessions, audit log and avatars (SQLite)
+        # Users, sessions, audit log and settings (SQLite)
+        _ensure_writable(self._data_dir)
         self.auth = AuthStore(self._data_dir / "dashboard.db")
         self.auth.sync_superadmin((dashboard_config.get("auth") or {}).get("superadmin") or {})
 
@@ -664,6 +703,15 @@ class EventReceiver:
             try:
                 os.unlink(self.unix_socket)
                 logger.info(f"Removed existing socket file: {self.unix_socket}")
+            except PermissionError:
+                try:
+                    owner = Path(self.unix_socket).owner()
+                except Exception:
+                    owner = "another user"
+                logger.error(f"❌ {self.unix_socket} belongs to {owner} (left over from a start as root) and "
+                             f"cannot be replaced: HBlink4 will not reach the dashboard. Fix as root: "
+                             f"rm -f {self.unix_socket} && systemctl restart hblink4-dash hblink4")
+                return
             except Exception as e:
                 logger.warning(f"Failed to remove existing socket: {e}")
         
