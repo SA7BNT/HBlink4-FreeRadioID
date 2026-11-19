@@ -1447,7 +1447,14 @@
         }
 
         /* Settings tab */
-        .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 6px; }
+        .settings-group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 15px; margin: 6px 2px 10px; }
+        .settings-group small { font-size: 11.5px; font-weight: 500; color: var(--text-dim); }
+        .set-row.is-wide { grid-template-columns: 1fr; }
+        .json-edit { font-family: ui-monospace, "SF Mono", Menlo, monospace !important; font-size: 12px !important; line-height: 1.45; }
+        .pw-wrap { display: flex; gap: 6px; }
+        .pw-wrap input { flex: 1; }
+        .pw-eye { padding: 4px 8px; }
         .set-tile { display: flex; flex-direction: column; gap: 2px; }
         .set-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 3px 12px; align-items: center; padding: 5px 0;
                    border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
@@ -1485,6 +1492,84 @@
         .card-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
         .card-title-row .repeater-header, .card-title-row .repeater-header-warning { margin: 0; }
         .card-title-row .avatar { cursor: pointer; }
+
+        /* ================= Design v4: one consistent look ================= */
+        :root {
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-2: rgba(255, 255, 255, 0.08);
+            --line: rgba(255, 255, 255, 0.08);
+            --on-air: #30d158;
+        }
+        body { letter-spacing: -0.005em; }
+        .container { max-width: 1480px; }
+
+        /* Section headers: icon, title, count chip */
+        .section-header { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.09em; }
+        .section-header [id$="Count"] {
+            font-size: 11px; letter-spacing: 0; font-weight: 800; color: var(--text) !important;
+            background: var(--surface-2); border: 1px solid var(--glass-border); border-radius: 999px;
+            padding: 1px 8px; min-width: 22px; text-align: center;
+        }
+        .section-header [id$="Count"]:empty { display: none; }
+        .section-header #userDbStatus { margin-left: auto !important; font-size: 11px !important; letter-spacing: 0;
+                                        text-transform: none; font-weight: 500; }
+
+        /* Statistics tiles */
+        .stat-label { display: flex; gap: 6px; align-items: center; text-transform: none; }
+
+        /* Cards: same surface everywhere */
+        .repeater-card { background: var(--surface); }
+        .repeater-card.obp-card { flex-direction: column; align-items: stretch; }
+        .repeater-card.obp-card .repeater-info { min-width: 100%; max-width: none; }
+        .obp-meta { color: var(--text-dim); font-size: 11.5px; margin: 3px 0 2px; }
+        .obp-tgs { font-size: 11.5px; margin-top: 3px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+        .obp-stream-pill { background: var(--surface-2); border-color: var(--glass-border); }
+
+        /* ON AIR: talking stations glow and come first */
+        .on-air-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+            color: #052e12; background: var(--on-air);
+            border-radius: 999px; padding: 3px 9px; white-space: nowrap;
+            box-shadow: 0 0 14px rgba(48, 209, 88, 0.55);
+        }
+        .on-air-dot { width: 7px; height: 7px; border-radius: 50%; background: #052e12; animation: onair 1.2s ease-in-out infinite; }
+        @keyframes onair { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+        .repeater-card.on-air {
+            border-color: rgba(48, 209, 88, 0.75) !important;
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 0 1px rgba(48, 209, 88, 0.35),
+                        0 0 26px rgba(48, 209, 88, 0.28), var(--glass-shadow) !important;
+            background: linear-gradient(135deg, rgba(48, 209, 88, 0.13), rgba(255, 255, 255, 0.04) 55%) !important;
+        }
+        .repeater-card.on-air .avatar { box-shadow: 0 0 0 2px var(--on-air), 0 0 14px rgba(48, 209, 88, 0.6); }
+
+        /* Last Heard */
+        #lastHeardTable td.lh-id { font-variant-numeric: tabular-nums; color: var(--text-dim); }
+        #lastHeardTable td.lh-call { font-weight: 600; }
+        #lastHeardTable td.lh-call.muted { color: var(--text-dim); font-weight: 400; }
+        #lastHeardTable td.lh-slot { text-align: center; }
+        #lastHeardTable td.lh-time { color: var(--text-dim); white-space: nowrap; }
+        #lastHeardTable tr.lh-active { background: linear-gradient(90deg, rgba(48, 209, 88, 0.16), rgba(48, 209, 88, 0.02) 70%); }
+        #lastHeardTable tr.lh-active td:first-child { box-shadow: inset 3px 0 0 var(--on-air); }
+        #lastHeardTable tr.lh-active td.lh-time { color: var(--text); }
+        #lastHeardBody thead th:nth-child(4) { text-align: center !important; }
+        .ts-chip {
+            font-size: 10.5px; font-weight: 800; color: var(--accent);
+            background: rgba(90, 200, 250, 0.12); border-radius: 7px; padding: 2px 7px;
+        }
+
+        /* Events */
+        #eventsBody { padding: 8px; }
+        .event { margin-bottom: 6px; padding: 8px 12px; }
+
+        /* Buttons in the header share one shape */
+        .connection-status, .audio-toggle, .network-info-btn, .hdr-btn { height: 30px; display: inline-flex; align-items: center; }
+
+        @media (max-width: 600px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .card-title-row { flex-wrap: wrap; }
+            #lastHeardBody th:nth-child(3), #lastHeardTable td:nth-child(3) { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -1514,23 +1599,23 @@
         <h2 class="section-header">Statistics</h2>
         <div class="stats-bar">
                 <div class="stat-card">
-                    <div class="stat-label">Connections</div>
+                    <div class="stat-label">🔌 Connections</div>
                     <div class="stat-value" id="statConnections">0</div>
                 </div>
             <div class="stat-card">
-                <div class="stat-label">Active Streams</div>
+                <div class="stat-label">🎙️ Active Streams</div>
                 <div class="stat-value" id="statStreams">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Calls Today</div>
+                <div class="stat-label">📞 Calls Today</div>
                 <div class="stat-value" id="statTotalCalls">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Retransmitted Calls Today</div>
+                <div class="stat-label">🔁 Retransmitted Today</div>
                 <div class="stat-value" id="statRetransmittedCalls">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Traffic Today</div>
+                <div class="stat-label">⏱️ Traffic Today</div>
                 <div class="stat-value" id="statTotalDuration">0:00:00</div>
             </div>
             <div class="stat-card stat-frid" id="statFridCard" style="display: none;" title="Logins verified by FreeRadioID.net / guest logins on the default passphrase">
@@ -2213,14 +2298,22 @@
                     `<option value="${escapeHtml(val)}" ${val === v ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>`;
             } else if (f.kind === 'countries') {
                 input = `<input ${name} value="${escapeHtml(Array.isArray(v) ? v.join(', ') : (v || ''))}">`;
-            } else if (f.kind === 'int') {
-                input = `<input type="number" ${name} min="${f.min}" max="${f.max}" value="${escapeHtml(v)}">`;
+            } else if (f.kind === 'int' || f.kind === 'float') {
+                input = `<input type="number" ${name} min="${f.min}" max="${f.max}" step="${f.kind === 'float' ? '0.1' : '1'}" value="${escapeHtml(v)}">`;
+            } else if (f.kind === 'password') {
+                input = `<span class="pw-wrap"><input type="password" ${name} value="${escapeHtml(v ?? '')}" autocomplete="off">
+                         <button type="button" class="btn-s pw-eye" title="Show/hide" onclick="const i=this.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'">👁</button></span>`;
+            } else if (f.kind === 'tglist') {
+                const txt = v === null || v === undefined ? 'all' : (Array.isArray(v) && v.length === 0 ? 'none' : (v || []).join(', '));
+                input = `<input ${name} value="${escapeHtml(txt)}" placeholder="e.g. 262, 2620 · all · none">`;
+            } else if (f.kind === 'json') {
+                input = `<textarea ${name} class="json-edit" rows="${Array.isArray(v) && v.length ? 7 : 2}" spellcheck="false">${escapeHtml(JSON.stringify(v ?? [], null, 2))}</textarea>`;
             } else if (f.kind === 'time') {
                 input = `<input type="time" ${name} value="${escapeHtml(v || '')}">`;
             } else {
                 input = `<input ${name} value="${escapeHtml(v ?? '')}" ${f.kind === 'url' ? 'placeholder="https://…"' : ''}>`;
             }
-            return `<div class="set-row ${f.kind === 'bool' ? 'is-bool' : ''}">
+            return `<div class="set-row ${f.kind === 'bool' ? 'is-bool' : ''} ${f.kind === 'json' ? 'is-wide' : ''}">
                 <label for="${id}">${escapeHtml(f.label)}${f.restart ? ' <span class="restart-tag" title="Takes effect after a restart">restart</span>' : ''}</label>
                 ${input}
                 ${f.help ? `<small class="muted">${escapeHtml(f.help)}</small>` : ''}
@@ -2228,7 +2321,15 @@
         }
 
         function settingsSectionsHtml(sections) {
-            return sections.map(sec => `
+            const block = (list, title, sub) => list.length ? `
+                <h3 class="settings-group">${title}<small>${sub}</small></h3>
+                <div class="settings-grid">${list.map(settingsSectionHtml).join('')}</div>` : '';
+            return block(sections.filter(s => !s.dmr), '📊 Dashboard', 'takes effect immediately; HTTPS & ports after a dashboard restart') +
+                   block(sections.filter(s => s.dmr), '🛰️ DMR server (HBlink4)', 'sent to the DMR server on save; port, links & trunks after a DMR server restart');
+        }
+
+        function settingsSectionHtml(sec) {
+            return `
                 <form class="tile set-tile" data-section="${sec.id}" onsubmit="event.preventDefault(); saveSettings(this)">
                     <h3>${escapeHtml(sec.title)}</h3>
                     ${sec.fields.map(settingInput).join('')}
@@ -2237,7 +2338,7 @@
                         <button type="button" class="btn-s" onclick="resetSettings('${sec.id}', this)" title="Take the values of this section from dashboard/config.json again">↺ config.json</button>
                         <button type="submit" class="btn-s btn-primary">Save</button>
                     </div>
-                </form>`).join('');
+                </form>`;
         }
 
         async function adminSettings() {
@@ -2249,7 +2350,11 @@
                     ${sys.systemd ? '<button class="btn-s btn-primary" onclick="restartDashboard()">Restart now</button>'
                                   : '<span class="muted">Restart it (sudo systemctl restart hblink4-dash).</span>'}
                 </div>
-                <div class="settings-grid" id="settingsGrid">${settingsSectionsHtml(sections)}</div>
+                <div id="dmrBanner" class="restart-banner" hidden>
+                    <span id="dmrBannerText"></span>
+                    ${sys.systemd ? '<button class="btn-s btn-primary" onclick="restartDmr()">Restart DMR server</button>' : ''}
+                </div>
+                <div id="settingsGrid">${settingsSectionsHtml(sections)}</div>
                 <p class="muted small">On the first start these values were taken from <code>dashboard/config.json</code>;
                 since then they live in the database (<code>dashboard/data/dashboard.db</code>) and are edited here.
                 The superadmin and the HBlink4 server settings (<code>config/config.json</code>) stay in the files.</p>`;
@@ -2267,7 +2372,25 @@
         function afterSettingsSaved(j) {
             document.getElementById('settingsGrid').innerHTML = settingsSectionsHtml(j.sections);
             if (j.restart_required) document.getElementById('restartBanner').hidden = false;
-            toast(j.changed.length ? `Saved (${j.changed.length} changed)` : 'No changes', 'ok');
+            if (j.dmr_changed) {
+                const b = document.getElementById('dmrBanner');
+                const t = document.getElementById('dmrBannerText');
+                if (!j.dmr_applied) {
+                    t.textContent = 'Saved. The DMR server is not connected right now; it uses the new values when it starts.';
+                    b.hidden = false;
+                } else if (j.dmr_restart_required) {
+                    t.textContent = 'Saved and sent. Port, links and trunks change after a restart of the DMR server.';
+                    b.hidden = false;
+                }
+            }
+            toast(!j.changed.length ? 'No changes'
+                  : j.dmr_changed && j.dmr_applied ? `Saved and applied to the DMR server (${j.changed.length})`
+                  : `Saved (${j.changed.length} changed)`, 'ok');
+        }
+
+        async function restartDmr() {
+            try { await api('POST', '/api/admin/dmr/restart'); toast('DMR server restarts…', 'ok'); }
+            catch (e) { toast(e.message, 'err'); }
         }
 
         async function saveSettings(form) {
@@ -2300,7 +2423,8 @@
                              user_created: '➕ User created', user_updated: '✏️ User changed', user_deleted: '🗑 User deleted',
                              password_changed: '🔑 Password changed', session_revoked: '🔑 Session revoked',
                              settings_changed: '⚙️ Settings changed', settings_reset: '↺ Settings reset',
-                             userdb_refresh: '📘 Callsign DB refresh', restart: '🔄 Restart' };
+                             userdb_refresh: '📘 Callsign DB refresh', restart: '🔄 Dashboard restart',
+                             dmr_restart: '🛰️ DMR server restart' };
             if (!audit.length) return '<div class="muted">Nothing logged yet.</div>';
             return `<table class="admin-table">
                 <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>IP</th></tr></thead>
@@ -2327,12 +2451,14 @@
                     ${infoRow('Accounts', s.users)}
                     ${infoRow('IP addresses', 'admins only')}
                     ${infoRow('Runs as', s.systemd ? 'systemd service' : 'manually (run_all.sh)')}
+                    ${infoRow('DMR server (HBlink4)', s.hblink_connected ? '<span class="auth-ok">connected</span>' : '<span class="auth-guest">not connected</span>')}
                     ${infoRow('FreeRadioID IDs', s.frid_ids)}
                     ${infoRow('Avatars cached', s.frid_avatars)}
                 </section></div>
                 <div class="set-actions" style="justify-content:flex-start">
                     <button class="btn-s" onclick="adminTab('settings')">⚙️ Change settings</button>
                     ${s.systemd ? '<button class="btn-s" onclick="restartDashboard()">🔄 Restart dashboard</button>' : ''}
+                    ${s.hblink_connected ? '<button class="btn-s" onclick="restartDmr()">🛰️ Restart DMR server</button>' : ''}
                 </div>`;
         }
 
@@ -2708,12 +2834,19 @@
             
             section.style.display = 'block';
             if (countElement) {
-                countElement.textContent = `(${connections.length})`;
+                countElement.textContent = `${connections.length}`;
             }
             
             // Get streams data to show on slots
             const streams = state.streams || [];
-            
+
+            // Whoever is talking (receiving RF) comes first, then hang time, then by callsign
+            const onAir = (r) => streams.some(s => s.repeater_id == r.repeater_id && s.status === 'active' && !s.is_assumed);
+            const busy = (r) => streams.some(s => s.repeater_id == r.repeater_id && (s.status === 'active' || s.status === 'hang_time'));
+            connections = [...connections].sort((a, b) =>
+                (onAir(b) - onAir(a)) || (busy(b) - busy(a)) ||
+                String(a.callsign || '').localeCompare(String(b.callsign || '')));
+
             container.innerHTML = connections.map(r => {
                 // Find active streams for this repeater (only active or hang_time, not ended)
                 const slot1Stream = streams.find(s => 
@@ -2737,13 +2870,14 @@
                 const { rf1, rf2 } = rfTgLists(r.slot1_talkgroups, r.slot2_talkgroups, r.translations);
 
                 return `
-                    <div class="repeater-card ${r.auth_method ? 'auth-' + r.auth_method : ''}" data-repeater-id="${r.repeater_id}">
+                    <div class="repeater-card ${r.auth_method ? 'auth-' + r.auth_method : ''} ${onAir(r) ? 'on-air' : ''}" data-repeater-id="${r.repeater_id}">
                         <div class="repeater-info">
                             <div class="card-title-row">
                                 <span onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">${avatarHtml(r.repeater_id, r.callsign, 34)}</span>
                                 <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
                                     ${icon} ${xlateBadge}${r.callsign || 'Unknown'} <span class="rid">${r.repeater_id}</span>
                                 </div>
+                                ${onAir(r) ? '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>' : ''}
                             </div>
                             ${authBadge(r)}
                             <div class="repeater-meta">
@@ -2973,7 +3107,7 @@
             if (section) section.style.display = 'block';
 
             const upCount = list.filter(o => o.status === 'connected').length;
-            if (countElement) countElement.textContent = upCount > 0 ? `(${upCount})` : '';
+            if (countElement) countElement.textContent = upCount > 0 ? `${upCount}` : '';
 
             const streams = state.streams || [];
 
@@ -3007,20 +3141,19 @@
                         return `<span class="obp-stream-pill">`
                              + `<span class="slot-status-badge ${badge}">${label}</span> `
                              + `${who} → <span class="slot-col-value highlight">TG${s.dst_id}</span> `
-                             + `<span style="color:#64748b">TS${s.slot}</span></span>`;
+                             + `<span class="muted">TS${s.slot}</span></span>`;
                       }).join('') + `</div>`
                     : `<div class="obp-streams"><span class="obp-stream-pill idle">— idle —</span></div>`;
 
                 return `
-                    <div class="repeater-card" style="flex-direction:column;align-items:stretch">
-                        <div class="repeater-info" style="min-width:100%">
+                    <div class="repeater-card obp-card">
+                        <div class="repeater-info">
                             <div class="${headerClass}">↔️ ${o.connection_name}
-                                <span style="font-weight:400;color:#94a3b8">(NetID ${o.network_id})</span></div>
-                            <div style="color:#94a3b8;font-size:11px;margin:2px 0">
+                                <span class="rid">NetID ${o.network_id}</span></div>
+                            <div class="obp-meta">
                                 ${fmtAddr(o.remote_address, o.remote_port)} · up ${upDur} ·
                                 ${o.preserve_source_peer ? 'preserves source peer' : 'network_id in RptrId'}</div>
-                            <div style="font-size:10px;margin-top:4px">
-                                <span style="color:#94a3b8">TGs:</span> ${tgList}</div>
+                            <div class="obp-tgs"><span class="repeater-meta-label">TGs</span> ${tgList}</div>
                             ${streamHtml}
                         </div>
                     </div>`;
@@ -3051,7 +3184,7 @@
             // Update the count in the header
             const connectedCount = outboundList.filter(o => o.status === 'connected').length;
             if (countElement) {
-                countElement.textContent = connectedCount > 0 ? `(${connectedCount})` : '';
+                countElement.textContent = connectedCount > 0 ? `${connectedCount}` : '';
             }
             
             // Get streams data to show on slots
@@ -3319,6 +3452,8 @@
             const activeOnly = isSectionCollapsed('lastHeard');
             let users = Array.isArray(state.last_heard) ? state.last_heard : [];
             if (activeOnly) users = users.filter(u => u.active);
+            // Whoever is talking right now is always on top
+            users = [...users].sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0) || (b.last_heard || 0) - (a.last_heard || 0));
 
             if (!users || users.length === 0) {
                 tbody.innerHTML = `
@@ -3345,7 +3480,7 @@
                 let timeDisplay;
                 if (user.active) {
                     // Stream is currently active - show badge
-                    timeDisplay = '<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 600;">Active</span>';
+                    timeDisplay = '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>';
                 } else if (elapsed < 60) {
                     timeDisplay = `${elapsed}s ago`;
                 } else if (elapsed < 3600) {
@@ -3403,13 +3538,13 @@
                 const destination = `${addrEmoji}${payloadEmoji} ${user.talkgroup}`;
 
                 return `
-                    <tr style="border-bottom: 1px solid #374151;">
-                        <td style="padding: 8px;">${user.radio_id}</td>
-                        <td style="padding: 8px; font-weight: 500; color: ${user.callsign ? 'white' : '#6b7280'};"><span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 28)}<span>${escapeHtml(callsign)}${user.frid ? ' <span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}</span></span></td>
-                        <td style="padding: 8px;">${source}</td>
-                        <td style="padding: 8px; text-align: center;">${user.slot}</td>
-                        <td style="padding: 8px;">${destination}</td>
-                        <td style="padding: 8px; color: ${user.active ? '' : '#9ca3af'};">${timeDisplay}</td>
+                    <tr class="${user.active ? 'lh-active' : ''}">
+                        <td class="lh-id">${user.radio_id}</td>
+                        <td class="lh-call ${user.callsign ? '' : 'muted'}"><span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 28)}<span>${escapeHtml(callsign)}${user.frid ? ' <span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}</span></span></td>
+                        <td>${source}</td>
+                        <td class="lh-slot"><span class="ts-chip">TS${user.slot}</span></td>
+                        <td>${destination}</td>
+                        <td class="lh-time">${timeDisplay}</td>
                     </tr>
                 `;
             }).join('');

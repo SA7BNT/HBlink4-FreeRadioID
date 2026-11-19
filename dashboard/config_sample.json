@@ -1,86 +1,44 @@
 {
-    "_comment_first_start": "Most of these values are only read on the FIRST start: they are copied into dashboard/data/dashboard.db and from then on edited in the admin area (Settings tab). Exceptions that always come from this file: auth.superadmin, web.bind, event_receiver, user_database.user_agent.",
-    "server_name": "dmr.die-n8schicht.de",
-    "server_description": "Amateur Radio DMR Network",
-    "dashboard_title": "DMR Die N8schicht",
-    "_comment_branding": "Optional: own logo and favicon, e.g. \"/static/n8schicht-icon.svg\" (files in dashboard/static/) or a full URL. Leave empty for the DMR Die N8schicht logo.",
-    "logo": "",
-    "favicon": "",
-    "announcement": {
-        "enabled": false,
-        "text": ""
-    },
-    "network_info": {
-        "enabled": false,
-        "button_text": "Network Info",
-        "url": "https://example.com/network-info"
-    },
+    "_comment": "DMR Die N8schicht – Dashboard. Diese Datei braucht nur das Nötigste für den ERSTEN Start. Titel, Banner, Zugriff, FreeRadioID, Rufzeichen-Datenbank und HTTPS übernimmt das Dashboard beim ersten Start in die SQLite-Datenbank (dashboard/data/dashboard.db) und du änderst sie danach im Adminbereich (Settings). Am einfachsten erstellt scripts/setup.sh diese Datei.",
+
     "auth": {
-        "_comment": "Login and user management (SQLite: dashboard/data/dashboard.db). The superadmin below is the only account set here; it logs into the admin area and creates admins and users there. Prefer password_hash over password: python3 -m dashboard.auth hash-password. public_dashboard=false means nothing is visible without login. IP addresses are only ever shown to admins.",
+        "_comment": "Bleibt immer in der Datei: der Superadmin. Er meldet sich im Dashboard an (🔐 Login) und legt dort Admins und Benutzer an. Statt 'password' besser 'password_hash' eintragen: ./venv/bin/python -m dashboard.auth hash-password",
         "superadmin": {
-            "username": "",
+            "username": "admin",
             "password": "",
             "password_hash": ""
-        },
-        "public_dashboard": true,
-        "session_hours": 12,
-        "remember_days": 30
-    },
-    "https": {
-        "_comment": "HTTPS with automatic Let's Encrypt certificates. Needs: sudo apt install certbot, the domain pointing to this server, and ports 80 and 443 open. Port 80 answers the Let's Encrypt challenge and redirects to HTTPS; web.port then also redirects. Renewal runs automatically. Use letsencrypt=false with cert_file/key_file for your own certificates; staging=true for testing.",
-        "enabled": false,
-        "domain": "dmr.die-n8schicht.de",
-        "email": "",
-        "port": 443,
-        "http_port": 80,
-        "letsencrypt": true,
-        "staging": false,
-        "cert_file": "",
-        "key_file": ""
-    },
-    "refresh_interval": 1000,
-    "max_events": 50,
-    "web": {
-        "_comment": "LISTENING socket for browsers (the web UI). Unrelated to the HBlink4 event link below. 'bind' is a bind address: '0.0.0.0' for all IPv4 interfaces, '::' for all interfaces on a dual-stack host, '127.0.0.1' for local access only.",
-        "bind": "0.0.0.0",
-        "port": 8080
-    },
-    "event_receiver": {
-        "_comment": "LISTENING socket for HBlink4's incoming event connection. HBlink4 dials in and sends the events; the dashboard only sends sync_request back over the connection it accepted. Naming convention: bind_* = an address we listen on, host_* = an address we connect out to. bind_ipv4/bind_ipv6 accept '0.0.0.0'/'::' for all interfaces, or '' to disable that family. transport, port and unix_socket must match the 'dashboard' section of config/config.json.",
-        "disable_ipv6": false,
-        "transport": "unix",
-        "bind_ipv4": "127.0.0.1",
-        "bind_ipv6": "::1",
-        "port": 8765,
-        "unix_socket": "/tmp/hblink4.sock"
-    },
-    "user_database": {
-        "_comment": "Radio ID to callsign lookups, downloaded daily from radioid.net. Only the countries listed below are loaded, so a radio from anywhere else shows '-' in Last Heard. Add yours using the exact name radioid.net uses, e.g. [\"New Zealand\"], or use \"all\" (no list brackets) for every country. See dashboard/README.md for when a change takes effect.",
-        "enabled": true,
-        "source_url": "https://database.radioid.net/static/user.csv",
-        "user_agent": "HBlink4-Dashboard (+https://github.com/n0mjs710/HBlink4; contact=operator@example.org)",
-        "refresh": {
-            "schedule": "daily",
-            "time_of_day": "03:17",
-            "jitter_minutes": 15,
-            "on_startup_if_older_than_hours": 36
-        },
-        "filter": {
-            "countries": ["United States", "Canada"],
-            "callsign_regex": null,
-            "radio_id_ranges": null
-        },
-        "freeradioid": {
-            "_comment": "Also loads the IDs registered at FreeRadioID.net (no country filter, ~400 IDs incl. non-amateur IDs) and marks them in Last Heard. To use FreeRadioID's combined list (radioid.net + FreeRadioID) as the main source instead, set source_url above to https://freeradioid.net/api/subscriber_ids.csv",
-            "enabled": true,
-            "url": "https://freeradioid.net/api/local_subscriber_ids.json"
         }
     },
 
-    "freeradioid": {
-        "_comment": "Avatars and profiles from FreeRadioID.net in the station detail view and Last Heard. {id} is replaced by the DMR-ID (api/idimg-<id>.png is the per-ID image of the FreeRadioID profile pages; it is scaled down and cached in dashboard/data/avatars/). Set avatar_url to \"\" to turn avatars off, profile_lookup to false to stop live profile lookups.",
-        "avatar_url": "https://freeradioid.net/api/idimg-{id}.png",
-        "profile_lookup": true,
-        "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
+    "web": {
+        "_comment": "Bleibt in der Datei: Adresse, auf der das Dashboard lauscht. Der Port gilt nur beim ersten Start (danach Adminbereich → HTTPS & web).",
+        "bind": "0.0.0.0",
+        "port": 8080
+    },
+
+    "event_receiver": {
+        "_comment": "Bleibt in der Datei: Verbindung von HBlink4 zum Dashboard. Muss zu 'dashboard' in config/config.json passen; die Vorgabe passt.",
+        "transport": "unix",
+        "unix_socket": "/tmp/hblink4.sock",
+        "bind_ipv4": "127.0.0.1",
+        "bind_ipv6": "::1",
+        "port": 8765,
+        "disable_ipv6": false
+    },
+
+    "user_database": {
+        "_comment": "Kontakt für die Server, von denen die Rufzeichenlisten geladen werden (FreeRadioID.net). Bitte eine echte Adresse eintragen.",
+        "user_agent": "HBlink4-Dashboard DMR Die N8schicht (contact=sysop@die-n8schicht.de)"
+    },
+
+    "dashboard_title": "DMR Die N8schicht",
+    "server_name": "dmr.die-n8schicht.de",
+    "server_description": "N8schicht DMR Network",
+
+    "https": {
+        "_comment": "Nur für den ersten Start; danach Adminbereich → HTTPS & web. Braucht certbot, die Domain muss auf den Server zeigen, Ports 80 und 443 offen.",
+        "enabled": false,
+        "domain": "dmr.die-n8schicht.de",
+        "email": ""
     }
 }

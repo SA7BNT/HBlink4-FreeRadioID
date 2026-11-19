@@ -1,50 +1,41 @@
 {
-    "_comment": "Minimal working HBlink4 configuration. Copy to config/config.json and change the passphrase under repeater_configurations.default -- that is the only edit needed to accept your first repeater. Everything omitted here has a built-in default. For blacklists, per-repeater patterns, links to other servers and OpenBridge trunks, see config/config_advanced_sample.json and docs/configuration.md.",
+    "_comment": "DMR Die N8schicht – HBlink4 DMR-Server. Diese Datei braucht nur das Nötigste für den ERSTEN Start. Beim ersten Start übernimmt HBlink4 die Werte unter 'repeater_configurations', 'freeradioid' und 'global.port_ipv4' in die SQLite-Datenbank (dashboard/data/dashboard.db). Danach werden sie im Adminbereich des Dashboards geändert (Settings → DMR server), Änderungen hier haben dann keine Wirkung mehr. Am einfachsten erstellt scripts/setup.sh diese Datei.",
 
     "global": {
-        "_comment": "port_ipv4 is the port repeaters connect to (62031 is the HomeBrew standard -- open it in your firewall, UDP). bind_ipv4 is the local address to listen on; 0.0.0.0 means every interface. Shipped IPv4-only, which is what most repeaters use. IPv6 and dual-stack are fully supported: set disable_ipv6 to false and IPv6 comes up on port_ipv6 alongside IPv4, already set to a separate port here because each address family gets its own socket. See docs/configuration.md for the other layouts, including serving both families on one port.",
+        "_comment": "Bleibt in der Datei: worauf HBlink4 lauscht und wo die Datenbank liegt. port_ipv4 gilt nur beim ersten Start (danach Adminbereich). UDP 62031 in der Firewall öffnen.",
         "bind_ipv4": "0.0.0.0",
         "port_ipv4": 62031,
         "bind_ipv6": "::",
         "port_ipv6": 62032,
         "disable_ipv6": true,
-        "max_missed": 3,
-        "timeout_duration": 30,
-        "_comment_reconnect_report_threshold": "When a repeater logs in again, the log shows how long its previous session lasted. Sessions that ran longer than this many seconds are routine (NAT lease expiring, power cycle) and are not reported; shorter ones are, because a repeater reconnecting every few seconds cannot stay online. Set to 0 to report every reconnect. Connections themselves are always logged regardless of this setting.",
-        "reconnect_report_threshold": 3600,
+        "settings_db": "dashboard/data/dashboard.db",
         "logging": {
             "file": "logs/hblink.log",
             "console_level": "INFO",
-            "file_level": "DEBUG",
-            "retention_days": 30
-        },
-        "stats_interval": 60,
-        "report_stats": true,
-        "stream_timeout": 2.0,
-        "stream_hang_time": 10.0,
-        "user_cache": {
-            "timeout": 600
+            "file_level": "INFO",
+            "retention_days": 14
         }
     },
 
     "dashboard": {
-        "_comment": "OUTBOUND connection to the dashboard: HBlink4 dials the dashboard and pushes events to it. These settings must match the 'event_receiver' section of dashboard/config.json -- if they disagree the dashboard just shows HBlink4 as disconnected. The defaults here already match the shipped dashboard sample, so leave them alone unless you move the dashboard to another host.",
+        "_comment": "Verbindung zum Dashboard (Live-Daten und Befehle aus dem Adminbereich). Muss zu 'event_receiver' in dashboard/config.json passen; die Vorgabe passt.",
         "enabled": true,
         "transport": "unix",
-        "unix_socket": "/tmp/hblink4.sock",
-        "host_ipv4": "127.0.0.1",
-        "host_ipv6": "::1",
-        "port": 8765,
-        "disable_ipv6": false,
-        "buffer_size": 65536
+        "unix_socket": "/tmp/hblink4.sock"
     },
 
     "repeater_configurations": {
-        "_comment": "'default' applies to every repeater that connects. CHANGE THE PASSPHRASE -- it is the shared secret each repeater must be configured with. slot1_talkgroups/slot2_talkgroups are the talkgroups allowed on each timeslot; list the ones your network uses. To give particular repeaters different rules, add a 'patterns' list -- see config/config_advanced_sample.json.",
+        "_comment": "Nur für den ersten Start. 'passphrase' ist das Standard-Passwort für Repeater und Hotspots. Mit FreeRadioID-Login (unten) ist es das Gast-Passwort: wer sich damit anmeldet, darf nur auf die Gast-Talkgroups senden. Eigene Regeln (Patterns) pflegst du im Adminbereich; Beispiele in config/config_advanced_sample.json.",
         "default": {
-            "passphrase": "CHANGE-ME",
-            "slot1_talkgroups": [8],
-            "slot2_talkgroups": [8]
+            "passphrase": "passw0rd",
+            "slot1_talkgroups": [262, 2620, 26500],
+            "slot2_talkgroups": [262, 2620, 26500]
         }
+    },
+
+    "freeradioid": {
+        "_comment": "Nur für den ersten Start. FreeRadioID.net Secure Login: Stationen melden sich mit ihrem persönlichen FreeRadioID-Passwort an (volle Rechte); das Standard-Passwort oben ist dann der Gastzugang.",
+        "enabled": true,
+        "guest_talkgroups": [26501, 26502, 26503]
     }
 }

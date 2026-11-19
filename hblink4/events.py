@@ -281,6 +281,10 @@ class EventEmitter:
                             logger.info("📥 Received sync_request from dashboard - sending initial state")
                             if hasattr(self, 'on_reconnect'):
                                 self.on_reconnect()
+                        elif message.get('type') in ('apply_settings', 'restart'):
+                            logger.info(f"📥 Received {message.get('type')} from dashboard")
+                            if hasattr(self, 'on_command'):
+                                self.on_command(message)
                     except json.JSONDecodeError as e:
                         logger.warning(f"Received invalid JSON from dashboard: {e}")
         except BlockingIOError:

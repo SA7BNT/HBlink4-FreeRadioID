@@ -1,64 +1,51 @@
 """
-Dashboard settings stored in SQLite and edited in the admin area.
+The admin area's settings: dashboard and HBlink4 DMR server, stored in SQLite.
 
-On the first start every setting is seeded from dashboard/config.json (or its
-built-in default). From then on the database is authoritative: the values are
-applied over the loaded config at startup and whenever an admin saves them.
-"Reset to config.json" in the admin area drops the stored values of a section
-and seeds them again from the file.
+Generic parts (field types, validation, storage) live in hblink4/settings_db.py
+so that the DMR server reads the same database. This module adds the dashboard's
+own fields and the logic the admin area needs:
 
-Not here on purpose: the superadmin (config.json only) and anything belonging
-to the HBlink4 server process (config/config.json).
+* first start: every setting missing from the database is taken from
+  dashboard/config.json (dashboard fields) or config/config.json (DMR fields),
+  or from its default
+* afterwards the database wins; "reset to config file" re-seeds one section
+* dashboard settings apply live; DMR settings are pushed to HBlink4 over the
+  event link (see dashboard/server.py)
+
+Not here on purpose: the superadmin (dashboard/config.json only) and the bind
+addresses / event link, which a program needs before it can read the database.
 """
 from __future__ import annotations
 
 import copy
-import json
-import re
-import time
-from dataclasses import dataclass
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from hblink4.settings_db import (  # noqa: E402
+    DMR_FIELDS, DMR_SECTIONS, Field, SettingsDB, SettingsError, get_path, set_path, validate,
+)
+
+__all__ = ["SettingsStore", "SettingsError", "FIELDS", "FIELD_BY_KEY", "SECTIONS", "get_path", "set_path",
+           "validate", "RADIOID_URL", "FREERADIOID_ALL_URL"]
 
 RADIOID_URL = "https://database.radioid.net/static/user.csv"
 FREERADIOID_ALL_URL = "https://freeradioid.net/api/subscriber_ids.csv"
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS settings (
-    key        TEXT PRIMARY KEY,
-    value      TEXT NOT NULL,
-    updated_at REAL NOT NULL,
-    updated_by TEXT NOT NULL DEFAULT ''
-);
-"""
-
-
-@dataclass(frozen=True)
-class Field:
-    key: str                 # dotted path into the dashboard config
-    section: str
-    label: str
-    kind: str                # text, longtext, bool, int, url, time, countries, choice
-    default: Any
-    help: str = ""
-    restart: bool = False
-    choices: Tuple[Tuple[str, str], ...] = ()
-    min: int = 0
-    max: int = 0
-
-
-SECTIONS: List[Tuple[str, str]] = [
+DASH_SECTIONS: List[Tuple[str, str]] = [
     ("general", "🏷️ General"),
     ("announcement", "📢 Announcement & link"),
-    ("access", "🔐 Access"),
-    ("freeradioid", "🛡️ FreeRadioID"),
+    ("access", "🔐 Dashboard access"),
+    ("freeradioid", "🛡️ FreeRadioID data"),
     ("userdb", "📘 Callsign database"),
     ("https", "🔒 HTTPS & web"),
 ]
 
-FIELDS: List[Field] = [
+DASH_FIELDS: List[Field] = [
     Field("dashboard_title", "general", "Dashboard title", "text", "DMR Die N8schicht"),
     Field("server_name", "general", "Server name (subtitle)", "text", "dmr.die-n8schicht.de"),
-    Field("server_description", "general", "Description", "text", "Amateur Radio DMR Network"),
+    Field("server_description", "general", "Description", "text", "N8schicht DMR Network"),
     Field("logo", "general", "Logo URL", "text", "", "Empty = N8schicht logo. Files in dashboard/static/ as /static/name.svg"),
     Field("favicon", "general", "Favicon URL", "text", "", "Empty = same as the logo"),
 
@@ -74,16 +61,17 @@ FIELDS: List[Field] = [
     Field("auth.remember_days", "access", "\"Stay logged in\" (days)", "int", 30, min=1, max=365),
 
     Field("freeradioid.avatars", "freeradioid", "Show avatars", "bool", True,
-          "From FreeRadioID; its grey placeholder is shown as initials"),
+          "Images of FreeRadioID-registered IDs, cached in the database"),
     Field("freeradioid.profile_lookup", "freeradioid", "Look up profiles", "bool", True,
           "Name and location in the station detail view"),
     Field("user_database.freeradioid.enabled", "freeradioid", "Load FreeRadioID ID list", "bool", True,
           "Registered IDs get the FRID tag in Last Heard"),
 
-    Field("user_database.source_url", "userdb", "Source", "choice", RADIOID_URL,
-          choices=((RADIOID_URL, "radioid.net"), (FREERADIOID_ALL_URL, "FreeRadioID (radioid.net + FreeRadioID)"))),
-    Field("user_database.filter.countries", "userdb", "Countries", "countries", ["United States", "Canada"],
-          "Comma separated, exactly as radioid.net spells them, or: all"),
+    Field("user_database.source_url", "userdb", "Source", "choice", FREERADIOID_ALL_URL,
+          choices=((FREERADIOID_ALL_URL, "FreeRadioID.net (radioid.net + FreeRadioID)"),
+                   (RADIOID_URL, "radioid.net only"))),
+    Field("user_database.filter.countries", "userdb", "Countries", "countries", "all",
+          "all, or comma separated exactly as the list spells them (Germany, Austria, …)"),
     Field("user_database.refresh.time_of_day", "userdb", "Daily refresh at", "time", "03:17"),
 
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
@@ -91,185 +79,138 @@ FIELDS: List[Field] = [
     Field("https.domain", "https", "Domain", "text", "", restart=True),
     Field("https.email", "https", "E-mail for Let's Encrypt", "text", "", restart=True),
     Field("https.staging", "https", "Test certificates (staging)", "bool", False, restart=True),
-    Field("https.port", "https", "HTTPS port", "int", 443, min=1, max=65535, restart=True),
-    Field("https.http_port", "https", "HTTP port (challenge + redirect)", "int", 80, min=1, max=65535, restart=True),
+    Field("https.port", "https", "HTTPS port", "int", 443, restart=True, min=1, max=65535),
+    Field("https.http_port", "https", "HTTP port (challenge + redirect)", "int", 80, restart=True, min=1, max=65535),
     Field("web.port", "https", "Plain web port", "int", 8080,
           "Redirects to HTTPS when HTTPS is on", restart=True, min=1, max=65535),
 ]
+
+FIELDS: List[Field] = DASH_FIELDS + DMR_FIELDS
 FIELD_BY_KEY: Dict[str, Field] = {f.key: f for f in FIELDS}
-# Values from the original HBlink4 sample config that nobody chose on purpose
+SECTIONS: List[Tuple[str, str]] = DASH_SECTIONS + DMR_SECTIONS
+
+# Values of the original HBlink4 sample configs that nobody chose on purpose
 _UPSTREAM_DEFAULTS = {
     "dashboard_title": ("HBlink4 Dashboard",),
     "server_name": ("HBlink4 Server",),
+    "server_description": ("Amateur Radio DMR Network",),
+    "user_database.filter.countries": (["United States", "Canada"],),
+    "user_database.source_url": (RADIOID_URL,),
 }
+# Values seeded by an older version that switch to the new default as long as
+# no admin changed them (updated_by is still the config file)
+_MIGRATE_UNTOUCHED = {
+    "user_database.source_url": (RADIOID_URL,),
+    "user_database.filter.countries": (["United States", "Canada"],),
+}
+_SEED_SOURCES = ("config.json", "config/config.json", "dashboard/config.json")
 
-
-class SettingsError(Exception):
-    """Invalid value; message is user-facing."""
-
-
-# ------------------------------------------------------------ dict helpers
-
-def get_path(cfg: Dict[str, Any], key: str, default: Any = None) -> Any:
-    cur: Any = cfg
-    for part in key.split("."):
-        if not isinstance(cur, dict) or part not in cur:
-            return default
-        cur = cur[part]
-    return cur
-
-
-def set_path(cfg: Dict[str, Any], key: str, value: Any) -> None:
-    """Set in place, so code holding a reference to a nested dict sees it."""
-    parts = key.split(".")
-    cur = cfg
-    for part in parts[:-1]:
-        nxt = cur.get(part)
-        if not isinstance(nxt, dict):
-            nxt = {}
-            cur[part] = nxt
-        cur = nxt
-    cur[parts[-1]] = value
-
-
-# -------------------------------------------------------------- validation
-
-def validate(field: Field, value: Any) -> Any:
-    k = field.kind
-    if k == "bool":
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str) and value.lower() in ("true", "false", "1", "0", "on", "off"):
-            return value.lower() in ("true", "1", "on")
-        raise SettingsError(f"{field.label}: yes or no expected.")
-    if k == "int":
-        try:
-            v = int(value)
-        except (TypeError, ValueError):
-            raise SettingsError(f"{field.label}: number expected.")
-        if not field.min <= v <= field.max:
-            raise SettingsError(f"{field.label}: {field.min}–{field.max}.")
-        return v
-    if k == "time":
-        v = str(value or "").strip()
-        if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v):
-            raise SettingsError(f"{field.label}: time as HH:MM.")
-        return v
-    if k == "url":
-        v = str(value or "").strip()
-        if v and not re.match(r"^https?://", v, re.I):
-            raise SettingsError(f"{field.label}: must start with http:// or https://")
-        return v[:500]
-    if k == "choice":
-        v = str(value or "")
-        if v not in [c[0] for c in field.choices]:
-            raise SettingsError(f"{field.label}: invalid choice.")
-        return v
-    if k == "countries":
-        if value == "all" or (isinstance(value, str) and value.strip().lower() == "all"):
-            return "all"
-        items = value if isinstance(value, list) else str(value or "").split(",")
-        items = [str(x).strip() for x in items if str(x).strip()]
-        if not items:
-            raise SettingsError(f"{field.label}: at least one country, or all.")
-        return items[:100]
-    if k in ("text", "longtext"):
-        v = str(value if value is not None else "")
-        return v[:2000] if k == "longtext" else v.strip()[:200]
-    raise SettingsError(f"Unknown setting type {k}")
-
-
-# ------------------------------------------------------------------ store
 
 class SettingsStore:
-    def __init__(self, auth_store):
+    def __init__(self, auth_store, dmr_file_cfg: Optional[Dict[str, Any]] = None):
         """Shares the dashboard database (and its lock) with AuthStore."""
         self._a = auth_store
-        with self._a._lock:
-            self._a._db.executescript(_SCHEMA)
+        self.db = SettingsDB(auth_store._q, auth_store._x)
+        self._dmr_file_cfg = dmr_file_cfg or {}
 
-    def _stored(self) -> Dict[str, Any]:
-        out = {}
-        for row in self._a._q("SELECT key, value FROM settings"):
-            try:
-                out[row["key"]] = json.loads(row["value"])
-            except ValueError:
-                pass
-        return out
-
-    def _write(self, key: str, value: Any, who: str) -> None:
-        self._a._x("INSERT OR REPLACE INTO settings (key, value, updated_at, updated_by) VALUES (?,?,?,?)",
-                   (key, json.dumps(value), time.time(), who))
-
+    # -- startup -------------------------------------------------------------
     def seed_and_apply(self, cfg: Dict[str, Any]) -> int:
         """
-        First start: store every missing setting from cfg (config.json) or its
-        default. Then apply all stored values over cfg. Returns how many were seeded.
+        First start: store every missing setting (dashboard fields from cfg =
+        dashboard/config.json, DMR fields from config/config.json). Then apply
+        the dashboard fields over cfg. Returns how many were seeded.
         """
-        stored = self._stored()
-        seeded = 0
-        for f in FIELDS:
-            if f.key in stored:
-                continue
-            raw = get_path(cfg, f.key, f.default)
-            if raw in _UPSTREAM_DEFAULTS.get(f.key, ()):
-                raw = f.default   # untouched upstream sample value -> fork default
+        self._migrate_untouched()
+        n = self.db.seed(DASH_FIELDS, cfg, "dashboard/config.json", self._fixup_with_cfg(cfg))
+        n += self.db.seed(DMR_FIELDS, self._dmr_file_cfg, "config/config.json")
+        self.db.apply(DASH_FIELDS, cfg)
+        return n
+
+    @staticmethod
+    def _fixup_with_cfg(cfg):
+        def fix(f: Field, raw: Any) -> Any:
             if f.key == "freeradioid.avatars" and get_path(cfg, "freeradioid.avatar_url", None) == "":
-                raw = False   # old config switched avatars off with an empty URL
-            try:
-                value = validate(f, raw)
-            except SettingsError:
-                value = f.default
-            self._write(f.key, value, "config.json")
-            stored[f.key] = value
-            seeded += 1
-        for key, value in stored.items():
-            if key in FIELD_BY_KEY:
-                set_path(cfg, key, value)
-        return seeded
+                return False   # old config switched avatars off with an empty URL
+            if raw in _UPSTREAM_DEFAULTS.get(f.key, ()):
+                return f.default
+            return raw
+        return fix
+
+    def _migrate_untouched(self) -> None:
+        meta = self.db.meta()
+        stored = self.db.stored()
+        for key, old_values in _MIGRATE_UNTOUCHED.items():
+            if key in stored and stored[key] in old_values and meta.get(key, (0, ""))[1] in _SEED_SOURCES:
+                self.db.write(key, FIELD_BY_KEY[key].default, "default")
+
+    # -- admin area ----------------------------------------------------------
+    def dmr_values(self) -> Dict[str, Any]:
+        stored = self.db.stored()
+        return {f.key: stored.get(f.key, f.default) for f in DMR_FIELDS}
 
     def describe(self, cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
-        meta = {r["key"]: (r["updated_at"], r["updated_by"])
-                for r in self._a._q("SELECT key, updated_at, updated_by FROM settings")}
+        meta = self.db.meta()
+        stored = self.db.stored()
         sections = []
         for sid, title in SECTIONS:
             fields = []
             for f in FIELDS:
                 if f.section != sid:
                     continue
+                value = stored.get(f.key, f.default) if f.is_dmr else get_path(cfg, f.key, f.default)
                 ts, by = meta.get(f.key, (None, ""))
                 fields.append({"key": f.key, "label": f.label, "kind": f.kind, "help": f.help,
                                "restart": f.restart, "choices": [list(c) for c in f.choices],
-                               "min": f.min, "max": f.max,
-                               "value": get_path(cfg, f.key, f.default),
+                               "min": f.min, "max": f.max, "value": value,
                                "updated_at": ts, "updated_by": by})
-            sections.append({"id": sid, "title": title, "fields": fields})
+            sections.append({"id": sid, "title": title, "dmr": sid.startswith("dmr_"), "fields": fields})
         return sections
 
     def update(self, cfg: Dict[str, Any], changes: Dict[str, Any], who: str) -> List[str]:
-        """Validate all, then store and apply. Returns the keys that changed."""
+        """Validate everything first, then store. Returns the keys that changed."""
         clean = {}
         for key, raw in changes.items():
             f = FIELD_BY_KEY.get(key)
             if not f:
                 raise SettingsError(f"Unknown setting {key}.")
             clean[key] = validate(f, raw)
+        self._check_dmr_structure(clean)
+        stored = self.db.stored()
         changed = []
         for key, value in clean.items():
-            if get_path(cfg, key) != value:
+            f = FIELD_BY_KEY[key]
+            old = stored.get(key) if f.is_dmr else get_path(cfg, key)
+            if old != value:
                 changed.append(key)
-            self._write(key, value, who)
-            set_path(cfg, key, value)
+            self.db.write(key, value, who)
+            if not f.is_dmr:
+                set_path(cfg, key, value)
         return changed
 
+    def _check_dmr_structure(self, clean: Dict[str, Any]) -> None:
+        """Patterns and blacklist must be understood by HBlink4 before they are saved."""
+        if not any(k.startswith("dmr.repeater_configurations") or k.startswith("dmr.blacklist") for k in clean):
+            return
+        trial: Dict[str, Any] = {}
+        merged = {**self.dmr_values(), **clean}
+        for f in DMR_FIELDS:
+            set_path(trial, f.path, merged.get(f.key, f.default))
+        try:
+            from hblink4.access_control import RepeaterMatcher
+            RepeaterMatcher(trial)
+        except Exception as e:
+            raise SettingsError(f"Patterns/blacklist not accepted by HBlink4: {e}")
+
     def reset_section(self, cfg: Dict[str, Any], file_cfg: Dict[str, Any], section: str, who: str) -> None:
-        """Drop the stored values of a section and seed them again from config.json."""
-        keys = [f.key for f in FIELDS if f.section == section]
-        if not keys:
+        """Drop the stored values of a section and seed them again from its config file."""
+        fields = [f for f in FIELDS if f.section == section]
+        if not fields:
             raise SettingsError("Unknown section.")
-        for key in keys:
-            self._a._x("DELETE FROM settings WHERE key=?", (key,))
-        fresh = copy.deepcopy(file_cfg)
-        self.seed_and_apply(fresh)
-        for key in keys:
-            set_path(cfg, key, get_path(fresh, key))
+        for f in fields:
+            self.db.delete(f.key)
+        if fields[0].is_dmr:
+            self.db.seed(fields, self._dmr_file_cfg, "config/config.json")
+        else:
+            fresh = copy.deepcopy(file_cfg)
+            self.db.seed(fields, fresh, "dashboard/config.json", self._fixup_with_cfg(fresh))
+            self.db.apply(fields, cfg)

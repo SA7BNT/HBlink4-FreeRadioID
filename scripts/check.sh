@@ -99,8 +99,10 @@ fi
 
 # --------------------------------------------------------------------- ports
 head_ "Ports"
-DMR_PORT="$(python3 -c "import json;print(json.load(open('config/config.json'))['global'].get('port_ipv4',62031))" 2>/dev/null || echo 62031)"
-WEB_PORT="$(python3 -c "import json;print(json.load(open('dashboard/config.json')).get('web',{}).get('port',8080))" 2>/dev/null || echo 8080)"
+# Ports come from the admin area (SQLite) if set there, else from the config files.
+CUR="$(python3 scripts/setup_apply.py current . 2>/dev/null || true)"
+DMR_PORT="$(echo "$CUR" | python3 -c "import json,sys;print(json.load(sys.stdin).get('dmr_port',62031))" 2>/dev/null || echo 62031)"
+WEB_PORT="$(echo "$CUR" | python3 -c "import json,sys;print(json.load(sys.stdin).get('web_port',8080))" 2>/dev/null || echo 8080)"
 if command -v ss >/dev/null 2>&1; then
     for spec in "udp:$DMR_PORT:DMR (HBlink4)" "tcp:$WEB_PORT:dashboard" "tcp:80:HTTP/Let's Encrypt" "tcp:443:HTTPS"; do
         IFS=: read -r proto port label <<< "$spec"

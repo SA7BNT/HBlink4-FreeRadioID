@@ -46,7 +46,7 @@ def load_config() -> dict:
     config_path = Path(__file__).parent / "config.json"
     default_config = {
         "server_name": "dmr.die-n8schicht.de",
-        "server_description": "Amateur Radio DMR Network",
+        "server_description": "N8schicht DMR Network",
         "dashboard_title": "DMR Die N8schicht",
         "refresh_interval": 1000,
         "max_events": 50,
@@ -66,7 +66,7 @@ def load_config() -> dict:
         },
         "user_database": {
             "enabled": True,
-            "source_url": "https://database.radioid.net/static/user.csv",
+            "source_url": "https://freeradioid.net/api/subscriber_ids.csv",
             "user_agent": "HBlink4-Dashboard (contact=operator@example.org)",
             "refresh": {
                 "schedule": "daily",
@@ -75,7 +75,7 @@ def load_config() -> dict:
                 "on_startup_if_older_than_hours": 36
             },
             "filter": {
-                "countries": ["United States", "Canada"],
+                "countries": "all",
                 "callsign_regex": None,
                 "radio_id_ranges": None
             }
@@ -111,8 +111,14 @@ def load_config() -> dict:
         try:
             with open(config_path) as f:
                 config = json.load(f)
-                # Merge with defaults (in case new keys are added)
-                return {**default_config, **config}
+                # Merge with defaults, nested sections included: the config file
+                # may hold only the few keys needed for the first start
+                def deep_merge(base, over):
+                    out = dict(base)
+                    for k, v in over.items():
+                        out[k] = deep_merge(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+                    return out
+                return deep_merge(default_config, config)
         except Exception as e:
             logger.warning(f"Failed to load config.json: {e}, using defaults")
             return default_config
@@ -130,6 +136,16 @@ dashboard_config = load_config()
 # Untouched copy of config.json (+ defaults): "reset to config.json" in the admin area
 import copy as _copy
 _file_config = _copy.deepcopy(dashboard_config)
+
+
+def _load_dmr_file_config() -> dict:
+    """config/config.json of HBlink4: source of the DMR settings on the very first start."""
+    path = Path(__file__).resolve().parent.parent / "config" / "config.json"
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 def _ensure_writable(data_dir: Path) -> None:
     """
@@ -167,6 +183,27 @@ def _ensure_writable(data_dir: Path) -> None:
     logger.error(f"     chown -R {me}:{me} {root}")
     logger.error("   and from now on start only the services (systemctl), or run_all.sh as that user.")
     sys.exit(1)
+
+
+# Open event links from HBlink4; the admin area sends commands back over them
+_hblink_links: set = set()
+
+
+def send_hblink_command(message: dict) -> bool:
+    """Send a command (apply_settings, restart) to HBlink4. False if not connected."""
+    data = json.dumps(message).encode("utf-8")
+    frame = len(data).to_bytes(4, byteorder="big") + data
+    sent = False
+    for t in list(_hblink_links):
+        if t.is_closing():
+            _hblink_links.discard(t)
+            continue
+        try:
+            t.write(frame)
+            sent = True
+        except Exception:
+            _hblink_links.discard(t)
+    return sent
 
 
 # In-memory state (could be Redis/database for persistence)
@@ -218,7 +255,7 @@ class DashboardState:
             pass
 
         # Settings: seeded from config.json on the first start, SQLite afterwards
-        self.settings = SettingsStore(self.auth)
+        self.settings = SettingsStore(self.auth, _load_dmr_file_config())
         seeded = self.settings.seed_and_apply(dashboard_config)
         if seeded:
             logger.info(f"⚙️ {seeded} settings taken over from config.json into the database; "
@@ -525,6 +562,7 @@ class TCPProtocol(asyncio.Protocol):
             length = len(sync_request)
             frame = length.to_bytes(4, byteorder='big') + sync_request
             transport.write(frame)
+            _hblink_links.add(transport)
             logger.info("📤 Sent sync_request to HBlink4")
         except Exception as e:
             logger.error(f"Failed to send sync_request: {e}")
@@ -596,6 +634,7 @@ class UnixProtocol(asyncio.Protocol):
             length = len(sync_request)
             frame = length.to_bytes(4, byteorder='big') + sync_request
             transport.write(frame)
+            _hblink_links.add(transport)
             logger.info("📤 Sent sync_request to HBlink4")
         except Exception as e:
             logger.error(f"Failed to send sync_request: {e}")
@@ -1291,6 +1330,7 @@ async def admin_system(request: Request):
             "cert_expires": None, "public_dashboard": _public_dashboard(),
             "superadmin": ((_auth_cfg().get("superadmin") or {}).get("username") or ""),
             "users": len(state.auth.list_users()), "systemd": bool(os.environ.get("INVOCATION_ID")),
+            "hblink_connected": bool(state.hblink_connected),
             "frid_ids": len(state.user_db.frid_ids()), "frid_avatars": state.avatars.stats()["with_avatar"],
             "version": "HBlink4-FreeRadioID"}
     if _tls_manager is not None and _tls_manager.have_cert():
@@ -1349,8 +1389,16 @@ async def admin_save_settings(request: Request, body: dict = Body(...)):
     if changed:
         state.auth.audit("settings_changed", actor["username"], ", ".join(changed), _client_ip(request))
     await _after_settings_change(changed)
-    restart = any(FIELD_BY_KEY[k].restart for k in changed)
-    return {"changed": changed, "restart_required": restart,
+    return _settings_result(changed)
+
+
+def _settings_result(changed: List[str]) -> dict:
+    dmr_changed = [k for k in changed if FIELD_BY_KEY[k].is_dmr]
+    dmr_applied = send_hblink_command({"type": "apply_settings"}) if dmr_changed else False
+    return {"changed": changed,
+            "restart_required": any(FIELD_BY_KEY[k].restart and not FIELD_BY_KEY[k].is_dmr for k in changed),
+            "dmr_changed": bool(dmr_changed), "dmr_applied": dmr_applied,
+            "dmr_restart_required": any(FIELD_BY_KEY[k].restart for k in dmr_changed),
             "sections": state.settings.describe(dashboard_config)}
 
 
@@ -1366,13 +1414,23 @@ async def admin_reset_settings(request: Request, body: dict = Body(...)):
     changed = [k for k in FIELD_BY_KEY if _get_cfg(k) != before[k]]
     state.auth.audit("settings_reset", actor["username"], section, _client_ip(request))
     await _after_settings_change(changed)
-    return {"changed": changed, "restart_required": any(FIELD_BY_KEY[k].restart for k in changed),
-            "sections": state.settings.describe(dashboard_config)}
+    return _settings_result(changed)
 
 
 def _get_cfg(key: str):
     from .settings import get_path
+    if FIELD_BY_KEY[key].is_dmr:
+        return state.settings.dmr_values().get(key)
     return get_path(dashboard_config, key)
+
+
+@app.post("/api/admin/dmr/restart")
+async def admin_restart_dmr(request: Request):
+    actor = _require_admin(request)
+    if not send_hblink_command({"type": "restart"}):
+        raise _HTTPError(409, "HBlink4 is not connected to the dashboard.")
+    state.auth.audit("dmr_restart", actor["username"], "", _client_ip(request))
+    return {"ok": True}
 
 
 @app.post("/api/admin/userdb/refresh")
@@ -1993,13 +2051,23 @@ async def _serve(host: str, port: int):
         except (NotImplementedError, RuntimeError):
             pass
 
-    async def start(srv):
+    async def serve_contained(srv):
+        # uvicorn calls sys.exit() when it cannot bind; inside a task that
+        # SystemExit would tear down the whole event loop (all servers).
+        try:
+            await srv.serve()
+        except SystemExit:
+            pass
+
+    async def start(srv, optional: bool = False):
         servers.append(srv)
-        task = asyncio.create_task(srv.serve())
+        task = asyncio.create_task(serve_contained(srv))
         while not srv.started and not task.done() and not stopping.is_set():
             await asyncio.sleep(0.05)
         if not srv.started and not stopping.is_set():
             port_ = srv.config.port
+            if optional:
+                raise SystemExit(1)
             logger.error(f"❌ Cannot listen on port {port_}: it is in use or not permitted. Is the dashboard "
                          f"already running (systemctl status hblink4-dash, or run_all.sh)? "
                          f"Check: sudo ss -tlpn 'sport = :{port_}'")
@@ -2008,7 +2076,7 @@ async def _serve(host: str, port: int):
 
     async def start_optional(srv, what: str):
         try:
-            tasks.append(await start(srv))
+            tasks.append(await start(srv, optional=True))
             return True
         except (Exception, SystemExit):
             servers.remove(srv)

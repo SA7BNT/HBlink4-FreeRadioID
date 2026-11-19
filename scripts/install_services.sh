@@ -89,6 +89,20 @@ if [ "$DASH_READY" = 0 ]; then
 fi
 
 echo
+# Unattended use (scripts/setup.sh): ASSUME_YES=1 answers every question with
+# its default (yes where the default is yes; "y" for the final confirmations),
+# SVC_USER / SVC_GROUP preset the service account.
+ask() {   # ask VAR "prompt" default
+    local __var="$1" __prompt="$2" __def="$3" __ans=""
+    if [ "${ASSUME_YES:-0}" = 1 ]; then
+        __ans="$__def"
+        echo "$__prompt$__def"
+    else
+        read -r -p "$__prompt" __ans
+    fi
+    printf -v "$__var" '%s' "$__ans"
+}
+
 note "HBlink4 service installer"
 echo "  Install directory : $REPO_ROOT"
 echo "  Unit directory    : $UNIT_DIR"
@@ -106,7 +120,7 @@ offer_config() {
         return 0
     fi
     warn "No $live yet."
-    read -r -p "  Create it from $sample? [Y/n]: " REPLY_CFG
+    ask REPLY_CFG "  Create it from $sample? [Y/n]: " "y"
     case "${REPLY_CFG:-y}" in
         [nN]|[nN][oO]) warn "  $label will not start until $live exists." ;;
         *)
@@ -158,9 +172,9 @@ fi
 DEFAULT_USER="${SUDO_USER:-$(stat -c '%U' "$REPO_ROOT")}"
 DEFAULT_GROUP="$(id -gn "$DEFAULT_USER" 2>/dev/null || echo "$DEFAULT_USER")"
 
-read -r -p "Service user [$DEFAULT_USER]: " SVC_USER
+if [ -n "${SVC_USER:-}" ]; then echo "Service user: $SVC_USER"; else ask SVC_USER "Service user [$DEFAULT_USER]: " ""; fi
 SVC_USER="${SVC_USER:-$DEFAULT_USER}"
-read -r -p "Service group [$DEFAULT_GROUP]: " SVC_GROUP
+if [ -n "${SVC_GROUP:-}" ]; then echo "Service group: $SVC_GROUP"; else ask SVC_GROUP "Service group [$DEFAULT_GROUP]: " ""; fi
 SVC_GROUP="${SVC_GROUP:-$DEFAULT_GROUP}"
 
 id "$SVC_USER" >/dev/null 2>&1 || die "No such user: $SVC_USER"
@@ -176,7 +190,7 @@ if [ "$(id -u)" -eq 0 ]; then
         warn "$FOREIGN file(s) in $REPO_ROOT do not belong to $SVC_USER (e.g. from a start as root):"
         find "$REPO_ROOT" -path "$REPO_ROOT/venv" -prune -o ! -user "$SVC_USER" -print 2>/dev/null \
             | grep -E '/(dashboard/data|logs)(/|$)' | head -n 5 | sed 's/^/    /'
-        read -r -p "Give the whole directory to $SVC_USER:$SVC_GROUP now (chown -R)? [Y/n]: " DO_CHOWN
+        ask DO_CHOWN "Give the whole directory to $SVC_USER:$SVC_GROUP now (chown -R)? [Y/n]: " "y"
         case "$DO_CHOWN" in
             [nN]*) warn "Not changed. The services will fail until $SVC_USER can write dashboard/data/ and logs/." ;;
             *)     chown -R "$SVC_USER:$SVC_GROUP" "$REPO_ROOT" && ok "chown -R $SVC_USER:$SVC_GROUP $REPO_ROOT" ;;
@@ -206,7 +220,7 @@ echo "  WorkingDirectory=$REPO_ROOT"
 echo "  ExecStart=$VENV_PY $REPO_ROOT/hblink4/hblink.py $REPO_ROOT/config/config.json"
 echo "  ExecStart=$VENV_PY $REPO_ROOT/dashboard/server.py"
 echo
-read -r -p "Proceed? [y/N]: " CONFIRM
+ask CONFIRM "Proceed? [y/N]: " "y"
 case "$CONFIRM" in [yY]|[yY][eE][sS]) ;; *) echo "Aborted."; exit 0 ;; esac
 
 # ---------------------------------------------------------------------- install
@@ -281,12 +295,12 @@ ok "systemctl daemon-reload"
 # ------------------------------------------------------------- enable and start
 
 echo
-read -r -p "Enable services at boot? [y/N]: " DO_ENABLE
+ask DO_ENABLE "Enable services at boot? [y/N]: " "y"
 case "$DO_ENABLE" in
     [yY]|[yY][eE][sS]) systemctl enable "${UNITS[@]}" >/dev/null && ok "enabled at boot" ;;
 esac
 
-read -r -p "Start (or restart) the services now? [y/N]: " DO_START
+ask DO_START "Start (or restart) the services now? [y/N]: " "y"
 case "$DO_START" in
     [yY]|[yY][eE][sS])
         systemctl restart "${UNITS[@]}"

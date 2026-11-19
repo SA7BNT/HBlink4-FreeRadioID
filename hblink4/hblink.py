@@ -23,6 +23,7 @@ from hmac import new as hmac_new, compare_digest
 import re
 
 import signal
+from pathlib import Path
 import asyncio
 
 # Global configuration dictionary
@@ -52,6 +53,7 @@ from .access_control import RepeaterMatcher
 from .events import EventEmitter
 from .user_cache import UserCache
 from .freeradioid import FreeRadioIDAuth, AUTH_LOCAL, AUTH_FREERADIOID, AUTH_GUEST
+from .settings_db import SettingsDB, DMR_FIELDS, resolve_db_path
 from .utils import (
     safe_decode_bytes, normalize_addr, rid_to_int, bytes_to_int, format_uptime,
     cleanup_old_logs, setup_logging, PeerAddress, detect_connection_type,
@@ -153,6 +155,7 @@ class HBProtocol(asyncio.DatagramProtocol):
         
         # Register reconnect callback to send current state when dashboard connects
         self._events.on_reconnect = self._send_initial_state
+        self._events.on_command = self._handle_dashboard_command
         
         # Active call tracking for contention management
         self._active_calls = 0  # Currently active forwarded calls
@@ -183,6 +186,31 @@ class HBProtocol(asyncio.DatagramProtocol):
     
     # ========== ADDRESS VALIDATION METHODS ==========
     
+    def _handle_dashboard_command(self, message: dict) -> None:
+        """Commands from the dashboard's admin area over the event link."""
+        kind = message.get('type')
+        if kind == 'apply_settings':
+            if not _apply_db_settings():
+                return
+            self._config = CONFIG
+            try:
+                self._matcher = RepeaterMatcher(CONFIG)
+            except Exception as e:
+                LOGGER.error(f'⚙️ New patterns/blacklist rejected, keeping the old ones: {e}')
+            self._frid = FreeRadioIDAuth(CONFIG.get('freeradioid', {}), LOGGER)
+            # Talkgroup lists of connected repeaters that did not send their own (RPTO)
+            for rid, rep in list(self._repeaters.items()):
+                if rep.connection_state == 'connected' and not rep.rpto_received:
+                    try:
+                        self._load_repeater_tg_config(rid, rep)
+                    except Exception:
+                        pass
+            LOGGER.info('⚙️ Settings from the admin area applied '
+                        '(port, links and trunks change on the next restart)')
+        elif kind == 'restart':
+            LOGGER.info('🔄 Restart requested from the admin area')
+            os.kill(os.getpid(), signal.SIGTERM)
+
     def _addr_matches(self, addr1: PeerAddress, addr2: PeerAddress) -> bool:
         """Compare two addresses, normalizing for IPv4/IPv6 differences"""
         return normalize_addr(addr1) == normalize_addr(addr2)
@@ -4426,10 +4454,42 @@ class HBProtocol(asyncio.DatagramProtocol):
 
 # Configuration functions moved to config.py
 
+_SETTINGS_DB: Optional[SettingsDB] = None
+
+
 def load_config(config_file: str):
-    """Wrapper for config module load_config - maintains global CONFIG"""
+    """
+    Load config/config.json, then the settings from SQLite.
+
+    The file only needs what is required before the database can be read
+    (bind address, event link, logging). Every DMR setting the admin area
+    manages comes from the database; on the very first start the database is
+    filled from this file (see hblink4/settings_db.py).
+    """
     global CONFIG
     CONFIG = load_config_func(config_file, LOGGER)
+    _apply_db_settings(seed=True)
+
+
+def _apply_db_settings(seed: bool = False) -> bool:
+    """Overlay the stored DMR settings on CONFIG. False if the database is unusable."""
+    global _SETTINGS_DB
+    try:
+        if _SETTINGS_DB is None:
+            repo_root = Path(__file__).resolve().parent.parent
+            db_path = resolve_db_path(repo_root, CONFIG.get('global', {}).get('settings_db'))
+            _SETTINGS_DB = SettingsDB.open(db_path)
+            CONFIG.setdefault('global', {})['_settings_db_path'] = str(db_path)
+        if seed:
+            n = _SETTINGS_DB.seed(DMR_FIELDS, CONFIG, "config/config.json")
+            if n:
+                print(f"⚙️ {n} DMR settings taken over from config/config.json into the database; "
+                      f"from now on they are edited in the dashboard's admin area")
+        _SETTINGS_DB.apply(DMR_FIELDS, CONFIG)
+        return True
+    except Exception as e:
+        print(f"⚠️ Settings database not usable ({e}) - running with config/config.json only", file=sys.stderr)
+        return False
 
 def parse_outbound_connections() -> List[OutboundConnectionConfig]:
     """Wrapper for config module parse_outbound_connections"""

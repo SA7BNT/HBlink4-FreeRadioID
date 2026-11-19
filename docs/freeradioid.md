@@ -39,6 +39,13 @@ they can *transmit* is limited.
 
 ## Configuration
 
+FreeRadioID login is **on by default**. The values below are taken from
+`config/config.json` on the first start only; after that they live in SQLite
+and are changed in the dashboard admin area (Settings → DMR server →
+FreeRadioID login) and applied live. German guide:
+[docs/de/freeradioid.md](de/freeradioid.md).
+
+
 ```json
 "freeradioid": {
     "enabled": true,
@@ -87,7 +94,7 @@ The dashboard also uses the [FreeRadioID API](https://freeradioid.net/api-index.
 * **Avatars** (`api/idimg-<id>.png`, the per-ID image of the FreeRadioID profile pages), only for registered IDs: fetched with the ID list, scaled from 500×500 PNG (~750 KB) to 192 px WebP and stored in SQLite; served by `/api/avatar/{id}`. FreeRadioID's grey placeholder for IDs without an image means initials. Placeholders are re-checked daily, images weekly.
 * **Profiles** (`api/dmr/user/?id=<id>`, cached for an hour) in the detail view, also at `GET /api/freeradioid/{id}`
 * **Registered IDs** (`api/local_subscriber_ids.json`), loaded daily without a country filter and tagged `FRID` in Last Heard
-* **Combined list** (`api/subscriber_ids.csv`, header-less) usable as `user_database.source_url`
+* **Combined list** (`api/subscriber_ids.csv`, header-less): the **default** `user_database.source_url` (all countries)
 
 ![Station detail](images/station-detail-desktop.png)
 

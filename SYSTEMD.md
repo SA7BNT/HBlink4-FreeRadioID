@@ -14,6 +14,11 @@ below before restarting.
 
 ## Quick install (recommended)
 
+> For a new installation use the guided installer `sudo ./scripts/setup.sh`
+> (German, see [docs/de/installation.md](docs/de/installation.md)). It asks for
+> all settings and then calls `install_services.sh` for you.
+
+
 The shipped unit files contain the author's user and paths (`User=cort`,
 `/home/cort/hblink4`), so they will not work as-is on your system. This script
 asks for your service user and group, fills in your paths, installs both units

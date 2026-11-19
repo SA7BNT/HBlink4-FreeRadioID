@@ -104,6 +104,14 @@ restart; the admin area offers a restart button when the dashboard runs under
 systemd). **↺ config.json** takes a section from the file again. The superadmin
 always stays in `config.json`.
 
+The same database also holds the **DMR server (HBlink4) settings**: DMR port,
+timeouts, default passphrase and talkgroups, FreeRadioID login and guest
+talkgroups, patterns, blacklist, outbound and OpenBridge links. HBlink4 seeds
+them from `config/config.json` on its first start and reads them on every
+start. Saving in the admin area sends an `apply_settings` command over the
+event link, so HBlink4 applies them live (port and links after **Restart DMR
+server**). German guide: [docs/de/adminbereich.md](../docs/de/adminbereich.md).
+
 ### HTTPS with Let's Encrypt
 
 ```json
