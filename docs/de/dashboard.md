@@ -26,6 +26,42 @@ Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop u
 
 🔌 Verbindungen · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · 🛡️ FreeRadioID: verifizierte Stationen und Gäste. Diese Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist. Die Tageswerte werden um Mitternacht zurückgesetzt.
 
+## Tabs: 🎙️ Live und 📈 Statistics
+
+Unter der Kopfzeile wählst du zwischen zwei Ansichten:
+
+- **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
+- **📈 Statistics**: die Talkgroup-Statistik. Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
+
+Der gewählte Tab steht in der Adresse (`…/#stats`). So landest du nach dem Neuladen wieder dort und kannst die Statistik direkt verlinken.
+
+## 📈 Talkgroup-Statistik
+
+<p align="center"><img src="../images/dashboard-stats-tab.png" alt="Tab Statistics" width="95%"></p>
+
+Der Tab **📈 Statistics** zeigt, **welche Talkgroups wie viel genutzt werden**. Jedes Gruppengespräch wird mit Talkgroup, Dauer und DMR-ID in SQLite gespeichert. Weitergeleitete Kopien desselben Gesprächs zählen nicht doppelt, Einzelrufe und Datenrufe zählen nicht mit.
+
+| Element | Inhalt |
+|---|---|
+| **Zeitraum** | Heute · 24 h · 7 Tage · 30 Tage |
+| **Messgröße** | ⏱️ Sprechzeit oder 📞 Anzahl Gespräche; gilt für beide Diagramme |
+| **Kennzahlen** | aktive Talkgroups, Gespräche, Sprechzeit, verschiedene Sprecher im Zeitraum |
+| **Top talkgroups** | die 10 meistgenutzten Talkgroups als Balken, mit Namen |
+| **Activity** | Verlauf pro Stunde (Heute, 24 h) bzw. pro Tag (7/30 Tage); die 5 größten Talkgroups farbig, der Rest grau als „other“ |
+| **Tabelle** | alle Talkgroups mit Gesprächen, Sprechzeit, Anteil, Sprechern, aktivster Station und letztem Gespräch |
+
+Fährst du mit der Maus über eine Säule oder einen Balken, erscheinen die genauen Werte. Eine Talkgroup behält ihre Farbe, auch wenn du den Zeitraum wechselst. Die Ansicht aktualisiert sich nach jedem Gespräch von selbst.
+
+<p align="center">
+  <img src="../images/tg-stats-hover.png" alt="Werte beim Überfahren" width="60%">
+  &nbsp;
+  <img src="../images/tg-stats-mobile.png" alt="Talkgroup-Statistik am Smartphone" width="28%">
+</p>
+
+Auf dem Smartphone liegen die Diagramme untereinander, und die Tabelle zeigt nur Talkgroup, Gespräche und Sprechzeit. Namen für die Talkgroups, die Speicherdauer und ob der Tab ohne Login sichtbar ist, stellst du im [Adminbereich](adminbereich.md#-dashboard) ein.
+
+<p align="center"><img src="../images/tg-stats-7d.png" alt="Talkgroup-Statistik über 7 Tage" width="95%"></p>
+
 ## ON AIR – wer spricht, steht oben
 
 <p align="center"><img src="../images/on-air.png" alt="ON AIR" width="90%"></p>

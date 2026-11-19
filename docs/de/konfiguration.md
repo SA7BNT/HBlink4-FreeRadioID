@@ -75,6 +75,7 @@ Das erstellt `scripts/setup.sh`; die Vorlagen sind `config/config_sample.json` u
 | 🔐 Access | `auth.public_dashboard`, `auth.session_hours`, `auth.remember_days` | öffentlich, 12 h, 30 Tage |
 | 🛡️ FreeRadioID data | `freeradioid.avatars`, `freeradioid.profile_lookup`, `user_database.freeradioid.enabled` | alles an |
 | 📘 Callsign database | `user_database.source_url`, `user_database.filter.countries`, `user_database.refresh.time_of_day` | **FreeRadioID.net**, alle Länder, 03:17 |
+| 📈 Talkgroup statistics | `tg_stats.enabled`, `tg_stats.public`, `tg_stats.retention_days`, `tg_stats.names` | an, öffentlich, 30 Tage, leer |
 | 🔒 HTTPS & web 🔄 | `https.enabled` / `.domain` / `.email` / `.staging` / `.port` / `.http_port`, `web.port` | aus, 443, 80, 8080 |
 
 ### DMR-Server
@@ -130,7 +131,7 @@ Mehr Beispiele, auch für `outbound_connections` und `openbridge_connections`, s
 
 ## Sichern und zurücksetzen
 
-- **Sichern:** `dashboard/data/dashboard.db` enthält alle Einstellungen, Benutzer und das Protokoll. Diese Datei und die beiden `config.json` reichen als Backup, siehe [Betrieb](betrieb.md#sicherung).
+- **Sichern:** `dashboard/data/dashboard.db` enthält alle Einstellungen, Benutzer, das Protokoll und die Talkgroup-Statistik (Tabelle `tg_calls`). Diese Datei und die beiden `config.json` reichen als Backup, siehe [Betrieb](betrieb.md#sicherung).
 - **Alles zurück auf die Dateien:** Dienste stoppen, `dashboard.db` umbenennen und neu starten. Achtung: Dann sind auch alle Benutzer weg, nur der Superadmin bleibt.
 
 ---

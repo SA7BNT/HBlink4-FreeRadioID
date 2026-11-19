@@ -33,6 +33,7 @@ from .user_db import UserDatabase, compute_next_refresh_seconds, _age_str
 from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
 from .settings import SettingsStore, SettingsError, FIELD_BY_KEY
 from .avatars import AvatarStore, DEFAULT_URL as FRID_AVATAR_URL
+from .tgstats import TGStats, parse_names as _parse_tg_names, RANGES as TG_RANGES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -253,6 +254,9 @@ class DashboardState:
             _shutil.rmtree(self._data_dir / "avatars", ignore_errors=True)
         except Exception:
             pass
+
+        # Talkgroup statistics (one row per group call), same database
+        self.tgstats = TGStats(self.auth)
 
         # Settings: seeded from config.json on the first start, SQLite afterwards
         self.settings = SettingsStore(self.auth, _load_dmr_file_config())
@@ -980,6 +984,10 @@ class EventReceiver:
                 # Only accumulate duration for RX streams (not assumed/TX streams or outbound)
                 if not data.get('is_assumed', False) and connection_type != 'outbound':
                     state.stats['total_duration_today'] += data['duration']
+
+                # Talkgroup statistics: every received group call, once
+                if not data.get('is_assumed', stream.get('is_assumed', False)):
+                    _record_tg_call(stream, data, connection_type, event.get('timestamp'))
                 
                 # Update last_heard entry to mark as no longer active (only for repeater RX streams)
                 if connection_type != 'outbound':
@@ -1511,6 +1519,8 @@ async def get_config():
     cfg["freeradioid"] = {"avatars": bool(frid.get("avatars", True) and frid.get("avatar_url", True)),
                           "avatar_version": state.avatars.version()}
     cfg["public_dashboard"] = _public_dashboard()
+    tgs = _tg_cfg()
+    cfg["tg_stats"] = {"enabled": bool(tgs.get("enabled", True)), "public": bool(tgs.get("public", True))}
     return cfg
 
 
@@ -1536,6 +1546,58 @@ async def get_streams(request: Request):
 async def get_events(request: Request, limit: int = 100):
     """Get recent events"""
     return view_for(current_user(request), {"events": list(state.events)[-limit:]})
+
+
+# ---------------------------------------------------------------- talkgroup statistics
+def _tg_cfg() -> dict:
+    return dashboard_config.get("tg_stats") or {}
+
+
+_tg_names_memo: tuple = (None, {})
+
+
+def _tg_names() -> Dict[int, str]:
+    global _tg_names_memo
+    text = _tg_cfg().get("names") or ""
+    if _tg_names_memo[0] != text:
+        _tg_names_memo = (text, _parse_tg_names(text))
+    return _tg_names_memo[1]
+
+
+def _record_tg_call(stream: dict, data: dict, connection_type: str, ts) -> None:
+    """Store one finished group call for the talkgroup statistics."""
+    if not _tg_cfg().get("enabled", True):
+        return
+    if (stream.get('call_type') or data.get('call_type') or 'group') != 'group':
+        return
+    tg = stream.get('dst_id') or data.get('dst_id')
+    if not tg:
+        return
+    if connection_type in ('openbridge', 'outbound'):
+        source = data.get('connection_name') or stream.get('connection_name') or connection_type
+    else:
+        source = str(stream.get('repeater_id') or data.get('repeater_id') or '')
+    try:
+        state.tgstats.record(int(tg), float(data.get('duration') or 0), slot=data.get('slot') or stream.get('slot'),
+                             src_id=stream.get('rf_src') or stream.get('src_id') or data.get('src_id'),
+                             is_data=bool(stream.get('is_data') or data.get('is_data')), source=source,
+                             ts=float(ts) if ts else None)
+    except Exception as e:
+        logger.warning(f"📈 Could not store talkgroup statistics: {e}")
+
+
+@app.get("/api/stats/talkgroups")
+async def get_tg_stats(request: Request, range: str = "today"):
+    """Calls and airtime per talkgroup, plus a time series for the charts."""
+    cfg = _tg_cfg()
+    if not cfg.get("enabled", True):
+        raise _HTTPError(404, "Talkgroup statistics are switched off.")
+    if not cfg.get("public", True) and not current_user(request):
+        raise _HTTPError(401, "Please log in.")
+    if range not in TG_RANGES:
+        raise _HTTPError(400, f"range must be one of {', '.join(TG_RANGES)}")
+    return await asyncio.to_thread(state.tgstats.summary, range, _tg_names(),
+                                   lambda rid: state.user_db.get(rid, '') if rid else '')
 
 
 @app.get("/api/stats")
@@ -1851,13 +1913,24 @@ async def shutdown_event():
     logger.info("✅ Dashboard shutdown complete")
 
 
+def _purge_tg_stats():
+    try:
+        n = state.tgstats.purge(int(_tg_cfg().get("retention_days", 30) or 30))
+        if n:
+            logger.info(f"📈 {n} old talkgroup calls removed from the statistics")
+    except Exception as e:
+        logger.warning(f"📈 Could not clean up talkgroup statistics: {e}")
+
+
 async def midnight_reset_task():
     """Background task to reset daily stats at midnight"""
+    _purge_tg_stats()
     while True:
         # Check if date has changed
         current_date = date.today().isoformat()
         if current_date != state.stats.get('last_reset_date'):
             state.reset_daily_stats()
+            _purge_tg_stats()
             # Send stats update to all WebSocket clients
             await send_stats_update()
 

@@ -213,6 +213,13 @@ The dashboard is started automatically with `./run_all.sh`, or separately with `
 
 ## Dashboard Components
 
+### Tabs
+The page has two tabs under the header: **🎙️ Live** (everything below) and
+**📈 Statistics** (talkgroup statistics: top talkgroups, hourly/daily activity
+chart, table; see `GET /api/stats/talkgroups`). The tab is kept in the URL
+(`#stats`). The Statistics tab is hidden when talkgroup statistics are switched
+off, or for visitors without login when "visible without login" is off.
+
 ### Statistics Cards
 Top row displays key metrics:
 - **Connections**: Total connections (inbound repeaters/hotspots/network + connected outbound)
@@ -287,6 +294,12 @@ Returns list of active and recently ended streams
 
 ### GET /api/events?limit=50
 Returns recent events (default limit: 100)
+
+### GET /api/stats/talkgroups?range=today|24h|7d|30d
+Talkgroup statistics: totals, per-talkgroup calls/airtime/speakers/top talker
+and an hourly (today, 24h) or daily (7d, 30d) series of the top 5 talkgroups
+plus "other". Every received group call is stored in SQLite (`tg_calls`); kept
+for `tg_stats.retention_days` (admin area → Talkgroup statistics).
 
 ### GET /api/stats
 Returns aggregate statistics

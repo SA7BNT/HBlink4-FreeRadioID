@@ -39,6 +39,7 @@ DASH_SECTIONS: List[Tuple[str, str]] = [
     ("access", "🔐 Dashboard access"),
     ("freeradioid", "🛡️ FreeRadioID data"),
     ("userdb", "📘 Callsign database"),
+    ("tgstats", "📈 Talkgroup statistics"),
     ("https", "🔒 HTTPS & web"),
 ]
 
@@ -73,6 +74,14 @@ DASH_FIELDS: List[Field] = [
     Field("user_database.filter.countries", "userdb", "Countries", "countries", "all",
           "all, or comma separated exactly as the list spells them (Germany, Austria, …)"),
     Field("user_database.refresh.time_of_day", "userdb", "Daily refresh at", "time", "03:17"),
+
+    Field("tg_stats.enabled", "tgstats", "Record talkgroup statistics", "bool", True,
+          "Every group call (talkgroup, duration, radio ID) is stored in the database for the charts"),
+    Field("tg_stats.public", "tgstats", "Visible without login", "bool", True,
+          "Off = only logged-in users see the talkgroup statistics"),
+    Field("tg_stats.retention_days", "tgstats", "Keep calls for (days)", "int", 30, min=1, max=365),
+    Field("tg_stats.names", "tgstats", "Talkgroup names", "longtext", "",
+          "One per line: 262 = Deutschland. Shown in the charts and the table"),
 
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
           "Needs certbot, the domain pointing here and ports 80/443 open", restart=True),
