@@ -235,3 +235,20 @@ line existed, run `sudo ./scripts/install_services.sh` again or add the two
 capability lines to `/etc/systemd/system/hblink4-dash.service`, then
 `sudo systemctl daemon-reload && sudo systemctl restart hblink4-dash`.
 
+
+## Installer notes
+
+`scripts/install_services.sh` sets `User=`, `Group=`, `WorkingDirectory=` and
+`ExecStart=` itself, whatever the checked-out unit files currently contain, so
+hand-edited copies (other paths, Windows line endings) install correctly.
+
+If it warns that the service user cannot write to the checkout (typical when the
+repository was cloned as root into `/opt`), give the directory to that user:
+
+```bash
+sudo chown -R adn:adn /opt/HBlink4        # use your service user and path
+```
+
+The dashboard writes `dashboard/data/` (statistics, users database, certificates)
+and HBlink4 writes `logs/`. Run `git pull` afterwards as that user, or repeat the
+`chown` after pulling as root.

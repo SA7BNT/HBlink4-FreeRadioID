@@ -202,9 +202,21 @@ trap 'rm -rf "$TMPDIR_UNITS"' EXIT
 
 for u in "${UNITS[@]}"; do
     # Substitute only the shipped author values; anchored so nothing else matches.
-    sed -e "s|/home/cort/hblink4|$REPO_ROOT_SED|g" \
-        -e "s|^User=cort$|User=$SVC_USER|" \
-        -e "s|^Group=cort$|Group=$SVC_GROUP|" \
+    # Set User/Group/WorkingDirectory/ExecStart whatever the checked-out unit
+    # currently says, so a hand-edited copy (other paths, CRLF line endings)
+    # installs just as well as the shipped one.
+    case "$u" in
+        hblink4.service)      EXEC="$VENV_PY $REPO_ROOT/hblink4/hblink.py $REPO_ROOT/config/config.json" ;;
+        hblink4-dash.service) EXEC="$VENV_PY $REPO_ROOT/dashboard/server.py" ;;
+        *)                    EXEC="" ;;
+    esac
+    EXEC_SED="$(printf '%s' "$EXEC" | sed -e 's/[&\\|]/\\&/g')"
+    sed -e 's/\r$//' \
+        -e "s|/home/cort/hblink4|$REPO_ROOT_SED|g" \
+        -e "s|^User=.*$|User=$SVC_USER|" \
+        -e "s|^Group=.*$|Group=$SVC_GROUP|" \
+        -e "s|^WorkingDirectory=.*$|WorkingDirectory=$REPO_ROOT_SED|" \
+        ${EXEC:+-e "s|^ExecStart=.*$|ExecStart=$EXEC_SED|"} \
         "$REPO_ROOT/$u" > "$TMPDIR_UNITS/$u"
 
     # Confirm the substitution produced what we intended. Checked against the
