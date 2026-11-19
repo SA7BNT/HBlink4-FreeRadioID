@@ -2380,7 +2380,7 @@
                 metadata: { description: 'Demo station', url: 'https://freeradioid.net',
                             software_id: '20210520_V1.6.8', package_id: 'MMDVM_DMO' },
                 freeradioid: r.auth_method === 'freeradioid'
-                    ? { registered: true, callsign: r.callsign, name: 'Demo Operator', city: r.location, country: 'Germany',
+                    ? { registered: true, callsign: r.callsign, name: 'N8schicht Crosslink', city: 'Internet', country: 'Germany',
                         avatar: 'https://freeradioid.net/avatar-0.png' }
                     : null,
                 statistics: { total_streams_today: 42, slot1_active: true, slot2_active: false },
@@ -3863,7 +3863,7 @@
             const now = Date.now() / 1000;   // unix seconds
 
             state.repeaters = [
-                { repeater_id: 3112001, callsign: 'W0ABC', location: 'Topeka, KS',
+                { repeater_id: 265800, callsign: 'XL0DIG', location: 'Auf der Nachtschicht',
                   status: 'connected', connection_type: 'repeater',
                   rx_freq: '448800000', tx_freq: '443800000',
                   connected_at: now - 3672, missed_pings: 0,
@@ -3903,16 +3903,16 @@
                 { connection_type: 'openbridge', connection_name: 'KS-CORE', slot: 2,
                   status: 'active', is_assumed: false, is_data: false, call_type: 'group',
                   src_id: 3188765, callsign: 'N0CAL', dst_id: 3120, start_time: now - 6 },
-                { repeater_id: 3112001, slot: 2, status: 'active', is_assumed: true,
+                { repeater_id: 265800, slot: 2, status: 'active', is_assumed: true,
                   is_data: false, call_type: 'group', src_id: 3188765, dst_id: 3120, start_time: now - 6 },
                 { repeater_id: 3112002, slot: 2, status: 'active', is_assumed: true,
                   is_data: false, call_type: 'group', src_id: 3188765, dst_id: 3120, start_time: now - 6 },
-                // Call B: W0ABC keys US-Nationwide (31) on TS1 → egress OUT the trunk
-                { repeater_id: 3112001, slot: 1, status: 'active', is_assumed: false,
-                  is_data: false, call_type: 'group', src_id: 3112001, dst_id: 31, start_time: now - 4 },
+                // Call B: XL0DIG keys US-Nationwide (31) on TS1 → egress OUT the trunk
+                { repeater_id: 265800, slot: 1, status: 'active', is_assumed: false,
+                  is_data: false, call_type: 'group', src_id: 265800, dst_id: 31, start_time: now - 4 },
                 { connection_type: 'openbridge', connection_name: 'KS-CORE', slot: 1,
                   status: 'active', is_assumed: true, is_data: false, call_type: 'group',
-                  src_id: 3112001, callsign: 'W0ABC', dst_id: 31, start_time: now - 4 },
+                  src_id: 265800, callsign: 'XL0DIG', dst_id: 31, start_time: now - 4 },
                 // Call C: MO-Local (3100) just ended on KD0XYZ TS1 → TX hang
                 { repeater_id: 3112002, slot: 1, status: 'hang_time', is_assumed: true,
                   is_data: false, call_type: 'group', src_id: 3161001, dst_id: 3100, start_time: now - 22 },
@@ -3922,13 +3922,13 @@
                 { radio_id: 3188765, callsign: 'N0CAL', talkgroup: 3120, slot: 2,
                   call_type: 'group', is_data: false, active: true,
                   source_name: 'KS-CORE', last_heard: now - 6 },
-                { radio_id: 3112001, callsign: 'W0ABC', talkgroup: 31, slot: 1,
+                { radio_id: 265800, callsign: 'XL0DIG', talkgroup: 31, slot: 1,
                   call_type: 'group', is_data: false, active: true,
-                  source_name: 'W0ABC', source_repeater_id: 3112001, last_heard: now - 4, frid: true },
+                  source_name: 'XL0DIG', source_repeater_id: 265800, last_heard: now - 4, frid: true },
                 { radio_id: 3161001, callsign: 'W0DEF', talkgroup: 3100, slot: 1,
                   call_type: 'group', is_data: false, active: false,
                   source_name: 'KD0XYZ', source_repeater_id: 3112002, last_heard: now - 22, frid: true },
-                { radio_id: 3112003, callsign: 'KE0FGH', talkgroup: 3112001, slot: 2,
+                { radio_id: 3112003, callsign: 'KE0FGH', talkgroup: 265800, slot: 2,
                   call_type: 'private', is_data: false, active: false,
                   source_name: 'N0MJS', source_repeater_id: 3112003, last_heard: now - 95 },
                 { radio_id: 3112002, callsign: 'KD0XYZ', talkgroup: 3100, slot: 1,

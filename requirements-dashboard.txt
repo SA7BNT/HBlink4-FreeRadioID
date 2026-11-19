@@ -9,3 +9,6 @@ uvicorn[standard]>=0.24.0
 
 # WebSocket support (included in uvicorn[standard])
 websockets>=12.0
+
+# Scales FreeRadioID avatars (500x500, ~750 KB) down to small WebP files
+Pillow>=10.0

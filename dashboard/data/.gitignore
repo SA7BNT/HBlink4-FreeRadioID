@@ -6,3 +6,4 @@
 dashboard.db*
 letsencrypt/
 freeradioid_users.json
+avatars/

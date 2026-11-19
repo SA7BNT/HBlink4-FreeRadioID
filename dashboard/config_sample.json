@@ -78,8 +78,8 @@
     },
 
     "freeradioid": {
-        "_comment": "Avatars and profiles from FreeRadioID.net in the station detail view and Last Heard. {id} is replaced by the radio ID. Set avatar_url to \"\" to turn avatars off, profile_lookup to false to stop live profile lookups.",
-        "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+        "_comment": "Avatars and profiles from FreeRadioID.net in the station detail view and Last Heard. {id} is replaced by the DMR-ID (api/idimg-<id>.png is the per-ID image of the FreeRadioID profile pages; it is scaled down and cached in dashboard/data/avatars/). Set avatar_url to \"\" to turn avatars off, profile_lookup to false to stop live profile lookups.",
+        "avatar_url": "https://freeradioid.net/api/idimg-{id}.png",
         "profile_lookup": true,
         "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
     }

@@ -205,14 +205,14 @@ Das Dashboard nutzt die [FreeRadioID-API](https://freeradioid.net/api-index.html
 
 | Quelle | Wofür |
 |---|---|
-| `avatar-<ID>.png` | Avatar in der Detailansicht und in **Last Heard**. Der Abruf läuft über den Dashboard-Server (`/api/avatar/<ID>`), damit die IPs der Besucher nicht an Dritte gehen. |
+| `api/idimg-<ID>.png` | Avatar pro DMR-ID, dasselbe Bild wie auf den FreeRadioID-Profilseiten, in der Detailansicht und in **Last Heard**. Der Dashboard-Server holt es (`/api/avatar/<ID>`), verkleinert es von 500×500 px (~750 KB) auf 192 px WebP (~6–10 KB) und speichert es einen Tag lang in `dashboard/data/avatars/`. Die IPs der Besucher gehen so nicht an Dritte. |
 | `api/dmr/user/?id=<ID>` | Profil (Name, Ort, Land, registriert) in der Detailansicht. Wird eine Stunde zwischengespeichert. |
 | `api/local_subscriber_ids.json` | Liste der bei FreeRadioID registrierten IDs (rund 400). Sie wird täglich geladen, ohne Länderfilter. Die IDs bekommen in **Last Heard** den Tag `FRID`, und ihre Rufzeichen werden auch angezeigt, wenn sie in der radioid.net-Liste fehlen. |
 | `api/subscriber_ids.csv` | Optional: die Gesamtliste von FreeRadioID (radioid.net plus FreeRadioID) als Hauptquelle statt radioid.net |
 
 Alles ist von Anfang an aktiv. Umschalten kannst du es im Adminbereich unter **Settings**, in den Abschnitten *FreeRadioID* und *Callsign database*: Avatare und Profilabfrage an/aus, FreeRadioID-ID-Liste, und ob radioid.net oder die FreeRadioID-Gesamtliste die Hauptquelle ist.
 
-> **Hinweis zu den Avataren:** Stand November 2026 liefert FreeRadioID für **jede** ID nur seinen grauen Platzhalter aus. Geprüft habe ich alle 405 registrierten IDs und die Kontonummern 1–400. Hochgeladene Profilbilder sind dort offenbar nur eingeloggt sichtbar. Das Dashboard erkennt den Platzhalter und zeigt stattdessen die Initialen. Sobald FreeRadioID echte Bilder öffentlich ausliefert, erscheinen sie automatisch.
+> **Avatare:** Von den 405 bei FreeRadioID registrierten IDs haben derzeit 157 ein eigenes Bild (Stand November 2026). Für IDs ohne Bild liefert FreeRadioID einen grauen Platzhalter. Das Dashboard erkennt ihn und zeigt stattdessen die Initialen. Neue oder geänderte Avatare erscheinen spätestens nach einem Tag.
 
 ## Login-Arten im Dashboard
 

@@ -100,7 +100,7 @@ def load_config() -> dict:
         },
         # FreeRadioID.net integration: avatars and live profile lookups
         "freeradioid": {
-            "avatar_url": "https://freeradioid.net/avatar-{id}.png",
+            "avatar_url": "https://freeradioid.net/api/idimg-{id}.png",
             "profile_lookup": True,
             "profile_url": "https://freeradioid.net/api/dmr/user/?id={id}"
         }
@@ -191,7 +191,8 @@ class DashboardState:
         }
         
         # Persistence file paths
-        self._data_dir = Path(__file__).parent / "data"
+        # HBLINK4_DASH_DATA_DIR: tests point this at a temporary directory
+        self._data_dir = Path(os.environ.get("HBLINK4_DASH_DATA_DIR") or Path(__file__).parent / "data")
         self._stats_file = self._data_dir / "stats.json"
         self._last_heard_file = self._data_dir / "last_heard.json"
         self._persistence_disabled = False  # Will be set to True if write permissions fail
@@ -1382,60 +1383,127 @@ async def admin_restart(request: Request):
 
 
 # ---------------------------------------------------------------- avatars
-# From FreeRadioID. It answers every unknown ID with the same grey
-# placeholder, which is treated as "no avatar" so the page can show initials
-# instead. Proxying also keeps viewers' IPs away from third parties.
-_avatar_cache: Dict[int, tuple] = {}        # dmr_id -> (ts, mime|None, bytes|None)
+# From FreeRadioID (api/idimg-<dmr_id>.png, the image its profile pages show
+# per DMR-ID). Unknown IDs get a grey placeholder there, which is treated as
+# "no avatar" so the page shows initials. Originals are 500x500 PNGs of about
+# 750 KB, so they are shrunk (Pillow) and kept in dashboard/data/avatars/.
+# Proxying also keeps viewers' IPs away from third parties.
+FRID_AVATAR_URL = "https://freeradioid.net/api/idimg-{id}.png"
+_OLD_AVATAR_URLS = ("https://freeradioid.net/avatar-{id}.png",)
+_avatar_miss: Dict[int, float] = {}          # dmr_id -> time of last "no avatar" answer
 _avatar_placeholder: Dict[str, Optional[str]] = {"md5": None}
 _avatar_sem = asyncio.Semaphore(4)
-_AVATAR_TTL_HIT, _AVATAR_TTL_MISS = 6 * 3600, 6 * 3600
+_AVATAR_TTL_HIT, _AVATAR_TTL_MISS, _AVATAR_SIZE = 24 * 3600, 12 * 3600, 192
 
 
-def _fetch_bytes(url: str, limit: int = 1024 * 1024) -> Optional[bytes]:
+def _avatar_dir() -> Path:
+    d = state._data_dir / "avatars"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _avatar_template() -> str:
+    tpl = (dashboard_config.get("freeradioid") or {}).get("avatar_url", FRID_AVATAR_URL)
+    # avatar-<n>.png is per FreeRadioID *account*, not per DMR-ID: always the placeholder
+    return FRID_AVATAR_URL if tpl in _OLD_AVATAR_URLS else tpl
+
+
+def _fetch_bytes(url: str, limit: int = 4 * 1024 * 1024) -> Optional[bytes]:
     import urllib.request
     req = urllib.request.Request(url, headers={"User-Agent": "HBlink4-Dashboard avatar proxy"})
-    with urllib.request.urlopen(req, timeout=5) as resp:
+    with urllib.request.urlopen(req, timeout=8) as resp:
         if resp.status != 200:
             return None
         return resp.read(limit + 1)[:limit]
 
 
+def _shrink(data: bytes) -> tuple:
+    """(mime, bytes) scaled down to _AVATAR_SIZE; the original if Pillow is missing."""
+    try:
+        from PIL import Image
+        import io as _io
+        im = Image.open(_io.BytesIO(data))
+        im = im.convert("RGBA") if im.mode in ("P", "LA", "RGBA") else im.convert("RGB")
+        im.thumbnail((_AVATAR_SIZE, _AVATAR_SIZE), Image.LANCZOS)
+        out = _io.BytesIO()
+        im.save(out, "WEBP", quality=82, method=4)
+        return "image/webp", out.getvalue()
+    except Exception:
+        return sniff_image(data), data
+
+
 def _fetch_freeradioid_avatar(dmr_id: int) -> tuple:
     import hashlib as _hl
-    frid_cfg = dashboard_config.get("freeradioid") or {}
-    tpl = frid_cfg.get("avatar_url", "https://freeradioid.net/avatar-{id}.png")
-    if not tpl or not frid_cfg.get("avatars", True):
+    tpl = _avatar_template()
+    if not tpl:
         return None, None
     if _avatar_placeholder["md5"] is None:
         ph = _fetch_bytes(tpl.replace("{id}", "0"))
         _avatar_placeholder["md5"] = _hl.md5(ph).hexdigest() if ph else ""
     data = _fetch_bytes(tpl.replace("{id}", str(dmr_id)))
-    if not data or _hl.md5(data).hexdigest() == _avatar_placeholder["md5"]:
+    if not data or _hl.md5(data).hexdigest() == _avatar_placeholder["md5"] or not sniff_image(data):
         return None, None
-    mime = sniff_image(data)
-    return (mime, data) if mime else (None, None)
+    return _shrink(data)
+
+
+def _cached_avatar(dmr_id: int, max_age: float) -> Optional[tuple]:
+    for ext, mime in (("webp", "image/webp"), ("png", "image/png"), ("jpg", "image/jpeg"), ("gif", "image/gif")):
+        f = _avatar_dir() / f"{dmr_id}.{ext}"
+        try:
+            if datetime.now().timestamp() - f.stat().st_mtime < max_age:
+                return mime, f.read_bytes()
+        except OSError:
+            continue
+    return None
+
+
+def _store_avatar(dmr_id: int, mime: str, data: bytes) -> None:
+    ext = {"image/webp": "webp", "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif"}.get(mime, "png")
+    d = _avatar_dir()
+    for old in d.glob(f"{dmr_id}.*"):
+        old.unlink(missing_ok=True)
+    tmp = d / f".{dmr_id}.{ext}.tmp"
+    tmp.write_bytes(data)
+    os.replace(tmp, d / f"{dmr_id}.{ext}")
 
 
 @app.get("/api/avatar/{dmr_id}")
 async def get_avatar(dmr_id: int):
-    if not (dashboard_config.get("freeradioid") or {}).get("avatars", True):
-        return Response(status_code=404, headers={"Cache-Control": "public, max-age=300"})
+    headers_miss = {"Cache-Control": "public, max-age=3600"}
+    if not (dashboard_config.get("freeradioid") or {}).get("avatars", True) or not 1 <= dmr_id <= 16777215:
+        return Response(status_code=404, headers=headers_miss)
     now = datetime.now().timestamp()
-    cached = _avatar_cache.get(dmr_id)
-    if not cached or now - cached[0] > (_AVATAR_TTL_HIT if cached[1] else _AVATAR_TTL_MISS):
-        async with _avatar_sem:
+    fresh = _cached_avatar(dmr_id, _AVATAR_TTL_HIT)
+    if fresh:
+        return Response(fresh[1], media_type=fresh[0], headers={"Cache-Control": "public, max-age=86400"})
+    if now - _avatar_miss.get(dmr_id, 0) < _AVATAR_TTL_MISS:
+        return Response(status_code=404, headers=headers_miss)
+    async with _avatar_sem:
+        fresh = _cached_avatar(dmr_id, _AVATAR_TTL_HIT)      # another request may have fetched it
+        if not fresh:
             try:
                 mime, data = await asyncio.to_thread(_fetch_freeradioid_avatar, dmr_id)
             except Exception as e:
                 logger.debug(f"Avatar fetch for {dmr_id} failed: {e}")
-                mime, data = (cached[1], cached[2]) if cached else (None, None)
-        cached = (now, mime, data)
-        _avatar_cache[dmr_id] = cached
-        if len(_avatar_cache) > 5000:
-            _avatar_cache.pop(next(iter(_avatar_cache)))
-    if cached[1]:
-        return Response(cached[2], media_type=cached[1], headers={"Cache-Control": "public, max-age=3600"})
-    return Response(status_code=404, headers={"Cache-Control": "public, max-age=3600"})
+                stale = _cached_avatar(dmr_id, float("inf"))   # FreeRadioID down: keep the old one
+                if stale:
+                    return Response(stale[1], media_type=stale[0], headers={"Cache-Control": "public, max-age=600"})
+                mime, data = None, None
+            if mime and data:
+                try:
+                    await asyncio.to_thread(_store_avatar, dmr_id, mime, data)
+                except OSError as e:
+                    logger.debug(f"Could not cache avatar {dmr_id}: {e}")
+                fresh = (mime, data)
+                _avatar_miss.pop(dmr_id, None)
+            else:
+                for old in _avatar_dir().glob(f"{dmr_id}.*"):
+                    old.unlink(missing_ok=True)
+                _avatar_miss[dmr_id] = now
+                if len(_avatar_miss) > 20000:
+                    _avatar_miss.clear()
+                return Response(status_code=404, headers=headers_miss)
+    return Response(fresh[1], media_type=fresh[0], headers={"Cache-Control": "public, max-age=86400"})
 
 
 # REST API endpoints
