@@ -1578,7 +1578,75 @@
         .main-tabs button:hover { color: var(--text); }
         .main-tabs button.active { background: rgba(90,200,250,0.18); color: var(--text); box-shadow: inset 0 0 0 1px rgba(90,200,250,0.35); }
         .main-tabs .tab-count:not(:empty) { font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(90,200,250,0.12); border-radius: 999px; padding: 1px 7px; }
-        @media (max-width: 600px) { .main-tabs { width: 100%; } .main-tabs button { flex: 1; justify-content: center; padding: 8px 10px; } }
+        .main-tabs button { white-space: nowrap; }
+        .main-tabs .t-short { display: none; }
+        @media (max-width: 600px) {
+            .main-tabs { width: 100%; }
+            .main-tabs button { flex: 1; justify-content: center; padding: 8px 4px; font-size: 13px; gap: 4px; }
+            .main-tabs .t-long { display: none; } .main-tabs .t-short { display: inline; }
+        }
+
+        /* ---------------- Configuration tab ---------------- */
+        .cf-hero { display: flex; align-items: center; gap: 22px; padding: 22px 24px; border-radius: var(--radius-lg); margin-bottom: 14px; position: relative; overflow: hidden;
+                   background: linear-gradient(135deg, rgba(10,132,255,0.22), rgba(191,90,242,0.16) 55%, rgba(48,209,88,0.10)); border: 1px solid var(--glass-border); }
+        .cf-hero::after { content: ""; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255,214,10,0.18), transparent 65%); pointer-events: none; }
+        .cf-hero img { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); flex: none; }
+        .cf-hero h2 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
+        .cf-hero p { margin: 4px 0 0; color: var(--text-dim); font-size: 14px; }
+        .cf-hero .cf-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .cf-hero .cf-steps span { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+        .cf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .cf-card { border-radius: var(--radius-lg); padding: 16px 18px; background: var(--glass-bg); border: 1px solid var(--glass-border); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); min-width: 0; }
+        .cf-card.wide { grid-column: 1 / -1; }
+        .cf-card h3 { margin: 0 0 12px; font-size: 13px; letter-spacing: .07em; text-transform: uppercase; color: var(--text-dim); }
+        .cf-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .cf-row:last-child { border-bottom: 0; }
+        .cf-row .l { color: var(--text-dim); font-size: 13px; }
+        .cf-row .v { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; min-width: 0; }
+        .cf-row .v code, .cf-code code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+        .cf-row .v code { background: rgba(255,255,255,0.07); padding: 3px 8px; border-radius: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cf-copy { background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border); color: var(--text); border-radius: 8px; font-size: 12px; padding: 4px 8px; cursor: pointer; flex: none; }
+        .cf-copy:hover { background: rgba(90,200,250,0.18); }
+        .cf-copy.ok { background: rgba(48,209,88,0.22); border-color: rgba(48,209,88,0.45); }
+        .cf-login { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .cf-tsgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .cf-opt { border-radius: var(--radius-md); padding: 14px; border: 1px solid; }
+        .cf-opt.frid { background: linear-gradient(135deg, rgba(48,209,88,0.20), rgba(48,209,88,0.05)); border-color: rgba(48,209,88,0.40); }
+        .cf-opt.guest { background: linear-gradient(135deg, rgba(255,214,10,0.16), rgba(255,214,10,0.04)); border-color: rgba(255,214,10,0.35); }
+        .cf-opt.plain { background: rgba(255,255,255,0.04); border-color: var(--glass-border); }
+        .cf-opt h4 { margin: 0 0 6px; font-size: 15px; }
+        .cf-opt p { margin: 0 0 8px; color: var(--text-dim); font-size: 13px; line-height: 1.45; }
+        .cf-opt .pw { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+        .cf-opt .pw code { background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 8px; font-size: 14px; }
+        .cf-opt a { color: #8af5ab; font-weight: 600; }
+        .cf-ts { margin-bottom: 12px; }
+        .cf-ts:last-child { margin-bottom: 0; }
+        .cf-ts .h { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .cf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .cf-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 12px; background: rgba(90,200,250,0.12); border: 1px solid rgba(90,200,250,0.30); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+        .cf-chip small { font-weight: 500; font-size: 12px; color: var(--text-dim); }
+        .cf-chip.guest { background: rgba(255,214,10,0.12); border-color: rgba(255,214,10,0.35); }
+        .cf-chip.any { background: rgba(255,255,255,0.06); border-color: var(--glass-border); font-weight: 600; font-size: 13px; }
+        .cf-hint { color: var(--text-dim); font-size: 12.5px; line-height: 1.5; margin: 10px 0 0; }
+        .cf-hint code { background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 6px; }
+        .cf-code { position: relative; margin-top: 8px; }
+        .cf-code pre { margin: 0; background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12.5px; line-height: 1.55; overflow-x: auto; color: #d8deee; }
+        .cf-code .cf-copy { position: absolute; top: 8px; right: 8px; }
+        .cf-sw { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); margin-bottom: 4px; }
+        .cf-sw button { background: transparent; border: 0; color: var(--text-dim); font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+        .cf-sw button.active { background: rgba(90,200,250,0.18); color: var(--text); }
+        .cf-note { white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+        .cf-note a { color: var(--accent); }
+        @media (max-width: 900px) { .cf-grid, .cf-tsgrid { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) {
+            .cf-hero { flex-direction: column; text-align: center; padding: 18px; }
+            .cf-hero .cf-steps { justify-content: center; }
+            .cf-hero img { width: 80px; height: 80px; }
+            .cf-hero h2 { font-size: 22px; }
+            .cf-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .cf-row .v { font-size: 14px; flex-wrap: wrap; }
+            .cf-row .v code { white-space: normal; word-break: break-all; }
+        }
 
         /* ---------------- Talkgroup statistics ---------------- */
         #tgStatsBody { padding: 16px; }
@@ -1659,6 +1727,7 @@
         <nav class="main-tabs" id="mainTabs" role="tablist">
             <button type="button" role="tab" data-tab="live" class="active">🎙️ Live</button>
             <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 Statistics <span class="tab-count" id="tgStatsCount"></span></button>
+            <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
         </nav>
 
         <div class="tab-pane" id="tabLive">
@@ -1807,6 +1876,10 @@
                 </div>
             </div>
         </div><!-- /tabStats -->
+
+        <div class="tab-pane" id="tabConfig" style="display: none;">
+            <div id="cfBody"><div class="tgs-empty">Loading …</div></div>
+        </div><!-- /tabConfig -->
     </div>
     <div class="tgs-tip" id="tgsTip"></div>
     
@@ -4242,17 +4315,24 @@
             return !!c.enabled && (c.public || !!state.me || new URLSearchParams(location.search).has('demo'));
         }
         // ---- Main tabs (Live / Statistics); the tab is kept in the URL (#stats) ----
-        function currentTab() { return location.hash === '#stats' && tgsAllowed() ? 'stats' : 'live'; }
+        function currentTab() {
+            if (location.hash === '#stats' && tgsAllowed()) return 'stats';
+            if (location.hash === '#config' && cfAllowed()) return 'config';
+            return 'live';
+        }
         function showTab(tab, push) {
             if (tab === 'stats' && !tgsAllowed()) tab = 'live';
+            if (tab === 'config' && !cfAllowed()) tab = 'live';
             document.querySelectorAll('#mainTabs button').forEach(b => {
                 b.classList.toggle('active', b.dataset.tab === tab);
                 b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
             });
             document.getElementById('tabLive').style.display = tab === 'live' ? '' : 'none';
             document.getElementById('tabStats').style.display = tab === 'stats' ? '' : 'none';
+            document.getElementById('tabConfig').style.display = tab === 'config' ? '' : 'none';
             tgs.visible = tab === 'stats';
-            if (push) history.replaceState(null, '', tab === 'stats' ? '#stats' : location.pathname + location.search);
+            if (push) history.replaceState(null, '', tab === 'live' ? location.pathname + location.search : '#' + tab);
+            if (tab === 'config') loadConnect();
             if (tgs.visible) { if (tgs.data) renderTgStats(); loadTgStats(); }   // widths are known only when shown
             else tgsHide();
         }
@@ -4264,6 +4344,7 @@
         function tgsUpdateVisibility() {
             const show = tgsAllowed();
             document.getElementById('mainTabStats').style.display = show ? '' : 'none';
+            document.getElementById('mainTabConfig').style.display = cfAllowed() ? '' : 'none';
             showTab(currentTab(), false);
             if (show && !tgs.data && !tgs.visible) loadTgStats();   // fills the count on the tab
         }
@@ -4513,6 +4594,154 @@
             series.push({ tg: null, name: `${rest.length} other`, calls: buckets.map((_, i) => sum(rest.map(r => r.calls[i]))), duration: buckets.map((_, i) => sum(rest.map(r => r.duration[i]))) });
             return { range, bucket: hourly ? 'hour' : 'day', buckets, series, talkgroups: table,
                      totals: { calls: sum(table.map(t => t.calls)), duration: total, talkgroups: table.length, users: hourly ? 47 : 186 } };
+        }
+
+        // ================= Configuration tab (how to connect) =================
+        const cf = { data: null, sw: 'pistar' };
+        function cfAllowed() {
+            const c = (state.config && state.config.connect) || { enabled: true };
+            return !!c.enabled;
+        }
+        async function loadConnect() {
+            try {
+                if (new URLSearchParams(location.search).has('demo')) cf.data = demoConnect();
+                else {
+                    const r = await fetch('/api/connect', { credentials: 'same-origin' });
+                    if (!r.ok) return;
+                    cf.data = await r.json();
+                }
+                renderConnect();
+            } catch (e) { console.warn('Configuration tab:', e); }
+        }
+        function cfCopyBtn(text) {
+            return `<button type="button" class="cf-copy" data-copy="${escapeHtml(String(text))}" title="Copy">⧉ Copy</button>`;
+        }
+        async function cfCopy(btn) {
+            const text = btn.dataset.copy;
+            try { await navigator.clipboard.writeText(text); }
+            catch (e) {
+                const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+                try { document.execCommand('copy'); } catch (_) {} t.remove();
+            }
+            const old = btn.textContent; btn.textContent = '✓ Copied'; btn.classList.add('ok');
+            setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1400);
+        }
+        function cfChips(list, names, cls) {
+            if (list == null) return `<span class="cf-chip any">all talkgroups</span>`;
+            if (!list.length) return `<span class="cf-chip any">none</span>`;
+            return list.map(t => `<span class="cf-chip ${cls || ''}">${t}${names[t] ? `<small>${escapeHtml(names[t])}</small>` : ''}</span>`).join('');
+        }
+        function cfOptions(d) {
+            const l = x => x == null ? '*' : x.join(',');
+            return `TS1=${l(d.slot1)};TS2=${l(d.slot2)}`;
+        }
+        function cfLinkify(text) {
+            return escapeHtml(text).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+        }
+        function renderConnect() {
+            const d = cf.data, el = document.getElementById('cfBody');
+            if (!d || !el) return;
+            const names = d.tg_names || {};
+            const logo = d.logo || '/static/n8schicht-icon.svg';
+            const pw = d.password;
+            const pwShown = pw != null && pw !== '';
+            const pwOrAsk = pwShown ? pw : '(ask the sysop)';
+            const pwForSnippet = d.freeradioid ? 'YOUR_FREERADIOID_PASSWORD' : (pwShown ? pw : 'PASSWORD');
+
+            const login = d.freeradioid ? `
+                <div class="cf-login">
+                    <div class="cf-opt frid">
+                        <h4>🛡️ FreeRadioID login <span style="font-size:12px;color:#8af5ab">· recommended</span></h4>
+                        <p>Use your DMR ID and your <b>personal password from FreeRadioID.net</b>. You get full access to all talkgroups of this server.</p>
+                        <div class="pw">🔑 your FreeRadioID password</div>
+                        <p style="margin:8px 0 0">No password yet? Register your ID at <a href="https://freeradioid.net" target="_blank" rel="noopener">freeradioid.net</a>.</p>
+                    </div>
+                    <div class="cf-opt guest">
+                        <h4>👤 Guest access</h4>
+                        <p>Without a FreeRadioID password you connect as a guest: you hear everything, but you can only <b>transmit on the guest talkgroups</b>.</p>
+                        <div class="pw">🔑 ${pwShown ? `<code>${escapeHtml(pw)}</code>${cfCopyBtn(pw)}` : '<span style="color:var(--text-dim)">ask the sysop</span>'}</div>
+                    </div>
+                </div>` : `
+                <div class="cf-login">
+                    <div class="cf-opt plain">
+                        <h4>🔑 Password</h4>
+                        <div class="pw">${pwShown ? `<code>${escapeHtml(pw)}</code>${cfCopyBtn(pw)}` : '<span style="color:var(--text-dim)">ask the sysop</span>'}</div>
+                    </div>
+                </div>`;
+
+            const tgCard = `<div class="cf-tsgrid">
+                <div class="cf-ts"><div class="h">Time slot 1 · TS1</div><div class="cf-chips">${cfChips(d.slot1, names)}</div></div>
+                <div class="cf-ts"><div class="h">Time slot 2 · TS2</div><div class="cf-chips">${cfChips(d.slot2, names)}</div></div>
+                ${d.freeradioid ? `<div class="cf-ts"><div class="h">👤 Guests may transmit on</div><div class="cf-chips">${cfChips(d.guest, names, 'guest')}</div></div>` : ''}
+                </div>
+                <p class="cf-hint">${d.trust
+                    ? `Your device may choose its own talkgroups with the <b>Options</b> field, e.g. <code>${escapeHtml(cfOptions(d))}</code>.`
+                    : 'The talkgroups are set by the server; an Options line in your hotspot is not needed.'}
+                    ${d.unit_calls ? ' Private calls are enabled.' : ''}</p>`;
+
+            const fields = `
+                <div class="cf-row"><span class="l">DMR Master / Server</span><span class="v"><code>${escapeHtml(d.host)}</code>${cfCopyBtn(d.host)}</span></div>
+                <div class="cf-row"><span class="l">Port (UDP)</span><span class="v"><code>${d.port}</code>${cfCopyBtn(d.port)}</span></div>
+                <div class="cf-row"><span class="l">Password</span><span class="v">${d.freeradioid ? 'your FreeRadioID password' : (pwShown ? `<code>${escapeHtml(pw)}</code>` : 'ask the sysop')}</span></div>
+                <div class="cf-row"><span class="l">Radio ID</span><span class="v">your DMR ID <span style="font-weight:500;color:var(--text-dim)">(hotspots + 2 digits, e.g. 262123401)</span></span></div>
+                ${d.trust ? `<div class="cf-row"><span class="l">Options (optional)</span><span class="v"><code>${escapeHtml(cfOptions(d))}</code>${cfCopyBtn(cfOptions(d))}</span></div>` : ''}`;
+
+            const hostsLine = `N8schicht\t${d.host}\t${pwForSnippet}\t${d.port}`;
+            const mmdvm = `[DMR Network]\nEnable=1\nType=Direct\nRemoteAddress=${d.host}\nRemotePort=${d.port}\nLocalPort=62032\nPassword=${pwForSnippet}\nJitter=360\nSlot1=1\nSlot2=1\n${d.trust ? `Options=${cfOptions(d)}\n` : ''}`;
+            const setup = {
+                pistar: `<p class="cf-hint" style="margin-top:6px">Pi-Star / WPSD: add this line to <code>/root/DMR_Hosts.txt</code> (tab separated: name, address, password, port), then choose <b>N8schicht</b> as <b>DMR Master</b> in the DMR configuration.</p>
+                         <div class="cf-code"><pre>${escapeHtml(hostsLine)}</pre>${cfCopyBtn(hostsLine)}</div>`,
+                mmdvm: `<p class="cf-hint" style="margin-top:6px">MMDVMHost without DMRGateway: section <code>[DMR Network]</code> in <code>MMDVM.ini</code>.</p>
+                        <div class="cf-code"><pre>${escapeHtml(mmdvm)}</pre>${cfCopyBtn(mmdvm)}</div>`,
+            };
+
+            el.innerHTML = `
+                <div class="cf-hero">
+                    <img src="${escapeHtml(logo)}" alt="">
+                    <div>
+                        <h2>${escapeHtml(d.title)}</h2>
+                        <p>${escapeHtml(d.description || '')}${d.description ? ' · ' : ''}Connect your hotspot or repeater in three steps.</p>
+                        <div class="cf-steps"><span>① Server &amp; port</span><span>② ${d.freeradioid ? 'FreeRadioID password' : 'Password'}</span><span>③ Talkgroups</span></div>
+                    </div>
+                </div>
+                <div class="cf-grid">
+                    <div class="cf-card">
+                        <h3>📡 ① Server</h3>
+                        ${fields}
+                    </div>
+                    <div class="cf-card">
+                        <h3>🔐 ② Login</h3>
+                        ${login}
+                    </div>
+                    <div class="cf-card wide">
+                        <h3>🗂️ ③ Talkgroups</h3>
+                        ${tgCard}
+                    </div>
+                    <div class="cf-card wide">
+                        <h3>🧰 Ready-made settings</h3>
+                        <div class="cf-sw" id="cfSw"><button data-v="pistar">Pi-Star / WPSD</button><button data-v="mmdvm">MMDVMHost</button></div>
+                        <div id="cfSetup"></div>
+                        ${d.freeradioid ? `<p class="cf-hint">Replace <code>YOUR_FREERADIOID_PASSWORD</code> with your FreeRadioID password${pwShown ? `, or use <code>${escapeHtml(pw)}</code> for guest access` : ''}.</p>` : ''}
+                    </div>
+                    ${d.note ? `<div class="cf-card wide"><h3>📌 Note from the sysop</h3><div class="cf-note">${cfLinkify(d.note)}</div></div>` : ''}
+                </div>`;
+            const showSetup = () => {
+                document.querySelectorAll('#cfSw button').forEach(b => b.classList.toggle('active', b.dataset.v === cf.sw));
+                document.getElementById('cfSetup').innerHTML = setup[cf.sw];
+            };
+            document.getElementById('cfSw').addEventListener('click', ev => {
+                const b = ev.target.closest('button'); if (!b) return; cf.sw = b.dataset.v; showSetup();
+            });
+            showSetup();
+        }
+        document.addEventListener('click', ev => { const b = ev.target.closest('.cf-copy'); if (b) cfCopy(b); });
+
+        function demoConnect() {
+            return { title: 'DMR Die N8schicht', description: 'N8schicht DMR Network', logo: '', host: 'dmr.die-n8schicht.de', port: 62031,
+                     freeradioid: true, password: 'passw0rd', slot1: [262, 2620], slot2: [26500, 91], guest: [26501, 26502, 26503],
+                     trust: true, unit_calls: false,
+                     tg_names: { 262: 'Deutschland', 2620: 'Baden-Württemberg', 26500: 'N8schicht', 91: 'Worldwide', 26501: 'Gäste', 26502: 'Gäste 2', 26503: 'Gäste 3' },
+                     note: 'Bitte Rufzeichen nennen und Pausen lassen.\nFragen an sysop@die-n8schicht.de · Infos: https://dmr.die-n8schicht.de' };
         }
 
         // Initialize dashboard

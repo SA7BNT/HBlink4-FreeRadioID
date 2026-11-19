@@ -26,14 +26,37 @@ Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop u
 
 🔌 Verbindungen · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · 🛡️ FreeRadioID: verifizierte Stationen und Gäste. Diese Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist. Die Tageswerte werden um Mitternacht zurückgesetzt.
 
-## Tabs: 🎙️ Live und 📈 Statistics
+## Tabs: 🎙️ Live, 📈 Statistics, 🛠️ Configuration
 
-Unter der Kopfzeile wählst du zwischen zwei Ansichten:
+Unter der Kopfzeile wählst du zwischen drei Ansichten:
 
 - **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
-- **📈 Statistics**: die Talkgroup-Statistik. Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
+- **📈 Statistics**: die [Talkgroup-Statistik](#-talkgroup-statistik). Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
+- **🛠️ Configuration** (am Smartphone „Setup“): [alles, was man zum Verbinden braucht](#️-configuration--so-verbindest-du-dich).
 
-Der gewählte Tab steht in der Adresse (`…/#stats`). So landest du nach dem Neuladen wieder dort und kannst die Statistik direkt verlinken.
+Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+
+## 🛠️ Configuration – so verbindest du dich
+
+<p align="center">
+  <img src="../images/config-tab.png" alt="Tab Configuration" width="72%">
+  &nbsp;
+  <img src="../images/config-tab-mobile.png" alt="Tab Configuration am Smartphone" width="22%">
+</p>
+
+Der Tab erklärt mit dem N8schicht-Logo in drei Schritten, wie ein Hotspot oder Repeater auf den Server kommt. Alle Werte kommen live aus dem Adminbereich, sie stimmen also immer:
+
+| Karte | Inhalt |
+|---|---|
+| **① Server** | Adresse und UDP-Port mit **⧉ Copy**-Knopf, Passwort-Hinweis, Radio-ID (Hotspots mit zwei Ziffern Suffix); die *Options*-Zeile nur, wenn Geräte ihre Talkgroups selbst wählen dürfen (`trust`) |
+| **② Login** | 🛡️ **FreeRadioID** (empfohlen): eigene DMR-ID und persönliches Passwort von FreeRadioID.net, volle Rechte, mit Link zur Registrierung · 👤 **Gast**: das Standard-Passwort, senden nur auf die Gast-Talkgroups. Ohne FreeRadioID-Login steht hier nur das Passwort. |
+| **③ Talkgroups** | TS1, TS2 und die Gast-Talkgroups als Kacheln, mit den Namen aus dem Adminbereich |
+| **🧰 Ready-made settings** | fertige Zeile für Pi-Star/WPSD (`/root/DMR_Hosts.txt`) und der Abschnitt `[DMR Network]` für MMDVMHost, je zum Kopieren |
+| **📌 Note from the sysop** | freier Text aus dem Adminbereich, z. B. Regeln und Kontakt; Links werden klickbar |
+
+<p align="center"><img src="../images/config-mmdvm.png" alt="Fertige Einstellungen für MMDVMHost" width="80%"></p>
+
+Ob der Tab erscheint, welche Adresse er zeigt, ob das Standard-Passwort zu sehen ist und welcher Hinweis darunter steht, stellst du im [Adminbereich](adminbereich.md#-dashboard) ein. Sonst steht dort „ask the sysop“. Eigene Passwörter aus Patterns zeigt der Tab nie.
 
 ## 📈 Talkgroup-Statistik
 

@@ -40,6 +40,7 @@ DASH_SECTIONS: List[Tuple[str, str]] = [
     ("freeradioid", "🛡️ FreeRadioID data"),
     ("userdb", "📘 Callsign database"),
     ("tgstats", "📈 Talkgroup statistics"),
+    ("connect", "🛠️ Configuration tab"),
     ("https", "🔒 HTTPS & web"),
 ]
 
@@ -81,7 +82,16 @@ DASH_FIELDS: List[Field] = [
           "Off = only logged-in users see the talkgroup statistics"),
     Field("tg_stats.retention_days", "tgstats", "Keep calls for (days)", "int", 30, min=1, max=365),
     Field("tg_stats.names", "tgstats", "Talkgroup names", "longtext", "",
-          "One per line: 262 = Deutschland. Shown in the charts and the table"),
+          "One per line: 262 = Deutschland. Used by the statistics and the Configuration tab"),
+
+    Field("connect.enabled", "connect", "Show the Configuration tab", "bool", True,
+          "How to connect: server, port, password, talkgroups and ready-made settings"),
+    Field("connect.host", "connect", "Server address for hotspots", "text", "",
+          "Empty = the server name (General → Server name)"),
+    Field("connect.show_password", "connect", "Show the default password", "bool", True,
+          "With FreeRadioID login this is the guest password. Off = \"ask the sysop\""),
+    Field("connect.note", "connect", "Note for users", "longtext", "",
+          "Shown at the end of the tab: rules, contact, links"),
 
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
           "Needs certbot, the domain pointing here and ports 80/443 open", restart=True),

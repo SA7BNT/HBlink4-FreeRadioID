@@ -214,10 +214,12 @@ The dashboard is started automatically with `./run_all.sh`, or separately with `
 ## Dashboard Components
 
 ### Tabs
-The page has two tabs under the header: **🎙️ Live** (everything below) and
+The page has three tabs under the header: **🎙️ Live** (everything below),
 **📈 Statistics** (talkgroup statistics: top talkgroups, hourly/daily activity
-chart, table; see `GET /api/stats/talkgroups`). The tab is kept in the URL
-(`#stats`). The Statistics tab is hidden when talkgroup statistics are switched
+chart, table; see `GET /api/stats/talkgroups`) and **🛠️ Configuration** (how to
+connect: server, port, FreeRadioID/guest password, talkgroups, Pi-Star and
+MMDVMHost snippets; see `GET /api/connect`). The tab is kept in the URL
+(`#stats`, `#config`). The Statistics tab is hidden when talkgroup statistics are switched
 off, or for visitors without login when "visible without login" is off.
 
 ### Statistics Cards
@@ -294,6 +296,12 @@ Returns list of active and recently ended streams
 
 ### GET /api/events?limit=50
 Returns recent events (default limit: 100)
+
+### GET /api/connect
+Public connection info for the Configuration tab: host, DMR port, FreeRadioID
+on/off, default (guest) password unless `connect.show_password` is off, TS1/TS2
+and guest talkgroups with names, trust, note. Pattern passphrases are never
+included. 404 when `connect.enabled` is off.
 
 ### GET /api/stats/talkgroups?range=today|24h|7d|30d
 Talkgroup statistics: totals, per-talkgroup calls/airtime/speakers/top talker

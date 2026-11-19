@@ -53,9 +53,16 @@ Hier stehen **alle** Einstellungen, oben das Dashboard, darunter der DMR-Server.
 | 🛡️ FreeRadioID data | Avatare, Profilabfrage, FreeRadioID-ID-Liste | sofort |
 | 📘 Callsign database | Quelle (**FreeRadioID.net**, Vorgabe, oder nur radioid.net), Länder, Uhrzeit des Updates, **⟳ Refresh now** | sofort; bei neuer Quelle oder neuen Ländern wird die Liste gleich neu geladen |
 | 📈 Talkgroup statistics | Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **Namen der Talkgroups** (`262 = Deutschland`, eine pro Zeile) | sofort |
+| 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Servername), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
 | 🔒 HTTPS & web | HTTPS, Domain, E-Mail, Test-Zertifikate, Ports | nach **Neustart** des Dashboards |
 
-<p align="center"><img src="../images/admin-settings-tgstats.png" alt="Einstellungen Talkgroup-Statistik" width="45%"></p>
+<p align="center">
+  <img src="../images/admin-settings-tgstats.png" alt="Einstellungen Talkgroup-Statistik" width="45%">
+  &nbsp;
+  <img src="../images/admin-settings-connect.png" alt="Einstellungen Configuration-Tab" width="45%">
+</p>
+
+Die **Talkgroup-Namen** gelten für die Statistik und für den Tab *Configuration*.
 
 Ältere Gespräche als die eingestellte Speicherdauer löscht das Dashboard jede Nacht. Ist die Statistik aus, wird nichts mehr gespeichert und der Tab **📈 Statistics** verschwindet aus dem Dashboard.
 

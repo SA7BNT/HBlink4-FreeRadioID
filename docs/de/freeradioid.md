@@ -41,6 +41,9 @@ Für eigene Repeater mit privatem Passwort schaltest du FreeRadioID pro Pattern 
 
 ### Was Funkamateure an ihrem Gerät eintragen
 
+All das zeigt das Dashboard im Tab **🛠️ Configuration**, mit Kopier-Knöpfen und fertigen Zeilen für Pi-Star/WPSD und MMDVMHost (siehe [Dashboard](dashboard.md#️-configuration--so-verbindest-du-dich)).
+
+
 | Feld (Pi-Star / WPSD / MMDVMHost) | Wert |
 |---|---|
 | Server / Address | dein Servername, z. B. `dmr.die-n8schicht.de` |

@@ -1521,6 +1521,7 @@ async def get_config():
     cfg["public_dashboard"] = _public_dashboard()
     tgs = _tg_cfg()
     cfg["tg_stats"] = {"enabled": bool(tgs.get("enabled", True)), "public": bool(tgs.get("public", True))}
+    cfg["connect"] = {"enabled": bool((dashboard_config.get("connect") or {}).get("enabled", True))}
     return cfg
 
 
@@ -1598,6 +1599,36 @@ async def get_tg_stats(request: Request, range: str = "today"):
         raise _HTTPError(400, f"range must be one of {', '.join(TG_RANGES)}")
     return await asyncio.to_thread(state.tgstats.summary, range, _tg_names(),
                                    lambda rid: state.user_db.get(rid, '') if rid else '')
+
+
+# ---------------------------------------------------------------- configuration tab
+@app.get("/api/connect")
+async def get_connect_info():
+    """What a sysop needs to connect a hotspot or repeater (public part only)."""
+    con = dashboard_config.get("connect") or {}
+    if not con.get("enabled", True):
+        raise _HTTPError(404, "The configuration tab is switched off.")
+    d = state.settings.dmr_values()
+    p = "dmr.repeater_configurations.default."
+    frid = bool(d.get("dmr.freeradioid.enabled", True))
+    slot1, slot2 = d.get(p + "slot1_talkgroups"), d.get(p + "slot2_talkgroups")
+    guest = d.get("dmr.freeradioid.guest_talkgroups") if frid else []
+    names = _tg_names()
+    wanted = {int(t) for lst in (slot1, slot2, guest) if isinstance(lst, list) for t in lst}
+    return {
+        "title": dashboard_config.get("dashboard_title") or "DMR Die N8schicht",
+        "description": dashboard_config.get("server_description") or "",
+        "logo": dashboard_config.get("logo") or "",
+        "host": (con.get("host") or "").strip() or dashboard_config.get("server_name") or "",
+        "port": d.get("dmr.global.port_ipv4", 62031),
+        "freeradioid": frid,
+        "password": d.get(p + "passphrase") if con.get("show_password", True) else None,
+        "slot1": slot1, "slot2": slot2, "guest": guest,
+        "trust": bool(d.get(p + "trust", False)),
+        "unit_calls": bool(d.get(p + "default_unit_calls", False)),
+        "tg_names": {str(k): v for k, v in names.items() if k in wanted},
+        "note": con.get("note") or "",
+    }
 
 
 @app.get("/api/stats")
