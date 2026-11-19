@@ -74,7 +74,7 @@ In `dashboard/config.json`:
 "favicon": "/static/n8schicht-icon.svg"
 ```
 
-Eigene Logos legst du nach `dashboard/static/`. Wenn `logo` leer bleibt, erscheint das HBlink-Logo.
+Eigene Logos legst du nach `dashboard/static/`. Ohne Eintrag erscheint automatisch das N8schicht-Logo, auch bei einer älteren `config.json`.
 
 Für Rufzeichen aus Deutschland trägst du im Abschnitt `user_database` unter `countries` zusätzlich `"Germany"` ein. Das ist in der [Dashboard-Anleitung](dashboard/README.md#callsign-lookups) beschrieben.
 

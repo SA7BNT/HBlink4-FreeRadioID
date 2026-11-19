@@ -3,8 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HBlink4 Dashboard</title>
-    <link rel="icon" id="favicon" href="/static/HBlink.png">
+    <title>DMR Die N8schicht</title>
+    <link rel="icon" id="favicon" type="image/svg+xml" href="/static/n8schicht-icon.svg">
+    <link rel="alternate icon" type="image/png" href="/static/n8schicht-icon-192.png">
+    <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
+    <meta name="theme-color" content="#0b1224">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -1071,9 +1074,9 @@
     <div class="container">
         <header>
             <div class="header-branding">
-                <img src="/static/HBlink.png" alt="HBlink" class="logo">
+                <img src="/static/n8schicht-icon.svg" alt="DMR Die N8schicht" class="logo">
                 <div>
-                    <h1 id="dashboardTitle">HBlink4 Dashboard</h1>
+                    <h1 id="dashboardTitle">DMR Die N8schicht</h1>
                     <div style="color: #64748b; font-size: 12px; margin-top: 4px;" id="serverName"></div>
                 </div>
             </div>
@@ -1341,14 +1344,19 @@
                 state.config = config;
                 
                 // Update page title and server name
-                document.title = config.dashboard_title || 'HBlink4 Dashboard';
-                document.getElementById('dashboardTitle').textContent = config.dashboard_title || 'HBlink4 Dashboard';
-                document.getElementById('serverName').textContent = config.server_name || '';
+                // Upstream defaults left in an old dashboard/config.json count as "not set"
+                const title = (config.dashboard_title && config.dashboard_title !== 'HBlink4 Dashboard')
+                    ? config.dashboard_title : 'DMR Die N8schicht';
+                const serverName = (config.server_name && config.server_name !== 'HBlink4 Server')
+                    ? config.server_name : 'dmr.die-n8schicht.de';
+                document.title = title;
+                document.getElementById('dashboardTitle').textContent = title;
+                document.getElementById('serverName').textContent = serverName;
 
                 // Optional branding: own logo and favicon (paths under /static or full URLs)
                 if (config.logo) {
                     document.querySelector('.logo').src = config.logo;
-                    document.querySelector('.logo').alt = config.dashboard_title || 'Logo';
+                    document.querySelector('.logo').alt = title;
                 }
                 if (config.favicon || config.logo) {
                     document.getElementById('favicon').href = config.favicon || config.logo;

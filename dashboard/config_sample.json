@@ -1,8 +1,8 @@
 {
-    "server_name": "HBlink4 Server",
+    "server_name": "dmr.die-n8schicht.de",
     "server_description": "Amateur Radio DMR Network",
-    "dashboard_title": "HBlink4 Dashboard",
-    "_comment_branding": "Optional: own logo and favicon, e.g. \"/static/n8schicht-icon.svg\" (files in dashboard/static/) or a full URL. Leave empty for the HBlink logo.",
+    "dashboard_title": "DMR Die N8schicht",
+    "_comment_branding": "Optional: own logo and favicon, e.g. \"/static/n8schicht-icon.svg\" (files in dashboard/static/) or a full URL. Leave empty for the DMR Die N8schicht logo.",
     "logo": "",
     "favicon": "",
     "announcement": {

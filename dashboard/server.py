@@ -35,16 +35,16 @@ from .user_db import UserDatabase, compute_next_refresh_seconds, _age_str
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="HBlink4 Dashboard", version="1.1.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.1.0")
 
 # Load dashboard configuration
 def load_config() -> dict:
     """Load dashboard configuration from config.json"""
     config_path = Path(__file__).parent / "config.json"
     default_config = {
-        "server_name": "HBlink4 Server",
+        "server_name": "dmr.die-n8schicht.de",
         "server_description": "Amateur Radio DMR Network",
-        "dashboard_title": "HBlink4 Dashboard",
+        "dashboard_title": "DMR Die N8schicht",
         "refresh_interval": 1000,
         "max_events": 50,
         "web": {

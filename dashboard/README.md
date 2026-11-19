@@ -70,7 +70,7 @@ Replace the HBlink logo and the browser tab icon with your own:
 ```
 
 Put the files in `dashboard/static/` or use full URLs. If `favicon` is empty,
-the logo is used. Leave both empty for the default HBlink logo.
+the logo is used. Leave both empty for the default DMR Die N8schicht logo.
 
 ### Network Info Button
 
