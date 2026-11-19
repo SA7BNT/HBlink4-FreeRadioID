@@ -1945,14 +1945,24 @@ class _Server:
 
 
 async def _serve(host: str, port: int):
-    """Start the dashboard over HTTP, or over HTTPS with Let's Encrypt."""
+    """
+    Start the dashboard over HTTP, or over HTTPS with Let's Encrypt.
+
+    The dashboard itself comes up first (HTTPS if a certificate exists, plain
+    HTTP otherwise), so it is reachable while certbot works in the background.
+    A stop signal ends everything at once, in any phase.
+    """
     import signal
     global _tls_manager
     https_cfg = dashboard_config.get("https") or {}
     servers = []
+    tasks = []        # server tasks: the process ends when one of them ends
+    helpers = []      # background jobs (certbot, renewal): never end the process
     loop = asyncio.get_running_loop()
+    stopping = asyncio.Event()
 
     def stop_all():
+        stopping.set()
         for srv in servers:
             srv.should_exit = True
 
@@ -1965,60 +1975,103 @@ async def _serve(host: str, port: int):
     async def start(srv):
         servers.append(srv)
         task = asyncio.create_task(srv.serve())
-        while not srv.started and not task.done():
+        while not srv.started and not task.done() and not stopping.is_set():
             await asyncio.sleep(0.05)
-        if not srv.started:
+        if not srv.started and not stopping.is_set():
             port_ = srv.config.port
-            msg = (f"Cannot listen on port {port_}: it is in use or not permitted. "
-                   f"Is the dashboard already running (systemctl status hblink4-dash, or run_all.sh)? "
-                   f"Check: sudo ss -tlpn 'sport = :{port_}'")
-            logger.error(f"❌ {msg}")
+            logger.error(f"❌ Cannot listen on port {port_}: it is in use or not permitted. Is the dashboard "
+                         f"already running (systemctl status hblink4-dash, or run_all.sh)? "
+                         f"Check: sudo ss -tlpn 'sport = :{port_}'")
             raise SystemExit(1)
         return task
 
-    tasks = []
-    main_tls = False
+    async def start_optional(srv, what: str):
+        try:
+            tasks.append(await start(srv))
+            return True
+        except (Exception, SystemExit):
+            servers.remove(srv)
+            logger.error(f"🔒 {what}: port {srv.config.port} unavailable (in use, or CAP_NET_BIND_SERVICE missing)")
+            return False
+
     if https_cfg.get("enabled"):
         from .tls import CertManager, build_http_app
         _tls_manager = cm = CertManager(https_cfg, state._data_dir)
         http_port = int(https_cfg.get("http_port", 80))
         http_app = build_http_app(cm, redirect=True)
-        try:
-            tasks.append(await start(_Server.make(http_app, host=host, port=http_port, lifespan="off")))
-            print(f"HTTP on port {http_port}: Let's Encrypt challenges + redirect to HTTPS")
-        except (Exception, SystemExit) as e:
-            servers.pop()
-            logger.error(f"🔒 Port {http_port} unavailable (in use, or CAP_NET_BIND_SERVICE missing): "
-                         f"Let's Encrypt cannot verify the domain")
-        if not cm.have_cert():
-            await cm.obtain()
-        if cm.have_cert():
-            main_tls = True
-            main = _Server.make(app, host=host, port=cm.https_port,
+        await start_optional(_Server.make(http_app, host=host, port=http_port, lifespan="off"),
+                             "Let's Encrypt challenge / redirect")
+
+        def tls_server(lifespan: str):
+            return _Server.make(app, host=host, port=cm.https_port, lifespan=lifespan,
                                 ssl_certfile=cm.cert_file, ssl_keyfile=cm.key_file)
+
+        async def renew_loop(main):
+            while True:
+                await asyncio.sleep(12 * 3600)
+                if await cm.renew() and main.config.ssl is not None:
+                    main.config.ssl.load_cert_chain(cm.cert_file, cm.key_file)
+                    logger.info("🔒 Renewed certificate loaded")
+
+        if cm.have_cert():
+            main = tls_server("on")
             tasks.append(await start(main))
             print(f"Dashboard on {cm.https_url()}")
             if port not in (http_port, cm.https_port):
-                # The old plain-HTTP port now just redirects
-                tasks.append(await start(_Server.make(http_app, host=host, port=port, lifespan="off")))
-
-            async def renew_loop():
-                while True:
-                    await asyncio.sleep(12 * 3600)
-                    if await cm.renew() and main.config.ssl is not None:
-                        main.config.ssl.load_cert_chain(cm.cert_file, cm.key_file)
-                        logger.info("🔒 Renewed certificate loaded")
-            tasks.append(asyncio.create_task(renew_loop()))
+                await start_optional(_Server.make(http_app, host=host, port=port, lifespan="off"),
+                                     "redirect to HTTPS")
+            helpers.append(asyncio.create_task(renew_loop(main)))
         else:
-            logger.error("🔒 No certificate: serving the dashboard over plain HTTP until the problem is fixed")
-    if not main_tls:
+            # Serve over HTTP right away; get the certificate in the background
+            tasks.append(await start(_Server.make(app, host=host, port=port)))
+            print(f"Dashboard on http://{host}:{port} (requesting a certificate in the background)")
+
+            async def obtain_then_serve():
+                if await cm.obtain() and not stopping.is_set():
+                    main = tls_server("off")       # app already started by the HTTP server
+                    if await start_optional(main, "HTTPS"):
+                        print(f"Dashboard on {cm.https_url()}")
+                        logger.info("🔒 HTTPS is up. Restart the dashboard once to make "
+                                    f"port {port} redirect to HTTPS.")
+                        await renew_loop(main)
+                elif not stopping.is_set():
+                    logger.error("🔒 No certificate: the dashboard stays on plain HTTP. Fix the problem above "
+                                 "and restart the dashboard.")
+            helpers.append(asyncio.create_task(obtain_then_serve()))
+    else:
         tasks.append(await start(_Server.make(app, host=host, port=port)))
         print(f"Dashboard on http://{host}:{port}")
     print("Press CTRL+C to stop\n")
-    # Wait until a server ends (shutdown signal), then stop the rest
-    await asyncio.wait([t for t in tasks], return_when=asyncio.FIRST_COMPLETED)
+
+    # Wait for a stop signal or a server ending, then stop the rest
+    stop_wait = asyncio.create_task(stopping.wait())
+    await asyncio.wait([*tasks, stop_wait], return_when=asyncio.FIRST_COMPLETED)
     stop_all()
-    await asyncio.gather(*tasks, return_exceptions=True)
+    for h in helpers:
+        h.cancel()
+    # Servers shut down gracefully (lifespan shutdown saves the data)
+    pending = [t for t in tasks if not t.done()]
+    if pending:
+        await asyncio.wait(pending, timeout=10)
+    # asyncio.run() would now wait for worker threads that are still
+    # downloading (callsign list, avatars) -- minutes on a slow line, which made
+    # "systemctl stop/restart" hang. Everything is saved; leave right here.
+    _hard_exit(0)
+
+
+def _hard_exit(code: int):
+    try:
+        save_persistent_data()
+    except Exception:
+        pass
+    try:
+        state.auth._db.close()
+    except Exception:
+        pass
+    logging.shutdown()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
 
 
 def run():
@@ -2036,7 +2089,14 @@ def run():
     web_config = dashboard_config.get('web', {})
     host = sys.argv[1] if len(sys.argv) > 1 else web_config.get('bind', '0.0.0.0')
     port = int(sys.argv[2]) if len(sys.argv) > 2 else int(web_config.get('port', 8080))
-    asyncio.run(_serve(host, port))
+    code = 0
+    try:
+        asyncio.run(_serve(host, port))
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else 1
+    except KeyboardInterrupt:
+        pass
+    _hard_exit(code)
 
 
 if __name__ == "__main__":

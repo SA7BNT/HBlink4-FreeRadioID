@@ -88,7 +88,16 @@ class CertManager:
     async def _run(self, args: list) -> int:
         proc = await asyncio.create_subprocess_exec(
             *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
-        out, _ = await proc.communicate()
+        try:
+            out, _ = await asyncio.wait_for(proc.communicate(), timeout=300)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            # never leave certbot running behind a stopping dashboard
+            try:
+                proc.kill()
+            except ProcessLookupError:
+                pass
+            logger.error("🔒 certbot did not finish within 5 minutes (or the dashboard is stopping) - aborted")
+            raise
         for line in out.decode(errors="replace").splitlines()[-25:]:
             if line.strip():
                 logger.info(f"certbot: {line}")
@@ -112,7 +121,10 @@ class CertManager:
         if self.staging:
             args.append("--staging")
         logger.info(f"🔒 Requesting Let's Encrypt certificate for {self.domain} …")
-        rc = await self._run(args)
+        try:
+            rc = await self._run(args)
+        except asyncio.TimeoutError:
+            return False
         if rc == 0 and self.have_cert():
             self._mtime = self._cert_mtime()
             logger.info(f"🔒 Certificate for {self.domain} is ready")
@@ -129,6 +141,8 @@ class CertManager:
             return changed
         try:
             await self._run(self._certbot_base() + ["renew", "--cert-name", self.domain])
+        except asyncio.TimeoutError:
+            return False
         except RuntimeError as e:
             logger.error(f"🔒 {e}")
             return False

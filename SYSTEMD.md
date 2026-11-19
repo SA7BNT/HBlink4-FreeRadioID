@@ -283,3 +283,14 @@ errors), both config files (JSON with line/column), file ownership, the event
 socket, the ports and the Python environment, and prints a fix for every problem.
 It changes nothing.
 
+## Stopping the dashboard
+
+The dashboard saves its data and exits within a few seconds, even while the
+callsign list or avatars are still downloading in the background (earlier
+versions waited for those downloads, so `systemctl stop/restart` could hang in
+"deactivating"). `hblink4-dash.service` also sets `TimeoutStopSec=20` as a safety
+net; run `sudo ./scripts/install_services.sh` again to get it.
+
+With HTTPS enabled but no certificate yet, the dashboard starts on its plain web
+port immediately and requests the certificate in the background.
+

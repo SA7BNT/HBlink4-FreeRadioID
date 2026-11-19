@@ -167,6 +167,7 @@ Stürzt einer der beiden Prozesse ab, beendet `run_all.sh` auch den anderen und 
 | `cannot write logs/hblink.log` | dasselbe für das HBlink4-Log | `chown -R adn:adn /opt/HBlink4` |
 | `/tmp/hblink4.sock belongs to root` | Die Verbindung zwischen HBlink4 und Dashboard stammt noch von einem root-Start. Das Dashboard zeigt dann keine Daten vom DMR-Server. | `rm -f /tmp/hblink4.sock && systemctl restart hblink4-dash hblink4` |
 | `Address already in use` | HBlink4 oder das Dashboard läuft doppelt, oder ein anderer DMR-Server belegt den Port | siehe oben, nur einen Startweg nutzen |
+| Dienst hängt in `deactivating`, `systemctl restart` kommt nicht zurück | ältere Versionen haben beim Stoppen auf laufende Downloads gewartet (Rufzeichenliste, Avatare) | aktualisieren; einmalig `systemctl kill -s KILL hblink4-dash && systemctl start hblink4-dash`. Jetzt stoppt das Dashboard in ~2 s, und systemd beendet es spätestens nach 20 s. |
 
 `scripts/install_services.sh` erkennt fremde Dateien und alte Sockets selbst und bietet an, das zu korrigieren.
 

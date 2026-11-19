@@ -34,10 +34,15 @@ if command -v systemctl >/dev/null 2>&1 && [ -f /etc/systemd/system/hblink4.serv
             ok "$svc: active"
         else
             bad "$svc: $state (restarts: ${restarts:-?})"
-            echo "      last messages:"
-            journalctl -u "$svc" -n 200 --no-pager -o cat 2>/dev/null \
-                | grep -E "Error|error|✗|❌|Traceback|Exception|denied|readonly|in use|cannot" \
-                | grep -v "^INFO" | tail -n 6 | sed 's/^/        /'
+            if [ "$state" = "deactivating" ]; then
+                fix "stop is hanging (older versions waited for running downloads): systemctl kill -s KILL $svc; systemctl start $svc"
+            fi
+            echo "      last problems (with time -- compare with the time of your last fix):"
+            journalctl -u "$svc" -n 300 --no-pager -o short-iso 2>/dev/null \
+                | grep -E "Error|error|✗|❌|Traceback|Exception|denied|readonly|in use|cannot|owner:|chown" \
+                | grep -v " INFO" | tail -n 8 | awk '{t=substr($1,6,11); $1=$2=$3=""; sub(/^ +/,""); print "        " t "  " $0}'
+            echo "      newest lines:"
+            journalctl -u "$svc" -n 4 --no-pager -o short-iso 2>/dev/null | awk '{t=substr($1,6,11); $1=$2=$3=""; sub(/^ +/,""); print "        " t "  " $0}'
         fi
     done
     echo "      service user: ${SVC_USER}"

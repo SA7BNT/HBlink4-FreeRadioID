@@ -15,6 +15,8 @@ WorkingDirectory=/home/cort/hblink4
 ExecStart=/home/cort/hblink4/venv/bin/python /home/cort/hblink4/dashboard/server.py
 Restart=always
 RestartSec=10
+# Stop must never hang (background downloads are abandoned, data is saved first)
+TimeoutStopSec=20
 
 # Security hardening
 # NOTE: do not add PrivateTmp=true here. See the note in hblink4.service --
