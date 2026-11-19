@@ -26,15 +26,41 @@ Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop u
 
 🔌 Verbindungen · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · 🛡️ FreeRadioID: verifizierte Stationen und Gäste. Diese Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist. Die Tageswerte werden um Mitternacht zurückgesetzt.
 
-## Tabs: 🎙️ Live, 📈 Statistics, 🛠️ Configuration
+## Tabs: 🎙️ Live, 📈 Statistics, 🗂️ Talkgroups, 🛠️ Configuration
 
-Unter der Kopfzeile wählst du zwischen drei Ansichten:
+Unter der Kopfzeile wählst du zwischen vier Ansichten:
 
 - **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
 - **📈 Statistics**: die [Talkgroup-Statistik](#-talkgroup-statistik). Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
+- **🗂️ Talkgroups** (am Smartphone „TGs“): [das Talkgroup-Verzeichnis](#️-talkgroups--das-verzeichnis) mit Suche.
 - **🛠️ Configuration** (am Smartphone „Setup“): [alles, was man zum Verbinden braucht](#️-configuration--so-verbindest-du-dich).
 
-Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#talkgroups`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+
+## 🗂️ Talkgroups – das Verzeichnis
+
+<p align="center">
+  <img src="../images/talkgroups-tab.png" alt="Talkgroup-Verzeichnis" width="72%">
+  &nbsp;
+  <img src="../images/talkgroups-mobile.png" alt="Talkgroup-Verzeichnis am Smartphone" width="22%">
+</p>
+
+Alle Talkgroups mit Namen aus der **Talkgroup-Liste der N8schicht** ([`talkgroup_ids.json`](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json), rund 1.400 Einträge) und den eigenen Namen aus dem Adminbereich (*own*).
+
+- **Suche** nach Nummer (Anfang, z. B. `262`) oder Namen (z. B. `Bayern`, `nord`)
+- **📡 Active (30 days)**: nur Talkgroups, auf denen der Server in den letzten 30 Tagen Gespräche hatte, sortiert nach Sprechzeit; mit Gesprächen, Sprechzeit und letztem Gespräch
+- **✏️ Own names**: nur die selbst vergebenen Namen
+
+<p align="center"><img src="../images/talkgroups-search.png" alt="Suche im Verzeichnis" width="80%"></p>
+
+Die Namen erscheinen auch überall sonst im Dashboard:
+- **Last Heard:** unter der Talkgroup-Nummer
+- **Zeitschlitze der Karten:** unter *Destination*
+- **TS1/TS2-Listen der Karten:** als Tooltip; gepunktet unterstrichene Nummern haben einen Namen
+- **Detailansicht** der Stationen
+- **Talkgroup-Statistik** und **Configuration-Tab**
+
+Die Liste wird täglich zusammen mit der Rufzeichen-Datenbank neu geladen. Bis zum ersten Download nutzt das Dashboard eine mitgelieferte Kopie, die Namen funktionieren also sofort und auch offline.
 
 ## 🛠️ Configuration – so verbindest du dich
 

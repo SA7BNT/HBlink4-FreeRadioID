@@ -1582,7 +1582,9 @@
         .main-tabs .t-short { display: none; }
         @media (max-width: 600px) {
             .main-tabs { width: 100%; }
-            .main-tabs button { flex: 1; justify-content: center; padding: 8px 4px; font-size: 13px; gap: 4px; }
+            .main-tabs { gap: 2px; padding: 3px; }
+            .main-tabs button { flex: 1 1 0; min-width: 0; justify-content: center; padding: 8px 2px; font-size: 12.5px; gap: 3px; }
+            .main-tabs .tab-count { display: none; }
             .main-tabs .t-long { display: none; } .main-tabs .t-short { display: inline; }
         }
 
@@ -1647,6 +1649,16 @@
             .cf-row .v { font-size: 14px; flex-wrap: wrap; }
             .cf-row .v code { white-space: normal; word-break: break-all; }
         }
+
+        /* ---------------- Talkgroup names & directory ---------------- */
+        .tg-name { display: block; font-size: 11px; font-weight: 500; color: var(--text-dim); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lh-dest { display: inline-flex; flex-direction: column; vertical-align: middle; }
+        .slot-col-value .tg-name { max-width: 150px; }
+        .chip .tg-name { display: inline; font-size: 11px; margin-left: 4px; }
+        .tgdir-search { flex: 1; max-width: 440px; min-width: 200px; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px;
+                        padding: 8px 12px; color: var(--text); font: inherit; outline: none; }
+        .tgdir-search:focus { border-color: rgba(90,200,250,0.6); box-shadow: 0 0 0 3px rgba(90,200,250,0.15); }
+        .own-tag { font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid rgba(90,200,250,.4); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
 
         /* ---------------- Talkgroup statistics ---------------- */
         #tgStatsBody { padding: 16px; }
@@ -1726,7 +1738,8 @@
         <!-- Main tabs: live view / statistics -->
         <nav class="main-tabs" id="mainTabs" role="tablist">
             <button type="button" role="tab" data-tab="live" class="active">🎙️ Live</button>
-            <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 Statistics <span class="tab-count" id="tgStatsCount"></span></button>
+            <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span> <span class="tab-count" id="tgStatsCount"></span></button>
+            <button type="button" role="tab" data-tab="tgdir" id="mainTabTg">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
             <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
         </nav>
 
@@ -1880,6 +1893,26 @@
         <div class="tab-pane" id="tabConfig" style="display: none;">
             <div id="cfBody"><div class="tgs-empty">Loading …</div></div>
         </div><!-- /tabConfig -->
+
+        <div class="tab-pane" id="tabTgDir" style="display: none;">
+            <h2 class="section-header">🗂️ Talkgroups <span id="tgDirCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <div class="card" style="padding: 16px;">
+                <div class="tgs-toolbar">
+                    <input type="text" id="tgDirSearch" class="tgdir-search" placeholder="🔎 Search: number or name, e.g. 262 or Bayern" autocomplete="off">
+                    <div class="tgs-seg" id="tgDirFilter"><button data-v="all" class="active">All</button><button data-v="active">📡 Active (30 days)</button><button data-v="own">✏️ Own names</button></div>
+                </div>
+                <div class="tgs-table-wrap" style="margin-top: 0;">
+                    <table class="tgs-table">
+                        <thead><tr><th>TG</th><th>Name</th><th class="num">Calls (30 d)</th><th class="num hide-sm">Airtime</th><th class="hide-sm">Last call</th></tr></thead>
+                        <tbody id="tgDirBody"></tbody>
+                    </table>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+                    <span id="tgDirSource" style="color: var(--text-dim); font-size: 12.5px;"></span>
+                    <div class="tgs-more" id="tgDirMore" style="display: none; margin: 0;"><button type="button"></button></div>
+                </div>
+            </div>
+        </div><!-- /tabTgDir -->
     </div>
     <div class="tgs-tip" id="tgsTip"></div>
     
@@ -2058,6 +2091,7 @@
                 console.error('Failed to load config:', error);
             }
             if (typeof tgsUpdateVisibility === 'function') tgsUpdateVisibility();
+            if (typeof loadTgNames === 'function') loadTgNames();
         }
         
         function connectWebSocket() {
@@ -2131,6 +2165,10 @@
                 } else if (data.type === 'config_changed') {
                     // An admin changed settings: reload title, logo, banner, …
                     loadConfig();
+                } else if (data.type === 'talkgroups') {
+                    state.tgNames = data.data.names || {};
+                    if (tgd.data) tgd.data.names = state.tgNames;
+                    refreshTgViews();
                 } else if (data.type === 'user_db_status') {
                     // User database refresh completed (success or failure)
                     state.user_db_status = data.data;
@@ -2665,7 +2703,7 @@
             if (tgs === null || tgs === undefined) return '<span class="chip chip-all">All talkgroups</span>';
             if (Array.isArray(tgs) && tgs.length === 0) return '<span class="chip chip-none">None</span>';
             if (!Array.isArray(tgs)) return '<span class="muted">Unknown</span>';
-            return tgs.map(tg => `<span class="chip">${escapeHtml(tg)}</span>`).join('');
+            return tgs.map(tg => `<span class="chip">${escapeHtml(tg)}${tgName(tg) ? `<span class="tg-name">${escapeHtml(tgName(tg))}</span>` : ''}</span>`).join('');
         }
 
         function infoRow(label, value) {
@@ -2991,8 +3029,8 @@
 
         function renderTgChips(entries) {
             return entries.map(e => e.translated
-                ? `<span class="translated-tg" title="${e.title}">${e.tgid}</span>`
-                : `${e.tgid}`
+                ? `<span class="translated-tg" title="${e.title}${tgName(e.tgid) ? ' · ' + escapeHtml(tgName(e.tgid)) : ''}">${e.tgid}</span>`
+                : (tgName(e.tgid) ? `<span title="${escapeHtml(tgName(e.tgid))}" style="text-decoration: underline dotted rgba(255,255,255,.35); text-underline-offset: 3px;">${e.tgid}</span>` : `${e.tgid}`)
             ).join(', ');
         }
 
@@ -3189,7 +3227,7 @@
                         </div>
                         <div class="slot-col">
                             <div class="slot-col-label">Destination</div>
-                            <div class="slot-col-value highlight">${destination}</div>
+                            <div class="slot-col-value highlight">${destination}${stream && stream.call_type !== 'private' ? tgNameHtml(stream.dst_id) : ''}</div>
                         </div>
                         <div class="slot-col">
                             <div class="slot-col-label">Type</div>
@@ -3247,7 +3285,7 @@
                     </div>
                     <div class="slot-col">
                         <div class="slot-col-label">Destination</div>
-                        <div class="slot-col-value ${stream ? 'highlight' : 'empty'}">${destination}</div>
+                        <div class="slot-col-value ${stream ? 'highlight' : 'empty'}">${destination}${stream && stream.call_type !== 'private' ? tgNameHtml(stream.dst_id) : ''}</div>
                     </div>
                     <div class="slot-col">
                         <div class="slot-col-label">Type</div>
@@ -3710,7 +3748,7 @@
                 const payloadEmoji = isData
                     ? '<span title="Data call (not forwarded)">📟</span>'
                     : '<span title="Voice call">🎤</span>';
-                const destination = `${addrEmoji}${payloadEmoji} ${user.talkgroup}`;
+                const destination = `${addrEmoji}${payloadEmoji} <span class="lh-dest"><span>${user.talkgroup}</span>${isUnit ? '' : tgNameHtml(user.talkgroup)}</span>`;
 
                 return `
                     <tr class="${user.active ? 'lh-active' : ''}">
@@ -4280,6 +4318,66 @@
             updateUserDbStatus(state.user_db_status);
         }
 
+        // ================= Talkgroup names (N8schicht list + own names) =================
+        state.tgNames = {};
+        async function loadTgNames() {
+            try { state.tgNames = (await (await fetch('/api/talkgroups', { credentials: 'same-origin' })).json()).names || {}; }
+            catch (e) { return; }
+            refreshTgViews();
+        }
+        function tgName(tg) { return (state.tgNames && state.tgNames[tg]) || ''; }
+        function tgNameHtml(tg) { const n = tgName(tg); return n ? `<span class="tg-name" title="${escapeHtml(n)}">${escapeHtml(n)}</span>` : ''; }
+        function refreshTgViews() {
+            try { updateLastHeard(state.last_heard); updateRepeaters(state.repeaters); } catch (e) {}
+            if (tgd.data) renderTgDir();
+            if (typeof cf !== 'undefined' && cf.data) renderConnect();
+        }
+
+        // ================= Talkgroup directory =================
+        const tgd = { data: null, filter: 'all', limit: 150 };
+        async function loadTgDir() {
+            try { tgd.data = await (await fetch('/api/talkgroups?activity=1', { credentials: 'same-origin' })).json(); }
+            catch (e) { return; }
+            state.tgNames = tgd.data.names || state.tgNames;
+            renderTgDir();
+        }
+        function renderTgDir() {
+            const d = tgd.data; if (!d) return;
+            const q = document.getElementById('tgDirSearch').value.trim().toLowerCase();
+            const own = new Set(d.own || []), act = d.activity || {};
+            let rows = [...new Set([...Object.keys(d.names), ...Object.keys(act)])].map(tg => ({ tg, name: d.names[tg] || '', a: act[tg], own: own.has(tg) }));
+            if (tgd.filter === 'active') rows = rows.filter(r => r.a);
+            if (tgd.filter === 'own') rows = rows.filter(r => r.own);
+            if (q) rows = rows.filter(r => r.tg.startsWith(q) || r.name.toLowerCase().includes(q));
+            rows.sort((x, y) => tgd.filter === 'active' ? y.a.duration - x.a.duration : Number(x.tg) - Number(y.tg));
+            document.getElementById('tgDirCount').textContent = rows.length.toLocaleString('de-DE');
+            const shown = rows.slice(0, tgd.limit);
+            const dt = ts => new Date(ts * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            document.getElementById('tgDirBody').innerHTML = shown.length ? shown.map(r => `<tr><td><b>${escapeHtml(r.tg)}</b></td>
+                <td style="white-space:normal">${escapeHtml(r.name) || '<span style="color:var(--text-dim)">–</span>'}${r.own ? '<span class="own-tag">own</span>' : ''}</td>
+                <td class="num">${r.a ? r.a.calls.toLocaleString('de-DE') : '<span style="color:var(--text-dim)">–</span>'}</td>
+                <td class="num hide-sm">${r.a ? tgsFmtDur(r.a.duration, true) : ''}</td>
+                <td class="hide-sm">${r.a ? dt(r.a.last) : ''}</td></tr>`).join('')
+                : '<tr><td colspan="5" class="tgs-empty">No talkgroup found.</td></tr>';
+            const more = document.getElementById('tgDirMore');
+            more.style.display = rows.length > tgd.limit ? '' : 'none';
+            more.querySelector('button').textContent = `Show all ${rows.length.toLocaleString('de-DE')}`;
+            const L = d.list || {};
+            document.getElementById('tgDirSource').innerHTML = L.enabled
+                ? `List of the N8schicht: ${(L.count || 0).toLocaleString('de-DE')} names${L.updated ? ', updated ' + dt(L.updated) : ''} · <a href="https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json" target="_blank" rel="noopener" style="color:var(--accent)">talkgroup_ids.json</a>`
+                : 'Talkgroup list switched off (admin area → Settings → Talkgroups &amp; statistics)';
+        }
+        (() => {
+            let t = null;
+            document.getElementById('tgDirSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { tgd.limit = 150; renderTgDir(); }, 120); });
+            document.getElementById('tgDirMore').querySelector('button').addEventListener('click', () => { tgd.limit = 1e9; renderTgDir(); });
+            document.getElementById('tgDirFilter').addEventListener('click', ev => {
+                const b = ev.target.closest('button'); if (!b) return;
+                document.querySelectorAll('#tgDirFilter button').forEach(x => x.classList.toggle('active', x === b));
+                tgd.filter = b.dataset.v; tgd.limit = 150; renderTgDir();
+            });
+        })();
+
         // ================= Talkgroup statistics =================
         // Data: GET /api/stats/talkgroups?range=today|24h|7d|30d (one row per group call in SQLite).
         // Colours: validated categorical palette for the dark surface (dataviz check: all pass);
@@ -4318,6 +4416,7 @@
         function currentTab() {
             if (location.hash === '#stats' && tgsAllowed()) return 'stats';
             if (location.hash === '#config' && cfAllowed()) return 'config';
+            if (location.hash === '#talkgroups') return 'tgdir';
             return 'live';
         }
         function showTab(tab, push) {
@@ -4330,9 +4429,11 @@
             document.getElementById('tabLive').style.display = tab === 'live' ? '' : 'none';
             document.getElementById('tabStats').style.display = tab === 'stats' ? '' : 'none';
             document.getElementById('tabConfig').style.display = tab === 'config' ? '' : 'none';
+            document.getElementById('tabTgDir').style.display = tab === 'tgdir' ? '' : 'none';
             tgs.visible = tab === 'stats';
-            if (push) history.replaceState(null, '', tab === 'live' ? location.pathname + location.search : '#' + tab);
+            if (push) history.replaceState(null, '', tab === 'live' ? location.pathname + location.search : '#' + (tab === 'tgdir' ? 'talkgroups' : tab));
             if (tab === 'config') loadConnect();
+            if (tab === 'tgdir') loadTgDir();
             if (tgs.visible) { if (tgs.data) renderTgStats(); loadTgStats(); }   // widths are known only when shown
             else tgsHide();
         }
@@ -4563,7 +4664,7 @@
                 else { t.setHours(0, 0, 0, 0); t.setDate(t.getDate() - (n - 1 - i)); }
                 buckets.push(t.getTime() / 1000);
             }
-            const tgDefs = [[262, 'Deutschland', 1.0], [26500, 'N8schicht', 0.8], [2620, 'Baden-Württemberg', 0.45], [26501, 'Gäste', 0.32], [91, 'Worldwide', 0.25], [9, 'Lokal', 0.12], [263, 'DL Regional', 0.08], [8, 'Regional', 0.05]];
+            const tgDefs = [[262, 1.0], [265, 0.8], [2624, 0.45], [26501, 0.32], [91, 0.25], [920, 0.12], [263, 0.08], [9, 0.05]].map(([tg, w]) => [tg, tgName(tg) || (tg === 26501 ? 'N8schicht Gäste' : ''), w]);
             let seed = range.length * 97 + 11;
             const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
             const curH = now.getHours();
@@ -4641,7 +4742,7 @@
         function renderConnect() {
             const d = cf.data, el = document.getElementById('cfBody');
             if (!d || !el) return;
-            const names = d.tg_names || {};
+            const names = Object.assign({}, state.tgNames || {}, d.tg_names || {});
             const logo = d.logo || '/static/n8schicht-icon.svg';
             const pw = d.password;
             const pwShown = pw != null && pw !== '';
@@ -4738,9 +4839,9 @@
 
         function demoConnect() {
             return { title: 'DMR Die N8schicht', description: 'N8schicht DMR Network', logo: '', host: 'dmr.die-n8schicht.de', port: 62031,
-                     freeradioid: true, password: 'passw0rd', slot1: [262, 2620], slot2: [26500, 91], guest: [26501, 26502, 26503],
+                     freeradioid: true, password: 'passw0rd', slot1: [262, 2624], slot2: [265, 91], guest: [26501, 26502, 26503],
                      trust: true, unit_calls: false,
-                     tg_names: { 262: 'Deutschland', 2620: 'Baden-Württemberg', 26500: 'N8schicht', 91: 'Worldwide', 26501: 'Gäste', 26502: 'Gäste 2', 26503: 'Gäste 3' },
+                     tg_names: Object.assign({}, state.tgNames, { 26501: 'N8schicht Gäste', 26502: 'N8schicht Gäste 2', 26503: 'N8schicht Gäste 3' }),
                      note: 'Bitte Rufzeichen nennen und Pausen lassen.\nFragen an sysop@die-n8schicht.de · Infos: https://dmr.die-n8schicht.de' };
         }
 

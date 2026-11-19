@@ -52,7 +52,7 @@ Hier stehen **alle** Einstellungen, oben das Dashboard, darunter der DMR-Server.
 | 🔐 Dashboard access | öffentlich ja/nein, Sitzungsdauer, „angemeldet bleiben“ | sofort |
 | 🛡️ FreeRadioID data | Avatare, Profilabfrage, FreeRadioID-ID-Liste | sofort |
 | 📘 Callsign database | Quelle (**FreeRadioID.net**, Vorgabe, oder nur radioid.net), Länder, Uhrzeit des Updates, **⟳ Refresh now** | sofort; bei neuer Quelle oder neuen Ländern wird die Liste gleich neu geladen |
-| 📈 Talkgroup statistics | Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **Namen der Talkgroups** (`262 = Deutschland`, eine pro Zeile) | sofort |
+| 📈 Talkgroups & statistics | **Talkgroup-Liste der N8schicht** an/aus und ihre URL (Vorgabe: `talkgroup_ids.json` aus [dhartmann1979/n8schicht](https://github.com/dhartmann1979/n8schicht)), Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **eigene Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile; sie überschreiben die Liste) | sofort; eine neue URL wird gleich geladen |
 | 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Servername), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
 | 🔒 HTTPS & web | HTTPS, Domain, E-Mail, Test-Zertifikate, Ports | nach **Neustart** des Dashboards |
 

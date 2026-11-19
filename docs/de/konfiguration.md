@@ -75,7 +75,7 @@ Das erstellt `scripts/setup.sh`; die Vorlagen sind `config/config_sample.json` u
 | 🔐 Access | `auth.public_dashboard`, `auth.session_hours`, `auth.remember_days` | öffentlich, 12 h, 30 Tage |
 | 🛡️ FreeRadioID data | `freeradioid.avatars`, `freeradioid.profile_lookup`, `user_database.freeradioid.enabled` | alles an |
 | 📘 Callsign database | `user_database.source_url`, `user_database.filter.countries`, `user_database.refresh.time_of_day` | **FreeRadioID.net**, alle Länder, 03:17 |
-| 📈 Talkgroup statistics | `tg_stats.enabled`, `tg_stats.public`, `tg_stats.retention_days`, `tg_stats.names` | an, öffentlich, 30 Tage, leer |
+| 📈 Talkgroups & statistics | `talkgroups.list`, `talkgroups.url`, `tg_stats.enabled`, `tg_stats.public`, `tg_stats.retention_days`, `tg_stats.names` (eigene Namen) | an, N8schicht-Liste, an, öffentlich, 30 Tage, leer |
 | 🛠️ Configuration tab | `connect.enabled`, `connect.host`, `connect.show_password`, `connect.note` | an, Servername, an, leer |
 | 🔒 HTTPS & web 🔄 | `https.enabled` / `.domain` / `.email` / `.staging` / `.port` / `.http_port`, `web.port` | aus, 443, 80, 8080 |
 

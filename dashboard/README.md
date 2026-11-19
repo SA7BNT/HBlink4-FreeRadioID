@@ -303,6 +303,14 @@ on/off, default (guest) password unless `connect.show_password` is off, TS1/TS2
 and guest talkgroups with names, trust, note. Pattern passphrases are never
 included. 404 when `connect.enabled` is off.
 
+### GET /api/talkgroups[?activity=1]
+Talkgroup names: the N8schicht list (`talkgroup_ids.json` from
+github.com/dhartmann1979/n8schicht, bundled copy until the first download,
+refreshed daily with the callsign database) overridden by the own names
+(`tg_stats.names`). With `activity=1` also calls/airtime/last call per talkgroup
+of the last 30 days. Shown in the **🗂️ Talkgroups** tab and next to talkgroup
+numbers everywhere in the dashboard.
+
 ### GET /api/stats/talkgroups?range=today|24h|7d|30d
 Talkgroup statistics: totals, per-talkgroup calls/airtime/speakers/top talker
 and an hourly (today, 24h) or daily (7d, 30d) series of the top 5 talkgroups

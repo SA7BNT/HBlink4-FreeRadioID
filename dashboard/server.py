@@ -11,9 +11,10 @@ import os
 import ipaddress
 import sys
 import atexit
+import time
 from datetime import datetime, date, timedelta
 from collections import deque
-from typing import Dict, List, Set, Optional
+from typing import Any, Dict, List, Set, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Body
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +35,7 @@ from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
 from .settings import SettingsStore, SettingsError, FIELD_BY_KEY
 from .avatars import AvatarStore, DEFAULT_URL as FRID_AVATAR_URL
 from .tgstats import TGStats, parse_names as _parse_tg_names, RANGES as TG_RANGES
+from .talkgroups import Talkgroups
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -257,6 +259,8 @@ class DashboardState:
 
         # Talkgroup statistics (one row per group call), same database
         self.tgstats = TGStats(self.auth)
+        # Talkgroup names (N8schicht list, bundled copy until the first download)
+        self.talkgroups = Talkgroups(self.auth)
 
         # Settings: seeded from config.json on the first start, SQLite afterwards
         self.settings = SettingsStore(self.auth, _load_dmr_file_config())
@@ -1356,6 +1360,10 @@ _USERDB_KEYS = {"user_database.source_url", "user_database.filter.countries",
 
 
 async def _after_settings_change(changed: List[str]):
+    if any(k.startswith("talkgroups.") for k in changed):
+        asyncio.create_task(refresh_talkgroups("settings"))
+    elif "tg_stats.names" in changed:
+        asyncio.create_task(broadcast_talkgroups())
     if not changed:
         return
     # Pages reload title, logo, banner etc.
@@ -1376,6 +1384,7 @@ async def _refresh_userdb_now(trigger: str):
     status = await state.user_db.refresh_from_upstream(udb_cfg)
     await broadcast_user_db_status(trigger=trigger, status=status)
     asyncio.create_task(sync_avatars(trigger))
+    asyncio.create_task(refresh_talkgroups(trigger))
 
 
 @app.get("/api/admin/settings")
@@ -1557,12 +1566,60 @@ def _tg_cfg() -> dict:
 _tg_names_memo: tuple = (None, {})
 
 
-def _tg_names() -> Dict[int, str]:
+def _own_tg_names() -> Dict[int, str]:
     global _tg_names_memo
     text = _tg_cfg().get("names") or ""
     if _tg_names_memo[0] != text:
         _tg_names_memo = (text, _parse_tg_names(text))
     return _tg_names_memo[1]
+
+
+def _tg_names() -> Dict[int, str]:
+    """Talkgroup names: the N8schicht list, overridden/completed by the own names (admin area)."""
+    tl = dashboard_config.get("talkgroups") or {}
+    names = dict(state.talkgroups.names()) if tl.get("list", True) else {}
+    names.update(_own_tg_names())
+    return names
+
+
+async def refresh_talkgroups(trigger: str = "") -> None:
+    tl = dashboard_config.get("talkgroups") or {}
+    if not tl.get("list", True):
+        await broadcast_talkgroups()
+        return
+    try:
+        await asyncio.to_thread(state.talkgroups.refresh, tl.get("url") or "")
+    except Exception:
+        return
+    await broadcast_talkgroups()
+
+
+async def broadcast_talkgroups() -> None:
+    if not state.websocket_clients:
+        return
+    msg = json.dumps({"type": "talkgroups", "timestamp": datetime.now().timestamp(),
+                      "data": {"names": {str(k): v for k, v in _tg_names().items()}}})
+    for ws in list(state.websocket_clients):
+        try:
+            await ws.send_text(msg)
+        except Exception:
+            pass
+
+
+@app.get("/api/talkgroups")
+async def get_talkgroups(request: Request, activity: int = 0):
+    """All talkgroup names (list + own); with activity=1 also the calls of the last 30 days."""
+    out: Dict[str, Any] = {"names": {str(k): v for k, v in _tg_names().items()},
+                           "own": [str(k) for k in _own_tg_names()],
+                           "list": {"enabled": bool((dashboard_config.get("talkgroups") or {}).get("list", True)),
+                                    "count": state.talkgroups.count(), "updated": state.talkgroups.updated,
+                                    "error": state.talkgroups.error}}
+    if activity:
+        since = time.time() - 30 * 86400
+        rows = state.auth._q("SELECT tg, COUNT(*) AS n, SUM(duration) AS d, MAX(ts) AS last FROM tg_calls "
+                             "WHERE ts >= ? AND is_data = 0 GROUP BY tg", (since,))
+        out["activity"] = {str(r["tg"]): {"calls": r["n"], "duration": round(r["d"] or 0, 1), "last": r["last"]} for r in rows}
+    return out
 
 
 def _record_tg_call(stream: dict, data: dict, connection_type: str, ts) -> None:
@@ -1918,6 +1975,7 @@ async def startup_event():
     asyncio.create_task(receiver.start())
     asyncio.create_task(midnight_reset_task())
     asyncio.create_task(user_db_refresh_task())
+    asyncio.get_running_loop().call_later(15, lambda: asyncio.ensure_future(refresh_talkgroups("startup")))
     logger.info("🚀 HBlink4 Dashboard started!")
     logger.info(f"📡 Event transport: {receiver_config.get('transport', 'unix').upper()}")
     # Report the port actually configured, not the default -- an operator who
@@ -2030,6 +2088,7 @@ async def user_db_refresh_task():
         status = await state.user_db.refresh_from_upstream(udb_cfg)
         await broadcast_user_db_status(trigger="scheduled", status=status)
         asyncio.create_task(sync_avatars("scheduled"))
+        asyncio.create_task(refresh_talkgroups("scheduled"))
 
 
 async def broadcast_user_db_status(trigger: str, status: str):
