@@ -1,3 +1,107 @@
+<p align="center">
+  <img src="docs/images/n8schicht-banner.png" alt="DMR Die N8schicht – HBlink4 mit FreeRadioID Secure Login" width="100%">
+</p>
+
+# HBlink4 · FreeRadioID-Edition von DMR Die N8schicht
+
+Dieser Fork von [n0mjs710/HBlink4](https://github.com/n0mjs710/HBlink4) läuft auf **dmr.die-n8schicht.de**. Er ergänzt HBlink4 um zwei Dinge:
+
+- **FreeRadioID Secure Login**: Repeater und Hotspots können sich mit dem persönlichen Passwort von [FreeRadioID.net](https://freeradioid.net/betatest.html) anmelden. Wer das öffentliche Standard-Passwort benutzt, kommt als **Gast** rein und darf nur auf die Gast-Talkgroups senden.
+- **Überarbeitetes Dashboard** im Glass-Look, für Smartphone und Desktop. Jede Verbindung zeigt ein Badge mit ihrer Login-Art. Logo und Favicon lassen sich frei einstellen.
+
+Alles andere entspricht dem Original. Die englische Original-Anleitung folgt weiter unten.
+
+<p align="center">
+  <img src="docs/images/dashboard-desktop.png" alt="Dashboard am Desktop" width="72%">
+  &nbsp;
+  <img src="docs/images/dashboard-mobile.png" alt="Dashboard am Smartphone" width="22%">
+</p>
+
+## Login-Arten im Dashboard
+
+| Anzeige | Bedeutung |
+|---|---|
+| <img src="docs/images/dashboard-freeradioid-card.png" width="420"> | **🛡️ FreeRadioID ✓**: Das Passwort wurde von FreeRadioID.net bestätigt. Das Gerät hat volle Rechte und einen grünen Rand. |
+| <img src="docs/images/dashboard-guest-card.png" width="420"> | **👤 Guest**: Das Gerät hat sich mit dem Standard-Passwort angemeldet und darf nur auf die `guest_talkgroups` senden (Standard: 26501, 26502, 26503). Empfangen kann es alles. |
+| ohne Badge | Login mit dem Server-Passwort eines Patterns, bei dem FreeRadioID ausgeschaltet ist (`"freeradioid": false`). |
+
+Außerdem gibt es:
+- eine Statistik-Kachel **FreeRadioID** mit der Zahl der verifizierten Geräte und der Gäste,
+- im Detail-Fenster (Klick aufs Rufzeichen) die Zeile **Login**,
+- in **Last Heard** ein 🛡️ hinter der Quelle, wenn sie per FreeRadioID angemeldet ist.
+
+## Installation dieses Forks
+
+Die Installation läuft wie im Original (siehe [Installation](#installation) weiter unten). Es ändert sich nur die Adresse beim Klonen:
+
+```bash
+cd ~
+git clone https://github.com/dhartmann1979/HBlink4-FreeRadioID HBlink4
+cd HBlink4
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt -r requirements-dashboard.txt
+cp config/config_sample.json config/config.json
+cp dashboard/config_sample.json dashboard/config.json
+```
+
+### FreeRadioID einschalten
+
+Ergänze in `config/config.json` diesen Abschnitt:
+
+```json
+"freeradioid": {
+    "enabled": true,
+    "timeout": 3.0,
+    "guest_talkgroups": [26501, 26502, 26503]
+}
+```
+
+- Das `passphrase` unter `repeater_configurations.default` ist das **Standard-Passwort für Gäste**.
+- `guest_talkgroups: null` bedeutet, dass Gäste nicht eingeschränkt sind. Bei `[]` dürfen Gäste gar nicht senden.
+- Eigene Repeater mit privatem Passwort nimmst du aus, indem du in ihrem Pattern `"freeradioid": false` setzt.
+- Wenn die FreeRadioID-API nicht erreichbar ist, kommen Gäste weiterhin rein. Registrierte Nutzer kommen dann nur mit dem Standard-Passwort rein.
+
+Technische Details und das API-Protokoll stehen in **[docs/freeradioid.md](docs/freeradioid.md)**.
+
+### Eigenes Logo im Dashboard
+
+In `dashboard/config.json`:
+
+```json
+"dashboard_title": "DMR Die N8schicht",
+"server_name": "dmr.die-n8schicht.de",
+"logo": "/static/n8schicht-icon.svg",
+"favicon": "/static/n8schicht-icon.svg"
+```
+
+Eigene Logos legst du nach `dashboard/static/`. Wenn `logo` leer bleibt, erscheint das HBlink-Logo.
+
+Für Rufzeichen aus Deutschland trägst du im Abschnitt `user_database` unter `countries` zusätzlich `"Germany"` ein. Das ist in der [Dashboard-Anleitung](dashboard/README.md#callsign-lookups) beschrieben.
+
+### Starten und aktualisieren
+
+```bash
+sudo ./scripts/install_services.sh                       # einmalig: systemd-Dienste anlegen
+git pull && sudo systemctl restart hblink4 hblink4-dash  # Update
+```
+
+Neue Versionen des Originals übernimmst du so:
+
+```bash
+git remote add upstream https://github.com/n0mjs710/HBlink4   # einmalig
+git pull upstream main && git push
+```
+
+### Logo
+
+<img src="docs/images/n8schicht-logo.png" width="128" align="right" alt="DMR Die N8schicht Logo">
+
+Das Logo von **DMR Die N8schicht** liegt als SVG unter `dashboard/static/n8schicht-icon.svg`. Ein PNG in 512 px findest du unter `docs/images/n8schicht-logo.png`, ein PNG in 192 px unter `dashboard/static/n8schicht-icon-192.png`. Der Banner ist `docs/images/n8schicht-banner.png`.
+
+<br clear="right">
+
+---
+
 # HBlink4
 
 HBlink4 is a DMR server using the HomeBrew protocol, by Cort Buffington, N0MJS. It is the server a club or regional network runs for **its own talkgroups**.

@@ -2,6 +2,9 @@
     "server_name": "HBlink4 Server",
     "server_description": "Amateur Radio DMR Network",
     "dashboard_title": "HBlink4 Dashboard",
+    "_comment_branding": "Optional: own logo and favicon, e.g. \"/static/n8schicht-icon.svg\" (files in dashboard/static/) or a full URL. Leave empty for the HBlink logo.",
+    "logo": "",
+    "favicon": "",
     "announcement": {
         "enabled": false,
         "text": ""

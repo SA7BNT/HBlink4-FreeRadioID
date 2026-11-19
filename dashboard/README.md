@@ -58,6 +58,20 @@ The banner appears as an eye-catching orange gradient banner at the top of the p
 
 The banner only displays when both `enabled` is `true` and `text` contains content.
 
+### Logo and Favicon
+
+Replace the HBlink logo and the browser tab icon with your own:
+
+```json
+{
+    "logo": "/static/n8schicht-icon.svg",
+    "favicon": "/static/n8schicht-icon.svg"
+}
+```
+
+Put the files in `dashboard/static/` or use full URLs. If `favicon` is empty,
+the logo is used. Leave both empty for the default HBlink logo.
+
 ### Network Info Button
 
 Add an optional "Network Info" button to the dashboard header that links users to your network's information page:
@@ -124,6 +138,7 @@ Top row displays key metrics:
 - **Total Calls Today**: Number of calls received from repeaters today (RX only)
 - **Retransmitted Calls Today**: Number of calls forwarded to other repeaters today (TX)
 - **Total Traffic Today**: Duration of received traffic today (RX only)
+- **FreeRadioID**: Verified and guest logins (only shown when FreeRadioID secure login is in use, see [docs/freeradioid.md](../docs/freeradioid.md))
 
 ### Last Heard Table
 Shows the 10 most recent users:

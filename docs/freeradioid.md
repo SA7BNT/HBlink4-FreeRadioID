@@ -61,5 +61,21 @@ they can *transmit* is limited.
 2. Later, change the default passphrase to a private one. Then only registered
    FreeRadioID users, plus whoever knows the new passphrase, can connect.
 
-The dashboard's `repeater_connected` events carry an `auth_method` field
-(`local`, `freeradioid` or `guest`).
+## Dashboard
+
+The dashboard shows how each connection logged in:
+
+* **🛡️ FreeRadioID ✓** badge with a green edge: verified by FreeRadioID.net
+* **👤 Guest** badge with a yellow edge: default passphrase, TX limited to the guest talkgroups
+* No badge: plain server passphrase (FreeRadioID off for that pattern)
+
+![FreeRadioID verified](images/dashboard-freeradioid-card.png)
+![Guest login](images/dashboard-guest-card.png)
+
+A **FreeRadioID** statistics tile counts verified and guest logins. The detail
+dialog has a **Login** row, and Last Heard marks traffic from verified sources
+with 🛡️.
+
+The data comes from the `auth_method` field (`local`, `freeradioid` or `guest`)
+in the `repeater_connected` events and in `/api/repeaters` and
+`/api/repeater/{id}` (`access_control.auth_method`).

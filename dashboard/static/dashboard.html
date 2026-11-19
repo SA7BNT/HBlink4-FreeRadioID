@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HBlink4 Dashboard</title>
+    <link rel="icon" id="favicon" href="/static/HBlink.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -856,7 +857,7 @@
             background: rgba(20, 26, 45, 0.55);
         }
 
-        .logo { height: 52px; filter: drop-shadow(0 4px 12px rgba(90, 200, 250, 0.35)); }
+        .logo { height: 56px; filter: drop-shadow(0 4px 12px rgba(90, 200, 250, 0.35)); }
         h1 {
             font-size: 24px;
             font-weight: 700;
@@ -1343,6 +1344,15 @@
                 document.title = config.dashboard_title || 'HBlink4 Dashboard';
                 document.getElementById('dashboardTitle').textContent = config.dashboard_title || 'HBlink4 Dashboard';
                 document.getElementById('serverName').textContent = config.server_name || '';
+
+                // Optional branding: own logo and favicon (paths under /static or full URLs)
+                if (config.logo) {
+                    document.querySelector('.logo').src = config.logo;
+                    document.querySelector('.logo').alt = config.dashboard_title || 'Logo';
+                }
+                if (config.favicon || config.logo) {
+                    document.getElementById('favicon').href = config.favicon || config.logo;
+                }
                 
                 // Show announcement banner if enabled and text exists
                 if (config.announcement && config.announcement.enabled && config.announcement.text && config.announcement.text.trim()) {
