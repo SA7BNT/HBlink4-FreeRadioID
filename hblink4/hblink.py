@@ -4472,6 +4472,10 @@ async def async_main():
             LOGGER.info(f'✓ HBlink4 listening on {bind_ipv4}:{port_ipv4} (UDP, IPv4)')
         except Exception as e:
             LOGGER.error(f'✗ Failed to bind IPv4 to {bind_ipv4}:{port_ipv4}: {e}')
+            if getattr(e, 'errno', None) == 98:
+                LOGGER.error(f'  UDP port {port_ipv4} is already taken - is HBlink4 already running '
+                             f'(systemctl status hblink4, or run_all.sh), or another DMR server/proxy '
+                             f'(ADN/FreeDMR) on this machine? Check: sudo ss -ulpn "sport = :{port_ipv4}"')
             if bind_ipv4 == '0.0.0.0':
                 # Critical failure on wildcard bind
                 sys.exit(1)

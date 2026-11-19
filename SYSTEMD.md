@@ -252,3 +252,12 @@ sudo chown -R adn:adn /opt/HBlink4        # use your service user and path
 The dashboard writes `dashboard/data/` (statistics, users database, certificates)
 and HBlink4 writes `logs/`. Run `git pull` afterwards as that user, or repeat the
 `chown` after pulling as root.
+
+## Services or run_all.sh, never both
+
+`run_all.sh` is for trying things out in a terminal. Once the services are
+installed, do not start it as well: both would bind UDP 62031 and TCP 8080, the
+second HBlink4 exits with "Address already in use" and systemd keeps restarting
+the services. `run_all.sh` now refuses to start while the services are active or
+a port is taken, and stops both programs as soon as one of them exits.
+

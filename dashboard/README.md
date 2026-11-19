@@ -87,10 +87,22 @@ the logo is used. Leave both empty for the default DMR Die N8schicht logo.
 
 The superadmin exists only in this file (`python -m dashboard.auth hash-password`
 prints a hash). It logs in through **🔐 Login** and manages admins and users in the
-admin area. Users, sessions, the audit log and own avatars are stored in SQLite
+admin area. Users, sessions, the audit log and settings are stored in SQLite
 (`dashboard/data/dashboard.db`). **IP addresses are removed server-side from every
 API response and WebSocket message for everyone except admins.** With
 `public_dashboard: false` nothing is visible without a login.
+
+### Settings in the Admin Area (SQLite)
+
+On the first start the dashboard copies its settings from `dashboard/config.json`
+(or built-in defaults) into `dashboard/data/dashboard.db`. From then on the
+database wins and the settings are edited in the admin area (**Settings** tab):
+branding, announcement banner and network info button, public dashboard and
+session lengths, FreeRadioID avatars/profiles/ID list, the callsign database
+(source, countries, refresh time, refresh now) and HTTPS/ports (applied after a
+restart; the admin area offers a restart button when the dashboard runs under
+systemd). **↺ config.json** takes a section from the file again. The superadmin
+always stays in `config.json`.
 
 ### HTTPS with Let's Encrypt
 
@@ -120,8 +132,8 @@ answers the ACME challenge and redirects to HTTPS; certificates live in
 ```
 
 Avatars appear in the station detail view and Last Heard (`""` turns them off).
-They are fetched through `GET /api/avatar/{id}`: own uploads (admin area) first,
-then FreeRadioID, whose grey placeholder is treated as "no avatar".
+They are fetched through `GET /api/avatar/{id}` from FreeRadioID, whose grey
+placeholder is treated as "no avatar" (initials are shown).
 The detail view shows the FreeRadioID profile of the station (cached for an
 hour; `GET /api/freeradioid/{id}`). The IDs registered at FreeRadioID are
 downloaded with the callsign database (`user_database.freeradioid`), marked

@@ -31,6 +31,7 @@ if __package__ in (None, ""):
 
 from .user_db import UserDatabase, compute_next_refresh_seconds, _age_str
 from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
+from .settings import SettingsStore, SettingsError, FIELD_BY_KEY
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -125,6 +126,9 @@ def load_config() -> dict:
         return default_config
 
 dashboard_config = load_config()
+# Untouched copy of config.json (+ defaults): "reset to config.json" in the admin area
+import copy as _copy
+_file_config = _copy.deepcopy(dashboard_config)
 
 # In-memory state (could be Redis/database for persistence)
 class DashboardState:
@@ -162,6 +166,13 @@ class DashboardState:
         # Users, sessions, audit log and avatars (SQLite)
         self.auth = AuthStore(self._data_dir / "dashboard.db")
         self.auth.sync_superadmin((dashboard_config.get("auth") or {}).get("superadmin") or {})
+
+        # Settings: seeded from config.json on the first start, SQLite afterwards
+        self.settings = SettingsStore(self.auth)
+        seeded = self.settings.seed_and_apply(dashboard_config)
+        if seeded:
+            logger.info(f"⚙️ {seeded} settings taken over from config.json into the database; "
+                        "from now on they are edited in the admin area")
 
         # Load persisted data
         self._load_persisted_data()
@@ -1115,8 +1126,6 @@ async def _security_middleware(request: Request, call_next):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "same-origin")
-    if request.url.scheme == "https":
-        response.headers.setdefault("Strict-Transport-Security", "max-age=15552000")
     return response
 
 
@@ -1222,7 +1231,8 @@ async def admin_system(request: Request):
             "letsencrypt": bool(https_cfg.get("letsencrypt", True)), "served_over_https": request.url.scheme == "https",
             "cert_expires": None, "public_dashboard": _public_dashboard(),
             "superadmin": ((_auth_cfg().get("superadmin") or {}).get("username") or ""),
-            "users": len(state.auth.list_users()), "avatars": len(state.auth.list_avatars())}
+            "users": len(state.auth.list_users()), "systemd": bool(os.environ.get("INVOCATION_ID")),
+            "version": "HBlink4-FreeRadioID"}
     if _tls_manager is not None and _tls_manager.have_cert():
         try:
             import ssl as _ssl
@@ -1232,43 +1242,101 @@ async def admin_system(request: Request):
     return info
 
 
-@app.get("/api/admin/avatars")
-async def admin_avatars(request: Request):
+# ---------------------------------------------------------------- settings
+_USERDB_KEYS = {"user_database.source_url", "user_database.filter.countries",
+                "user_database.freeradioid.enabled"}
+
+
+async def _after_settings_change(changed: List[str]):
+    if not changed:
+        return
+    # Pages reload title, logo, banner etc.
+    message = json.dumps({"type": "config_changed", "timestamp": datetime.now().timestamp()})
+    for client in list(state.websocket_clients):
+        try:
+            await client.send_text(message)
+        except Exception:
+            pass
+    if _USERDB_KEYS & set(changed):
+        asyncio.create_task(_refresh_userdb_now("settings"))
+
+
+async def _refresh_userdb_now(trigger: str):
+    udb_cfg = dashboard_config.get("user_database", {}) or {}
+    # a new source or filter must be downloaded in full, not answered with 304
+    state.user_db.meta.last_modified_header = ""
+    status = await state.user_db.refresh_from_upstream(udb_cfg)
+    await broadcast_user_db_status(trigger=trigger, status=status)
+
+
+@app.get("/api/admin/settings")
+async def admin_settings(request: Request):
     _require_admin(request)
-    return {"avatars": state.auth.list_avatars()}
+    return {"sections": state.settings.describe(dashboard_config)}
 
 
-@app.put("/api/admin/avatars/{dmr_id}")
-async def admin_put_avatar(dmr_id: int, request: Request):
+@app.put("/api/admin/settings")
+async def admin_save_settings(request: Request, body: dict = Body(...)):
     actor = _require_admin(request)
-    if not 1 <= dmr_id <= 16777215:
-        raise _HTTPError(400, "Invalid DMR-ID.")
-    data = await request.body()
-    if len(data) > 512 * 1024:
-        raise _HTTPError(413, "Image too large (max 512 KB).")
-    mime = sniff_image(data)
-    if not mime:
-        raise _HTTPError(415, "Only PNG, JPEG, GIF or WebP images.")
-    state.auth.set_avatar(dmr_id, mime, data, actor["username"])
-    _avatar_cache.pop(dmr_id, None)
-    state.auth.audit("avatar_set", actor["username"], str(dmr_id), _client_ip(request))
+    changes = body.get("changes") or {}
+    if not isinstance(changes, dict):
+        raise _HTTPError(400, "changes must be an object")
+    try:
+        changed = state.settings.update(dashboard_config, changes, actor["username"])
+    except SettingsError as e:
+        raise _HTTPError(400, str(e))
+    if changed:
+        state.auth.audit("settings_changed", actor["username"], ", ".join(changed), _client_ip(request))
+    await _after_settings_change(changed)
+    restart = any(FIELD_BY_KEY[k].restart for k in changed)
+    return {"changed": changed, "restart_required": restart,
+            "sections": state.settings.describe(dashboard_config)}
+
+
+@app.post("/api/admin/settings/reset")
+async def admin_reset_settings(request: Request, body: dict = Body(...)):
+    actor = _require_admin(request)
+    section = str(body.get("section") or "")
+    before = {k: _copy.deepcopy(_get_cfg(k)) for k in FIELD_BY_KEY}
+    try:
+        state.settings.reset_section(dashboard_config, _file_config, section, actor["username"])
+    except SettingsError as e:
+        raise _HTTPError(400, str(e))
+    changed = [k for k in FIELD_BY_KEY if _get_cfg(k) != before[k]]
+    state.auth.audit("settings_reset", actor["username"], section, _client_ip(request))
+    await _after_settings_change(changed)
+    return {"changed": changed, "restart_required": any(FIELD_BY_KEY[k].restart for k in changed),
+            "sections": state.settings.describe(dashboard_config)}
+
+
+def _get_cfg(key: str):
+    from .settings import get_path
+    return get_path(dashboard_config, key)
+
+
+@app.post("/api/admin/userdb/refresh")
+async def admin_refresh_userdb(request: Request):
+    actor = _require_admin(request)
+    state.auth.audit("userdb_refresh", actor["username"], "", _client_ip(request))
+    asyncio.create_task(_refresh_userdb_now("admin"))
     return {"ok": True}
 
 
-@app.delete("/api/admin/avatars/{dmr_id}")
-async def admin_delete_avatar(dmr_id: int, request: Request):
+@app.post("/api/admin/restart")
+async def admin_restart(request: Request):
     actor = _require_admin(request)
-    state.auth.delete_avatar(dmr_id)
-    _avatar_cache.pop(dmr_id, None)
-    state.auth.audit("avatar_deleted", actor["username"], str(dmr_id), _client_ip(request))
+    if not os.environ.get("INVOCATION_ID"):
+        raise _HTTPError(400, "Only possible when the dashboard runs as a systemd service (Restart=always).")
+    state.auth.audit("restart", actor["username"], "", _client_ip(request))
+    import signal as _signal
+    asyncio.get_running_loop().call_later(0.5, os.kill, os.getpid(), _signal.SIGTERM)
     return {"ok": True}
 
 
 # ---------------------------------------------------------------- avatars
-# Own uploads first, then FreeRadioID. FreeRadioID answers every unknown ID
-# with the same grey placeholder, which is treated as "no avatar" so the page
-# can show initials instead. Proxying also keeps viewers' IPs away from
-# third parties.
+# From FreeRadioID. It answers every unknown ID with the same grey
+# placeholder, which is treated as "no avatar" so the page can show initials
+# instead. Proxying also keeps viewers' IPs away from third parties.
 _avatar_cache: Dict[int, tuple] = {}        # dmr_id -> (ts, mime|None, bytes|None)
 _avatar_placeholder: Dict[str, Optional[str]] = {"md5": None}
 _avatar_sem = asyncio.Semaphore(4)
@@ -1286,8 +1354,9 @@ def _fetch_bytes(url: str, limit: int = 1024 * 1024) -> Optional[bytes]:
 
 def _fetch_freeradioid_avatar(dmr_id: int) -> tuple:
     import hashlib as _hl
-    tpl = (dashboard_config.get("freeradioid") or {}).get("avatar_url", "https://freeradioid.net/avatar-{id}.png")
-    if not tpl:
+    frid_cfg = dashboard_config.get("freeradioid") or {}
+    tpl = frid_cfg.get("avatar_url", "https://freeradioid.net/avatar-{id}.png")
+    if not tpl or not frid_cfg.get("avatars", True):
         return None, None
     if _avatar_placeholder["md5"] is None:
         ph = _fetch_bytes(tpl.replace("{id}", "0"))
@@ -1301,9 +1370,8 @@ def _fetch_freeradioid_avatar(dmr_id: int) -> tuple:
 
 @app.get("/api/avatar/{dmr_id}")
 async def get_avatar(dmr_id: int):
-    own = state.auth.get_avatar(dmr_id)
-    if own:
-        return Response(own[1], media_type=own[0], headers={"Cache-Control": "public, max-age=300"})
+    if not (dashboard_config.get("freeradioid") or {}).get("avatars", True):
+        return Response(status_code=404, headers={"Cache-Control": "public, max-age=300"})
     now = datetime.now().timestamp()
     cached = _avatar_cache.get(dmr_id)
     if not cached or now - cached[0] > (_AVATAR_TTL_HIT if cached[1] else _AVATAR_TTL_MISS):
@@ -1328,7 +1396,7 @@ async def get_config():
     """Public part of the dashboard configuration (no secrets)."""
     cfg = {k: dashboard_config[k] for k in _PUBLIC_CONFIG_KEYS if k in dashboard_config}
     frid = dashboard_config.get("freeradioid") or {}
-    cfg["freeradioid"] = {"avatars": bool(frid.get("avatar_url", True))}
+    cfg["freeradioid"] = {"avatars": bool(frid.get("avatars", True) and frid.get("avatar_url", True))}
     cfg["public_dashboard"] = _public_dashboard()
     return cfg
 
@@ -1853,6 +1921,13 @@ async def _serve(host: str, port: int):
         task = asyncio.create_task(srv.serve())
         while not srv.started and not task.done():
             await asyncio.sleep(0.05)
+        if not srv.started:
+            port_ = srv.config.port
+            msg = (f"Cannot listen on port {port_}: it is in use or not permitted. "
+                   f"Is the dashboard already running (systemctl status hblink4-dash, or run_all.sh)? "
+                   f"Check: sudo ss -tlpn 'sport = :{port_}'")
+            logger.error(f"❌ {msg}")
+            raise SystemExit(1)
         return task
 
     tasks = []
@@ -1865,8 +1940,10 @@ async def _serve(host: str, port: int):
         try:
             tasks.append(await start(_Server.make(http_app, host=host, port=http_port, lifespan="off")))
             print(f"HTTP on port {http_port}: Let's Encrypt challenges + redirect to HTTPS")
-        except Exception as e:
-            logger.error(f"🔒 Cannot listen on port {http_port}: {e} (needs CAP_NET_BIND_SERVICE)")
+        except (Exception, SystemExit) as e:
+            servers.pop()
+            logger.error(f"🔒 Port {http_port} unavailable (in use, or CAP_NET_BIND_SERVICE missing): "
+                         f"Let's Encrypt cannot verify the domain")
         if not cm.have_cert():
             await cm.obtain()
         if cm.have_cert():

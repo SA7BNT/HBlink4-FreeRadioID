@@ -1445,6 +1445,43 @@
             .hdr-btn.user span:not(.avatar):not(.role-tag) { display: none; }
             .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
         }
+
+        /* Settings tab */
+        .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .set-tile { display: flex; flex-direction: column; gap: 2px; }
+        .set-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 3px 12px; align-items: center; padding: 5px 0;
+                   border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .set-row label { font-size: 12.5px; color: var(--text); }
+        .set-row small { grid-column: 1 / -1; font-size: 11px; line-height: 1.35; }
+        .set-row.is-bool { grid-template-columns: 1fr auto; }
+        .set-row input:not([type=checkbox]), .set-row select, .set-row textarea {
+            width: 100%; padding: 6px 9px; border-radius: 8px; font-size: 13px; font-family: inherit;
+            color: var(--text); background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); outline: none;
+            color-scheme: dark;
+        }
+        .set-row textarea { resize: vertical; min-height: 34px; }
+        .set-row input:focus, .set-row select:focus, .set-row textarea:focus { border-color: var(--accent); }
+        .set-row select option { background: #1c2238; }
+        .set-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+        .restart-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #ffcf6e;
+                       border: 1px solid rgba(255, 159, 10, 0.5); border-radius: 999px; padding: 1px 6px; vertical-align: 1px; }
+        .restart-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; padding: 9px 12px;
+                          border-radius: 12px; font-size: 13px; background: rgba(255, 159, 10, 0.12); border: 1px solid rgba(255, 159, 10, 0.45); }
+        .restart-banner[hidden] { display: none; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 23px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch span { position: absolute; inset: 0; cursor: pointer; border-radius: 999px; background: rgba(255, 255, 255, 0.16);
+                       transition: background 0.2s; }
+        .switch span::before { content: ""; position: absolute; width: 19px; height: 19px; left: 2px; top: 2px; border-radius: 50%;
+                               background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+        .switch input:checked + span { background: var(--green); }
+        .switch input:checked + span::before { transform: translateX(17px); }
+        .switch input:focus-visible + span { outline: 2px solid var(--accent); }
+        @media (max-width: 760px) {
+            .settings-grid { grid-template-columns: 1fr; }
+            .set-row { grid-template-columns: 1fr; }
+            .set-row.is-bool { grid-template-columns: 1fr auto; }
+        }
     </style>
 </head>
 <body>
@@ -1734,13 +1771,10 @@
                 document.getElementById('serverName').textContent = serverName;
 
                 // Optional branding: own logo and favicon (paths under /static or full URLs)
-                if (config.logo) {
-                    document.querySelector('.logo').src = config.logo;
-                    document.querySelector('.logo').alt = title;
-                }
-                if (config.favicon || config.logo) {
-                    document.getElementById('favicon').href = config.favicon || config.logo;
-                }
+                const logo = config.logo || '/static/n8schicht-icon.svg';
+                if (document.querySelector('.logo').getAttribute('src') !== logo) document.querySelector('.logo').src = logo;
+                document.querySelector('.logo').alt = title;
+                document.getElementById('favicon').href = config.favicon || logo;
                 
                 // Show announcement banner if enabled and text exists
                 if (config.announcement && config.announcement.enabled && config.announcement.text && config.announcement.text.trim()) {
@@ -1827,6 +1861,9 @@
                     // Midnight reset - update stats immediately
                     state.stats = data.data;
                     updateStats(state.stats, state.repeaters, state.streams);
+                } else if (data.type === 'config_changed') {
+                    // An admin changed settings: reload title, logo, banner, …
+                    loadConfig();
                 } else if (data.type === 'user_db_status') {
                     // User database refresh completed (success or failure)
                     state.user_db_status = data.data;
@@ -2010,7 +2047,7 @@
         }
 
         // ---------- Admin area ----------
-        const ADMIN_TABS = [['users', '👥 Users'], ['sessions', '🔑 Sessions'], ['avatars', '🖼️ Avatars'],
+        const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
 
         function openAdmin(tab = 'users') {
@@ -2031,7 +2068,7 @@
             if (!body) return;
             body.innerHTML = '<div class="muted">Loading…</div>';
             try {
-                body.innerHTML = await ({ users: adminUsers, sessions: adminSessions, avatars: adminAvatars,
+                body.innerHTML = await ({ users: adminUsers, settings: adminSettings, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
         }
@@ -2079,7 +2116,7 @@
                     <thead><tr><th>User</th><th>Role</th><th>DMR-ID</th><th>Last login</th><th></th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
-                <p class="muted small">Admins see IP addresses and manage users and avatars. Only the superadmin
+                <p class="muted small">Admins see IP addresses and manage users and settings. Only the superadmin
                 (set in <code>dashboard/config.json</code>) can create admins.</p>`;
         }
 
@@ -2151,40 +2188,102 @@
             catch (e) { toast(e.message, 'err'); }
         }
 
-        async function adminAvatars() {
-            const { avatars } = await api('GET', '/api/admin/avatars');
+        // ---------- Settings (SQLite) ----------
+        let _sysInfo = null;
+
+        function settingInput(f) {
+            const id = `set-${f.key.replace(/\./g, '-')}`;
+            const v = f.value;
+            const name = `name="${escapeHtml(f.key)}" id="${id}"`;
+            let input;
+            if (f.kind === 'bool') {
+                input = `<label class="switch"><input type="checkbox" ${name} ${v ? 'checked' : ''}><span></span></label>`;
+            } else if (f.kind === 'longtext') {
+                input = `<textarea ${name} rows="2">${escapeHtml(v ?? '')}</textarea>`;
+            } else if (f.kind === 'choice') {
+                input = `<select ${name}>${f.choices.map(([val, label]) =>
+                    `<option value="${escapeHtml(val)}" ${val === v ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>`;
+            } else if (f.kind === 'countries') {
+                input = `<input ${name} value="${escapeHtml(Array.isArray(v) ? v.join(', ') : (v || ''))}">`;
+            } else if (f.kind === 'int') {
+                input = `<input type="number" ${name} min="${f.min}" max="${f.max}" value="${escapeHtml(v)}">`;
+            } else if (f.kind === 'time') {
+                input = `<input type="time" ${name} value="${escapeHtml(v || '')}">`;
+            } else {
+                input = `<input ${name} value="${escapeHtml(v ?? '')}" ${f.kind === 'url' ? 'placeholder="https://…"' : ''}>`;
+            }
+            return `<div class="set-row ${f.kind === 'bool' ? 'is-bool' : ''}">
+                <label for="${id}">${escapeHtml(f.label)}${f.restart ? ' <span class="restart-tag" title="Takes effect after a restart">restart</span>' : ''}</label>
+                ${input}
+                ${f.help ? `<small class="muted">${escapeHtml(f.help)}</small>` : ''}
+            </div>`;
+        }
+
+        function settingsSectionsHtml(sections) {
+            return sections.map(sec => `
+                <form class="tile set-tile" data-section="${sec.id}" onsubmit="event.preventDefault(); saveSettings(this)">
+                    <h3>${escapeHtml(sec.title)}</h3>
+                    ${sec.fields.map(settingInput).join('')}
+                    <div class="set-actions">
+                        ${sec.id === 'userdb' ? '<button type="button" class="btn-s" onclick="refreshUserDb()">⟳ Refresh now</button>' : ''}
+                        <button type="button" class="btn-s" onclick="resetSettings('${sec.id}', this)" title="Take the values of this section from dashboard/config.json again">↺ config.json</button>
+                        <button type="submit" class="btn-s btn-primary">Save</button>
+                    </div>
+                </form>`).join('');
+        }
+
+        async function adminSettings() {
+            const [{ sections }, sys] = await Promise.all([api('GET', '/api/admin/settings'), api('GET', '/api/admin/system')]);
+            _sysInfo = sys;
             return `
-                <form class="inline-form create" onsubmit="event.preventDefault(); uploadAvatar(this)">
-                    <input name="dmr_id" placeholder="DMR-ID" inputmode="numeric" required>
-                    <input name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required>
-                    <button class="btn-primary btn-s" type="submit">⬆ Upload</button>
-                </form>
-                <p class="muted small">Your own avatars take priority over FreeRadioID. FreeRadioID currently only serves
-                its grey placeholder publicly; it is shown as initials. PNG, JPEG, GIF or WebP, max. 512 KB.</p>
-                <div class="avatar-grid">${avatars.length ? avatars.map(a => `
-                    <div class="avatar-item">
-                        ${avatarHtml(a.dmr_id, String(a.dmr_id), 64)}
-                        <b>${a.dmr_id}</b>
-                        <small class="muted">${fmtTime(a.updated_at)}</small>
-                        <button class="btn-s danger" onclick="deleteAvatar(${a.dmr_id})">Remove</button>
-                    </div>`).join('') : '<div class="muted">No own avatars yet.</div>'}</div>`;
+                <div id="restartBanner" class="restart-banner" hidden>
+                    Some changes take effect after a restart of the dashboard.
+                    ${sys.systemd ? '<button class="btn-s btn-primary" onclick="restartDashboard()">Restart now</button>'
+                                  : '<span class="muted">Restart it (sudo systemctl restart hblink4-dash).</span>'}
+                </div>
+                <div class="settings-grid" id="settingsGrid">${settingsSectionsHtml(sections)}</div>
+                <p class="muted small">On the first start these values were taken from <code>dashboard/config.json</code>;
+                since then they live in the database (<code>dashboard/data/dashboard.db</code>) and are edited here.
+                The superadmin and the HBlink4 server settings (<code>config/config.json</code>) stay in the files.</p>`;
         }
 
-        async function uploadAvatar(form) {
-            const id = form.dmr_id.value.trim();
-            const file = form.file.files[0];
-            if (!file) return;
-            if (file.size > 512 * 1024) { toast('Image too large (max. 512 KB)', 'err'); return; }
-            try {
-                await api('PUT', `/api/admin/avatars/${encodeURIComponent(id)}`, undefined, file);
-                toast(`Avatar for ${id} saved`, 'ok');
-                adminTab('avatars');
-            } catch (e) { toast(e.message, 'err'); }
+        function collectSettings(form) {
+            const changes = {};
+            for (const el of form.elements) {
+                if (!el.name) continue;
+                changes[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+            }
+            return changes;
         }
 
-        async function deleteAvatar(id) {
-            try { await api('DELETE', `/api/admin/avatars/${id}`); toast('Avatar removed', 'ok'); adminTab('avatars'); }
+        function afterSettingsSaved(j) {
+            document.getElementById('settingsGrid').innerHTML = settingsSectionsHtml(j.sections);
+            if (j.restart_required) document.getElementById('restartBanner').hidden = false;
+            toast(j.changed.length ? `Saved (${j.changed.length} changed)` : 'No changes', 'ok');
+        }
+
+        async function saveSettings(form) {
+            try { afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes: collectSettings(form) })); }
             catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function resetSettings(section, btn) {
+            if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Really reset?'; return; }
+            try { afterSettingsSaved(await api('POST', '/api/admin/settings/reset', { section })); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function refreshUserDb() {
+            try { await api('POST', '/api/admin/userdb/refresh'); toast('Callsign database is being refreshed…', 'ok'); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function restartDashboard() {
+            try {
+                await api('POST', '/api/admin/restart');
+                toast('Restarting… the page reloads in a few seconds', 'ok');
+                setTimeout(() => location.reload(), 6000);
+            } catch (e) { toast(e.message, 'err'); }
         }
 
         async function adminAudit() {
@@ -2192,7 +2291,8 @@
             const labels = { login: '✅ Login', login_failed: '⛔ Failed login', logout: '↩︎ Logout',
                              user_created: '➕ User created', user_updated: '✏️ User changed', user_deleted: '🗑 User deleted',
                              password_changed: '🔑 Password changed', session_revoked: '🔑 Session revoked',
-                             avatar_set: '🖼️ Avatar set', avatar_deleted: '🖼️ Avatar removed' };
+                             settings_changed: '⚙️ Settings changed', settings_reset: '↺ Settings reset',
+                             userdb_refresh: '📘 Callsign DB refresh', restart: '🔄 Restart' };
             if (!audit.length) return '<div class="muted">Nothing logged yet.</div>';
             return `<table class="admin-table">
                 <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>IP</th></tr></thead>
@@ -2217,11 +2317,13 @@
                     ${infoRow('Public dashboard', s.public_dashboard ? 'yes (anyone can view)' : 'no (login required)')}
                     ${infoRow('Superadmin', escapeHtml(s.superadmin || '— not set —'))}
                     ${infoRow('Accounts', s.users)}
-                    ${infoRow('Own avatars', s.avatars)}
                     ${infoRow('IP addresses', 'admins only')}
+                    ${infoRow('Runs as', s.systemd ? 'systemd service' : 'manually (run_all.sh)')}
                 </section></div>
-                <p class="muted small">These settings live in <code>dashboard/config.json</code> (sections <code>auth</code> and
-                <code>https</code>); restart the dashboard after changing them.</p>`;
+                <div class="set-actions" style="justify-content:flex-start">
+                    <button class="btn-s" onclick="adminTab('settings')">⚙️ Change settings</button>
+                    ${s.systemd ? '<button class="btn-s" onclick="restartDashboard()">🔄 Restart dashboard</button>' : ''}
+                </div>`;
         }
 
         // ---------- Station detail view ----------

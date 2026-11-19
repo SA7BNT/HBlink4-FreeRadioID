@@ -5,7 +5,7 @@ Roles
 -----
 superadmin  set in dashboard/config.json (auth.superadmin); manages everyone,
             cannot be deleted or demoted from the web UI
-admin       sees IP addresses, manages 'user' accounts and avatars
+admin       sees IP addresses, manages 'user' accounts and settings
 user        logged-in viewer (needed when auth.public_dashboard is false)
 
 Passwords are hashed with scrypt (stdlib). Sessions are random tokens; only
@@ -70,13 +70,6 @@ CREATE TABLE IF NOT EXISTS audit (
     action   TEXT NOT NULL,
     detail   TEXT NOT NULL DEFAULT '',
     ip       TEXT NOT NULL DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS avatars (
-    dmr_id     INTEGER PRIMARY KEY,
-    mime       TEXT NOT NULL,
-    data       BLOB NOT NULL,
-    updated_at REAL NOT NULL,
-    updated_by TEXT NOT NULL DEFAULT ''
 );
 """
 
@@ -395,22 +388,6 @@ class AuthStore:
     def audit_log(self, limit: int = 200) -> List[Dict[str, Any]]:
         return [dict(r) for r in self._q("SELECT ts, username, action, detail, ip FROM audit "
                                           "ORDER BY id DESC LIMIT ?", (limit,))]
-
-    # -- avatars ------------------------------------------------------------
-    def set_avatar(self, dmr_id: int, mime: str, data: bytes, actor: str = "") -> None:
-        self._x("INSERT OR REPLACE INTO avatars (dmr_id, mime, data, updated_at, updated_by) VALUES (?,?,?,?,?)",
-                (dmr_id, mime, sqlite3.Binary(data), time.time(), actor))
-
-    def get_avatar(self, dmr_id: int) -> Optional[tuple]:
-        rows = self._q("SELECT mime, data, updated_at FROM avatars WHERE dmr_id=?", (dmr_id,))
-        return (rows[0]["mime"], bytes(rows[0]["data"]), rows[0]["updated_at"]) if rows else None
-
-    def delete_avatar(self, dmr_id: int) -> None:
-        self._x("DELETE FROM avatars WHERE dmr_id=?", (dmr_id,))
-
-    def list_avatars(self) -> List[Dict[str, Any]]:
-        return [dict(r) for r in self._q("SELECT dmr_id, mime, length(data) AS size, updated_at, updated_by "
-                                          "FROM avatars ORDER BY dmr_id")]
 
 
 def sniff_image(data: bytes) -> Optional[str]:

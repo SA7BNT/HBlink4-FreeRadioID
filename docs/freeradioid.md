@@ -84,12 +84,12 @@ in the `repeater_connected` events and in `/api/repeaters` and
 
 The dashboard also uses the [FreeRadioID API](https://freeradioid.net/api-index.html):
 
-* **Avatars** (`avatar-<id>.png`), proxied by the dashboard (`/api/avatar/{id}`) in the station detail view and Last Heard. FreeRadioID currently returns the same grey placeholder for every ID to anonymous requests; the dashboard detects it and shows initials. Own avatars uploaded in the admin area take priority.
+* **Avatars** (`avatar-<id>.png`), proxied by the dashboard (`/api/avatar/{id}`) in the station detail view and Last Heard. FreeRadioID currently returns the same grey placeholder for every ID to anonymous requests; the dashboard detects it and shows initials.
 * **Profiles** (`api/dmr/user/?id=<id>`, cached for an hour) in the detail view, also at `GET /api/freeradioid/{id}`
 * **Registered IDs** (`api/local_subscriber_ids.json`), loaded daily without a country filter and tagged `FRID` in Last Heard
 * **Combined list** (`api/subscriber_ids.csv`, header-less) usable as `user_database.source_url`
 
 ![Station detail](images/station-detail-desktop.png)
 
-See `dashboard/config_sample.json` (`freeradioid` and `user_database.freeradioid`) for the settings.
+These options are switched in the admin area (Settings → FreeRadioID / Callsign database); on the first start they are taken from `dashboard/config.json`.
 

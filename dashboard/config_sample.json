@@ -1,4 +1,5 @@
 {
+    "_comment_first_start": "Most of these values are only read on the FIRST start: they are copied into dashboard/data/dashboard.db and from then on edited in the admin area (Settings tab). Exceptions that always come from this file: auth.superadmin, web.bind, event_receiver, user_database.user_agent.",
     "server_name": "dmr.die-n8schicht.de",
     "server_description": "Amateur Radio DMR Network",
     "dashboard_title": "DMR Die N8schicht",

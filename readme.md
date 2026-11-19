@@ -33,7 +33,7 @@ Oben rechts im Dashboard gibt es **🔐 Login**. Nach dem Einloggen erscheint do
 | Rolle | Darf |
 |---|---|
 | **Superadmin** | alles; legt Admins an. Er wird **nur** in `dashboard/config.json` festgelegt und kann im Web nicht gelöscht oder herabgestuft werden. |
-| **Admin** | sieht **IP-Adressen**; verwaltet Benutzer (Rolle *User*), Sitzungen und Avatare; liest das Protokoll |
+| **Admin** | sieht **IP-Adressen**; verwaltet Benutzer (Rolle *User*), Einstellungen und Sitzungen; liest das Protokoll |
 | **User** | darf das Dashboard sehen, wenn es nicht öffentlich ist (`public_dashboard: false`), aber keine IP-Adressen |
 | nicht eingeloggt | sieht das öffentliche Dashboard **ohne IP-Adressen** |
 
@@ -68,17 +68,40 @@ Statt `password_hash` geht auch `"password": "…"` im Klartext. Das Dashboard w
 <p align="center"><img src="docs/images/admin-users.png" alt="Adminbereich: Benutzer" width="80%"></p>
 
 - **Users**: Benutzer anlegen, bearbeiten (Name, DMR-ID, Rolle, neues Passwort), sperren und löschen. Wer gesperrt wird oder ein neues Passwort bekommt, wird sofort abgemeldet.
+- **Settings**: die Einstellungen des Dashboards, siehe unten
 - **Sessions**: alle aktiven Anmeldungen mit IP und Browser; jede lässt sich beenden
-- **Avatars**: eigene Avatarbilder pro DMR-ID hochladen (PNG, JPEG, GIF oder WebP, max. 512 KB). Sie haben Vorrang vor FreeRadioID.
 - **Log**: Anmeldungen, fehlgeschlagene Logins und alle Änderungen
-- **System**: HTTPS-Status, Ablaufdatum des Zertifikats und Zugriffseinstellungen
+- **System**: HTTPS-Status, Ablaufdatum des Zertifikats, Zugriff; Neustart des Dashboards, wenn es als Dienst läuft
 
 <p align="center">
   <img src="docs/images/admin-sessions.png" alt="Sitzungen" width="49%">
   <img src="docs/images/admin-system.png" alt="System" width="49%">
 </p>
 
-Alles liegt in einer SQLite-Datenbank unter `dashboard/data/dashboard.db`: Benutzer, Sitzungen, Protokoll und Avatare. Die Datei ist von git ausgenommen. Zum Sichern kopierst du sie einfach.
+### Einstellungen im Adminbereich (SQLite)
+
+Beim **ersten Start** übernimmt das Dashboard seine Einstellungen aus `dashboard/config.json`; was dort fehlt, bekommt einen Standardwert. **Danach gilt die Datenbank.** Du änderst alles im Reiter **Settings**, und Änderungen an der `config.json` haben auf diese Werte keine Wirkung mehr. Mit **↺ config.json** holst du einen Abschnitt wieder aus der Datei.
+
+<p align="center">
+  <img src="docs/images/admin-settings.png" alt="Einstellungen" width="72%">
+  &nbsp;
+  <img src="docs/images/admin-settings-mobile.png" alt="Einstellungen am Smartphone" width="22%">
+</p>
+
+| Abschnitt | Einstellungen | Wirkung |
+|---|---|---|
+| General | Titel, Untertitel, Beschreibung, Logo, Favicon | sofort, auf allen offenen Seiten |
+| Announcement & link | Banner an/aus mit Text, Info-Button mit Text und Link | sofort |
+| Access | öffentliches Dashboard, Sitzungsdauer, „angemeldet bleiben“ | sofort |
+| FreeRadioID | Avatare, Profilabfrage, FreeRadioID-ID-Liste | sofort |
+| Callsign database | Quelle (radioid.net oder FreeRadioID), Länder, Uhrzeit des täglichen Updates; **Refresh now** | sofort; bei neuer Quelle oder neuen Ländern wird die Liste gleich neu geladen |
+| HTTPS & web | HTTPS an/aus, Domain, E-Mail, Test-Zertifikate, Ports | nach einem **Neustart** (Knopf im Adminbereich, wenn das Dashboard als Dienst läuft) |
+
+Bewusst **nicht** in der Datenbank:
+- der **Superadmin**: Er bleibt in `dashboard/config.json`, damit du dich nie aussperren kannst.
+- die Einstellungen des **DMR-Servers** (`config/config.json`: Passphrase, FreeRadioID-Login, Talkgroups). Sie gehören zum HBlink4-Prozess.
+
+Alles liegt in einer SQLite-Datenbank unter `dashboard/data/dashboard.db`: Benutzer, Sitzungen, Protokoll und Einstellungen. Die Datei ist von git ausgenommen. Zum Sichern kopierst du sie einfach.
 
 **Sicherheit:**
 - Passwörter werden mit scrypt gehasht.
@@ -96,7 +119,7 @@ Das Dashboard holt sich das Zertifikat selbst und erneuert es automatisch. Vorau
 3. certbot ist installiert: `sudo apt install certbot`
 4. Die Dienstdatei ist neu installiert, damit das Dashboard ohne root auf Port 80 und 443 darf: `sudo ./scripts/install_services.sh`
 
-Dann in `dashboard/config.json`:
+Dann im Adminbereich unter **Settings → HTTPS & web** einschalten, Domain und E-Mail eintragen und den Neustart-Knopf drücken. Beim allerersten Start geht es auch über `dashboard/config.json`:
 
 ```json
 "https": {
@@ -117,6 +140,35 @@ Danach `sudo systemctl restart hblink4-dash`. Was dann passiert:
 - Klappt das Zertifikat nicht, läuft das Dashboard weiter über HTTP auf Port 8080. Der Grund steht im Log (`journalctl -u hblink4-dash`). Nach der Korrektur startest du den Dienst neu.
 
 Zum Testen setzt du `"staging": true`, dann gibt es ein Test-Zertifikat ohne Rate-Limit. Eigene Zertifikate gehen mit `"letsencrypt": false` plus `cert_file` und `key_file`.
+
+## Starten: Dienst oder run_all.sh – nie beides
+
+Es gibt zwei Wege, HBlink4 und das Dashboard zu starten. **Nimm nur einen davon:**
+
+| Weg | Wofür | Befehle |
+|---|---|---|
+| **systemd-Dienste** (empfohlen) | Dauerbetrieb, startet beim Booten | `sudo ./scripts/install_services.sh`, dann `systemctl status hblink4 hblink4-dash`, Logs: `journalctl -u hblink4 -u hblink4-dash -f` |
+| **run_all.sh** | Ausprobieren im Terminal | `./run_all.sh`, Ende mit Strg+C |
+
+Laufen beide gleichzeitig, wollen zwei HBlink4 denselben UDP-Port 62031 und zwei Dashboards denselben Port 8080. Der zweite stürzt sofort mit `Address already in use` ab, und systemd startet seine Dienste alle 10 Sekunden neu.
+
+`run_all.sh` prüft das jetzt vorher und bricht mit einer klaren Meldung ab. Das passiert, wenn:
+- die Dienste schon laufen,
+- ein Port belegt ist (auch durch einen anderen DMR-Server wie ADN/FreeDMR),
+- du es als root in einem Verzeichnis startest, das dem Dienst-Benutzer gehört. Dann entstünden root-Dateien in `logs/` und `dashboard/data/`, die die Dienste später nicht schreiben können.
+
+Stürzt einer der beiden Prozesse ab, beendet `run_all.sh` auch den anderen und sagt, welcher es war.
+
+**Fehlersuche, wenn die Dienste nicht starten:**
+
+```bash
+sudo systemctl stop hblink4 hblink4-dash          # alles anhalten
+pkill -f run_all.sh; pkill -f run_hblink.py; pkill -f run_dashboard.py
+sudo ss -tulpn | grep -E ':(62031|8080|80|443)\b'  # wer belegt die Ports?
+sudo chown -R adn:adn /opt/HBlink4                 # Dienst-Benutzer und Pfad anpassen
+sudo systemctl start hblink4 hblink4-dash
+journalctl -u hblink4 -u hblink4-dash -n 50 --no-pager
+```
 
 ## Detailansicht einer Station
 
@@ -147,24 +199,9 @@ Das Dashboard nutzt die [FreeRadioID-API](https://freeradioid.net/api-index.html
 | `api/local_subscriber_ids.json` | Liste der bei FreeRadioID registrierten IDs (rund 400). Sie wird täglich geladen, ohne Länderfilter. Die IDs bekommen in **Last Heard** den Tag `FRID`, und ihre Rufzeichen werden auch angezeigt, wenn sie in der radioid.net-Liste fehlen. |
 | `api/subscriber_ids.csv` | Optional: die Gesamtliste von FreeRadioID (radioid.net plus FreeRadioID) als Hauptquelle statt radioid.net |
 
-Einstellungen in `dashboard/config.json`. Alles ist ohne Eintrag schon aktiv:
+Alles ist von Anfang an aktiv. Umschalten kannst du es im Adminbereich unter **Settings**, in den Abschnitten *FreeRadioID* und *Callsign database*: Avatare und Profilabfrage an/aus, FreeRadioID-ID-Liste, und ob radioid.net oder die FreeRadioID-Gesamtliste die Hauptquelle ist.
 
-```json
-"user_database": {
-    "source_url": "https://freeradioid.net/api/subscriber_ids.csv",
-    "filter": { "countries": ["Germany", "Austria", "Switzerland"] },
-    "freeradioid": { "enabled": true }
-},
-"freeradioid": {
-    "avatar_url": "https://freeradioid.net/avatar-{id}.png",
-    "profile_lookup": true
-}
-```
-
-- Mit `source_url` auf die FreeRadioID-CSV wechselst du die Hauptliste. Ohne diese Zeile bleibt radioid.net die Hauptliste.
-- `"avatar_url": ""` schaltet die Avatare ab, `"profile_lookup": false` die Profilabfrage.
-
-> **Hinweis zu den Avataren:** Stand November 2026 liefert FreeRadioID für **jede** ID nur seinen grauen Platzhalter aus. Geprüft habe ich alle 405 registrierten IDs und die Kontonummern 1–400. Hochgeladene Profilbilder sind dort offenbar nur eingeloggt sichtbar. Das Dashboard erkennt den Platzhalter und zeigt stattdessen die Initialen. Sobald FreeRadioID echte Bilder öffentlich ausliefert, erscheinen sie automatisch. Bis dahin lädst du eigene Avatare im Adminbereich hoch (Reiter *Avatars*).
+> **Hinweis zu den Avataren:** Stand November 2026 liefert FreeRadioID für **jede** ID nur seinen grauen Platzhalter aus. Geprüft habe ich alle 405 registrierten IDs und die Kontonummern 1–400. Hochgeladene Profilbilder sind dort offenbar nur eingeloggt sichtbar. Das Dashboard erkennt den Platzhalter und zeigt stattdessen die Initialen. Sobald FreeRadioID echte Bilder öffentlich ausliefert, erscheinen sie automatisch.
 
 ## Login-Arten im Dashboard
 
