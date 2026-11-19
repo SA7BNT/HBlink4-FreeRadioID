@@ -1410,14 +1410,25 @@ async def sync_avatars(trigger: str = ""):
     if not ids:
         return
     try:
-        await state.avatars.sync(ids)
+        result = await state.avatars.sync(ids)
     except Exception as e:
         logger.warning(f"🖼️ Avatar sync failed ({trigger}): {e}")
+        return
+    if result.get("fetched"):
+        # open pages switch to the new image URLs (and so past any cached "no avatar")
+        message = json.dumps({"type": "avatars_updated", "timestamp": datetime.now().timestamp(),
+                              "data": {"version": state.avatars.version()}})
+        for client in list(state.websocket_clients):
+            try:
+                await client.send_text(message)
+            except Exception:
+                pass
 
 
 @app.get("/api/avatar/{dmr_id}")
 async def get_avatar(dmr_id: int):
-    miss = Response(status_code=404, headers={"Cache-Control": "public, max-age=3600"})
+    # short: an ID may get an avatar with the next sync
+    miss = Response(status_code=404, headers={"Cache-Control": "public, max-age=300"})
     if not _avatars_enabled() or not state.user_db.is_frid(dmr_id):
         return miss       # not registered at FreeRadioID: no avatar, no request to FreeRadioID
     hit = state.avatars.get(dmr_id)
@@ -1439,7 +1450,8 @@ async def get_config():
     """Public part of the dashboard configuration (no secrets)."""
     cfg = {k: dashboard_config[k] for k in _PUBLIC_CONFIG_KEYS if k in dashboard_config}
     frid = dashboard_config.get("freeradioid") or {}
-    cfg["freeradioid"] = {"avatars": bool(frid.get("avatars", True) and frid.get("avatar_url", True))}
+    cfg["freeradioid"] = {"avatars": bool(frid.get("avatars", True) and frid.get("avatar_url", True)),
+                          "avatar_version": state.avatars.version()}
     cfg["public_dashboard"] = _public_dashboard()
     return cfg
 

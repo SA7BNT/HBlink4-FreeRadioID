@@ -136,7 +136,9 @@ Only IDs registered at FreeRadioID have avatars. During the FreeRadioID ID sync
 the dashboard downloads their `api/idimg-<id>.png`, scales it to 192 px WebP
 (Pillow) and stores it in SQLite (`dashboard.db`); `GET /api/avatar/{id}` answers
 from the database. FreeRadioID's grey placeholder means "no avatar" (initials are
-shown); those IDs are re-checked daily, real avatars weekly.
+shown); those IDs are re-checked daily, real avatars weekly. Image URLs carry a
+cache version (`?v=`), and an `avatars_updated` WebSocket event after each sync
+makes open pages load new avatars; a 404 is cached for 5 minutes only.
 The detail view shows the FreeRadioID profile of the station (cached for an
 hour; `GET /api/freeradioid/{id}`). The IDs registered at FreeRadioID are
 downloaded with the callsign database (`user_database.freeradioid`), marked

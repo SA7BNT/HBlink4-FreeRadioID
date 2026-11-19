@@ -96,6 +96,11 @@ class AvatarStore:
         r = rows[0]
         return bool(r["has_avatar"]), r["mime"], (bytes(r["data"]) if r["data"] is not None else None)
 
+    def version(self) -> int:
+        """Changes whenever the cache changes; pages put it into the image URLs."""
+        rows = self._a._q("SELECT COUNT(*) AS n, COALESCE(MAX(fetched_at), 0) AS t FROM frid_avatars WHERE has_avatar=1")
+        return int(rows[0]["t"]) * 1000 + rows[0]["n"] % 1000
+
     def stats(self) -> Dict[str, int]:
         rows = self._a._q("SELECT has_avatar, COUNT(*) AS n FROM frid_avatars GROUP BY has_avatar")
         d = {bool(r["has_avatar"]): r["n"] for r in rows}

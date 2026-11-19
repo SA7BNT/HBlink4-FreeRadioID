@@ -1482,6 +1482,9 @@
             .set-row { grid-template-columns: 1fr; }
             .set-row.is-bool { grid-template-columns: 1fr auto; }
         }
+        .card-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .card-title-row .repeater-header, .card-title-row .repeater-header-warning { margin: 0; }
+        .card-title-row .avatar { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -1861,6 +1864,11 @@
                     // Midnight reset - update stats immediately
                     state.stats = data.data;
                     updateStats(state.stats, state.repeaters, state.streams);
+                } else if (data.type === 'avatars_updated') {
+                    // new avatars in the server cache: re-render with the new image URLs
+                    state.avatarVersion = data.data.version;
+                    updateRepeaters(state.repeaters);
+                    updateLastHeard(state.last_heard);
                 } else if (data.type === 'config_changed') {
                     // An admin changed settings: reload title, logo, banner, …
                     loadConfig();
@@ -2336,8 +2344,10 @@
         // Avatars come through the dashboard server: own uploads first, then
         // FreeRadioID (its grey placeholder counts as "no avatar" -> initials).
         function avatarUrl(radioId) {
-            if (!radioId || (state.config && state.config.freeradioid && state.config.freeradioid.avatars === false)) return '';
-            return `/api/avatar/${encodeURIComponent(radioId)}`;
+            const frid = (state.config && state.config.freeradioid) || {};
+            if (!radioId || frid.avatars === false) return '';
+            const v = state.avatarVersion || frid.avatar_version || 0;
+            return `/api/avatar/${encodeURIComponent(radioId)}?v=${v}`;
         }
 
         // Avatar with an initials fallback if the image cannot load
@@ -2729,8 +2739,11 @@
                 return `
                     <div class="repeater-card ${r.auth_method ? 'auth-' + r.auth_method : ''}" data-repeater-id="${r.repeater_id}">
                         <div class="repeater-info">
-                            <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
-                                ${icon} ${xlateBadge}${r.callsign || 'Unknown'} <span class="rid">${r.repeater_id}</span>
+                            <div class="card-title-row">
+                                <span onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">${avatarHtml(r.repeater_id, r.callsign, 34)}</span>
+                                <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
+                                    ${icon} ${xlateBadge}${r.callsign || 'Unknown'} <span class="rid">${r.repeater_id}</span>
+                                </div>
                             </div>
                             ${authBadge(r)}
                             <div class="repeater-meta">
