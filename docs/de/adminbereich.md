@@ -1,6 +1,6 @@
 # ⚙️ Adminbereich
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · **Adminbereich** · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · **Adminbereich** · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -37,7 +37,9 @@ Im Adminbereich stellst du **Dashboard und DMR-Server** ein, ohne SSH und ohne C
 
 ## Aufbau
 
-Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste.
+Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 📥 Import · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste. Das Fenster ist immer gleich groß, egal welcher Bereich offen ist; nur der Inhalt rollt. Jeder Bereich beginnt mit einem Satz, worum es geht.
+
+Schritt-für-Schritt-Anleitungen für die häufigsten Aufgaben stehen in [🧭 Anleitungen](anleitungen.md).
 
 Für alle Bereiche gilt:
 - **Schalter** für Ja/Nein, **Auswahllisten** statt Texteingaben, wo es feste Möglichkeiten gibt.
@@ -157,6 +159,35 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 
 Unter **🧑‍💻 Expert: all trunks as JSON** stehen alle Trunks als JSON, zum Ansehen oder Einfügen; **⤴ Take over JSON into the form** übernimmt es ins Formular. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
 
+## 📥 Import
+
+<p align="center"><img src="../images/admin-import.png" alt="Import" width="72%">
+&nbsp;
+<img src="../images/admin-import-mobile.png" alt="Import am Smartphone" width="22%"></p>
+
+Der **Konfigurations-Konverter** übernimmt die Einstellungen eines anderen DMR-Servers:
+
+| Server software | Datei |
+|---|---|
+| HBlink3 | `hblink.cfg` (+ optional `rules.py` mit den Konferenz-Brücken) |
+| FreeDMR / FDMR+ / FDMR-Secure-Server | `hblink.cfg`, `freedmr.cfg` |
+| ADN DMR Peer Server | `adn-server.yaml` |
+| HBlink4 | `config/config.json` |
+
+**Auto-detect** erkennt das Format selbst. Datei wählen, auf das Feld ziehen oder einfügen, dann **🔍 Analyse**. **🧪 Load an HBlink3 example** lädt die Beispieldatei aus [lz5pn/HBlink3](https://github.com/lz5pn/HBlink3) zum Ausprobieren.
+
+<p align="center"><img src="../images/admin-import-result.png" alt="Ergebnis" width="80%"></p>
+
+Das Ergebnis ist nach Bereichen sortiert (DMR server, Access, OpenBridge, Links, Blacklist). Jede Zeile zeigt:
+- **alt → neu** und woher der Wert stammt, z. B. `[MASTER-1] → PORT: 54000`
+- **⚠️ Hinweise** in Gelb, z. B. wenn sich der Hotspot-Port ändert
+- **already set**, wenn der Wert schon stimmt (abgewählt)
+- bei Trunks und Links **new** oder **replaces existing** (gleicher Name)
+
+**Not taken over** listet die Abschnitte, die HBlink4 nicht braucht, jeweils mit Grund. **③ Apply selected** übernimmt die angehakten Zeilen; HBlink4 prüft sie wie beim normalen Speichern. Die Datei wird nur gelesen, nie ausgeführt.
+
+Die genaue Umsetzung steht in [Anleitungen → Umziehen](anleitungen.md#2-von-hblink3-freedmr-oder-adn-umziehen).
+
 ## 🔑 Sessions, 📜 Log, 🖥️ System
 
 <p align="center">
@@ -172,4 +203,4 @@ Unter **🧑‍💻 Expert: all trunks as JSON** stehen alle Trunks als JSON, zu
 
 ---
 
-Weiter: [🧾 Konfiguration](konfiguration.md)
+Weiter: [🧭 Anleitungen](anleitungen.md)

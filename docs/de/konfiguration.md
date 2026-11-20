@@ -1,6 +1,6 @@
 # 🧾 Konfiguration
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · **Konfiguration** · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · **Konfiguration** · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -65,6 +65,8 @@ Das erstellt `scripts/setup.sh`; die Vorlagen sind `config/config_sample.json` u
 | `web.port`, `https`, `dashboard_title`, `server_name`, `server_description` | ⏱ erster Start | danach Adminbereich |
 
 ## Alle Einstellungen in SQLite
+
+Kommst du von einem anderen Server, übernimmt der [📥 Import](adminbereich.md#-import) im Adminbereich die passenden Werte aus `hblink.cfg` (HBlink3, FreeDMR), `adn-server.yaml` oder einer HBlink4-`config.json`.
 
 ### Dashboard
 

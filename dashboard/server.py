@@ -1436,6 +1436,65 @@ def _settings_result(changed: List[str]) -> dict:
             "sections": state.settings.describe(dashboard_config)}
 
 
+# ---------------------------------------------------------------- configuration converter
+@app.get("/api/admin/import/formats")
+async def import_formats(request: Request):
+    _require_admin(request)
+    from .converter import FORMATS
+    return {"formats": [[k, v] for k, v in FORMATS.items()]}
+
+
+@app.post("/api/admin/import/analyze")
+async def import_analyze(request: Request, body: dict = Body(...)):
+    _require_admin(request)
+    from .converter import analyze, ConvertError
+    try:
+        result = await asyncio.to_thread(analyze, str(body.get("text") or ""), str(body.get("format") or "auto"),
+                                         str(body.get("rules") or ""))
+    except ConvertError as e:
+        raise _HTTPError(400, str(e))
+    current = state.settings.dmr_values()
+    for it in result["items"]:
+        if not it["merge"]:
+            cur = current.get(it["key"])
+            it["current"] = "••••••••" if it["key"].endswith("passphrase") else ("all" if cur is None else cur)
+            it["same"] = cur == it["value"]
+            if it["same"]:
+                it["selected"] = False
+        else:
+            names = {e.get("name") for e in (current.get(it["key"]) or [])}
+            it["replaces"] = any(e.get("name") in names for e in it["value"])
+    return result
+
+
+@app.post("/api/admin/import/apply")
+async def import_apply(request: Request, body: dict = Body(...)):
+    actor = _require_admin(request)
+    from .converter import merge_list
+    items = body.get("items") or []
+    if not isinstance(items, list) or not items:
+        raise _HTTPError(400, "Nothing selected.")
+    current = state.settings.dmr_values()
+    changes: Dict[str, Any] = {}
+    for it in items:
+        key = str((it or {}).get("key") or "")
+        if key not in FIELD_BY_KEY or not FIELD_BY_KEY[key].is_dmr:
+            raise _HTTPError(400, f"Unknown setting {key}.")
+        if it.get("merge"):
+            base = changes.get(key, current.get(key) or [])
+            changes[key] = merge_list(base, it.get("value") or [])
+        else:
+            changes[key] = it.get("value")
+    try:
+        changed = state.settings.update(dashboard_config, changes, actor["username"])
+    except SettingsError as e:
+        raise _HTTPError(400, str(e))
+    state.auth.audit("config_imported", actor["username"], f"{body.get('format', '')}: {', '.join(changed)}",
+                     _client_ip(request))
+    await _after_settings_change(changed)
+    return _settings_result(changed)
+
+
 @app.post("/api/admin/settings/reset")
 async def admin_reset_settings(request: Request, body: dict = Body(...)):
     actor = _require_admin(request)

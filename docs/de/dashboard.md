@@ -1,6 +1,6 @@
 # 🎙️ Dashboard
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · **Dashboard** · [Adminbereich](adminbereich.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · **Dashboard** · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -12,27 +12,34 @@
 
 Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop und Smartphone gebaut; auf dem Handy rücken die Spalten zusammen und unwichtige Spalten verschwinden.
 
-## Kopfzeile
+## Kopfzeile mit Menü
+
+<p align="center"><img src="../images/header-desktop.png" alt="Kopfzeile mit Menü" width="95%"></p>
+
+Die Kopfzeile bleibt beim Scrollen oben stehen und enthält das **Menü** (Live, Statistics, OpenBridge, Talkgroups, Configuration). So wechselst du von überall die Ansicht, ohne nach oben zu scrollen. Auf breiten Bildschirmen steht alles in einer Zeile, sonst rückt das Menü unter den Titel. Am Smartphone werden die Knöpfe kurz („✓ Live“, „✓ DMR“, 🔇) und das Menü nutzt die ganze Breite.
+
+<p align="center"><img src="../images/header-mobile.png" alt="Kopfzeile am Smartphone" width="30%"></p>
 
 | Element | Bedeutung |
 |---|---|
 | Logo, Titel, Untertitel, Farben | einstellbar im Adminbereich unter [🎨 Appearance](adminbereich.md#-appearance) |
-| **✓ Live Data** | Der Browser ist mit dem Dashboard verbunden. Ein Klick verbindet neu. |
-| **✓ DMR Server** | HBlink4 ist mit dem Dashboard verbunden. |
+| **Menü** | 🎙️ Live · 📈 Statistics · ↔️ OpenBridge · 🗂️ Talkgroups · 🛠️ Configuration |
+| **✓ Live Data** (Handy: ✓ Live) | Der Browser ist mit dem Dashboard verbunden. Ein Klick verbindet neu. |
+| **✓ DMR Server** (Handy: ✓ DMR) | HBlink4 ist mit dem Dashboard verbunden. |
 | **🔇 Notifications** | Töne bei Verbindungen und Gesprächen an/aus |
 | **🔗 Links** | eigenes Link-Menü, wenn im [Adminbereich](adminbereich.md#-links) eingerichtet; alternativ als Knopfreihe unter der Kopfzeile |
 | **🔐 Login** bzw. Name | Anmelden; danach das Menü mit Adminbereich, Passwort und Abmelden |
 
 ## Statistik
 
-🔌 Verbindungen (Repeater, Hotspots, Outbound-Links und aktive OpenBridge-Trunks) · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · ↔️ OpenBridge · 🛡️ FreeRadioID. Die Tageswerte werden um Mitternacht zurückgesetzt.
+🔌 Verbindungen (Repeater, Hotspots, Outbound-Links und aktive OpenBridge-Trunks) · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · ↔️ OpenBridge · 🛡️ FreeRadioID. Die Tageswerte werden um Mitternacht zurückgesetzt. Am Smartphone stehen die Kacheln zu dritt nebeneinander, Sprechzeit, OpenBridge und FreeRadioID als schmale Zeilen; „weitergeleitet heute“ entfällt dort.
 
 - **↔️ OpenBridge** zeigt aktive und eingerichtete Trunks (z. B. `1/1`) sowie die Gespräche von heute: ⬇ empfangen und ⬆ gesendet. Die Kachel erscheint nur, wenn ein Trunk eingerichtet ist. Ein Klick öffnet den [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 - **🛡️ FreeRadioID** zeigt verifizierte Stationen und Gäste. Die Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist.
 
 ## Tabs: 🎙️ Live, 📈 Statistics, ↔️ OpenBridge, 🗂️ Talkgroups, 🛠️ Configuration
 
-Unter der Kopfzeile wählst du zwischen fünf Ansichten:
+Im Menü der Kopfzeile wählst du zwischen fünf Ansichten:
 
 - **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
 - **📈 Statistics**: die [Talkgroup-Statistik](#-talkgroup-statistik). Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.

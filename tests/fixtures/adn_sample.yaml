@@ -1,0 +1,54 @@
+# Synthetic ADN-DMR-Peer-Server style configuration (written for the tests)
+GLOBAL:
+  PING_TIME: 10
+  MAX_MISSED: 3
+  USE_ACL: true
+  SUB_ACL: DENY:1
+  TGID_TS1_ACL: PERMIT:ALL
+  TGID_TS2_ACL: PERMIT:ALL
+  SERVER_ID: 73010
+  VALIDATE_SERVER_IDS: true
+REPORTS:
+  REPORT: true
+  REPORT_PORT: 4321
+LOGGER:
+  LOG_LEVEL: INFO
+PROXY:
+  LISTEN_PORT: 62031
+  TARGET_SYSTEM: SYSTEM
+DATABASE:
+  DB_SERVER: localhost
+SYSTEMS:
+  SYSTEM:
+    MODE: MASTER
+    ENABLED: true
+    REPEAT: true
+    MAX_PEERS: 100
+    PASSPHRASE: "<set-in-adn-server.yaml>"
+    GROUP_HANGTIME: 15
+    USE_ACL: true
+    REG_ACL: DENY:1
+    SUB_ACL: DENY:1
+    TGID_TS1_ACL: PERMIT:ALL
+    TGID_TS2_ACL: PERMIT:ALL
+    TS1_STATIC: ""
+    TS2_STATIC: ""
+  D-APRS:
+    MODE: MASTER
+    ENABLED: true
+    PORT: 52555
+    PASSPHRASE: aprs
+  OBP-ADN:
+    MODE: OPENBRIDGE
+    ENABLED: false
+    PORT: 62044
+    NETWORK_ID: 1
+    PASSPHRASE: ""
+    TARGET_IP: ""
+    TARGET_PORT: 62044
+    USE_ACL: true
+    SUB_ACL: DENY:1
+    TGID_ACL: PERMIT:ALL
+    RELAX_CHECKS: true
+    ENHANCED_OBP: true
+    PROTO_VER: 5

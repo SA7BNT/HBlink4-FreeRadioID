@@ -48,7 +48,8 @@ def load_config(config_file: str, logger: logging.Logger = None) -> Dict[str, An
         sys.exit(1)
 
 
-def parse_outbound_connections(config: Dict[str, Any], logger: logging.Logger = None) -> List:
+def parse_outbound_connections(config: Dict[str, Any], logger: logging.Logger = None,
+                               raise_errors: bool = False) -> List:
     """
     Parse outbound connections from configuration dictionary.
     
@@ -100,12 +101,16 @@ def parse_outbound_connections(config: Dict[str, Any], logger: logging.Logger = 
             if logger:
                 logger.info(f'✓ Loaded outbound connection: {config_obj.name} → {config_obj.address}:{config_obj.port}')
         except KeyError as e:
+            if raise_errors:
+                raise ValueError(f"link #{idx + 1}: required field {e} is missing")
             if logger:
                 logger.error(f'✗ Outbound connection #{idx} missing required field: {e}')
             else:
                 print(f'✗ Outbound connection #{idx} missing required field: {e}')
             sys.exit(1)
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
+            if raise_errors:
+                raise ValueError(f"link #{idx + 1}: {e}")
             if logger:
                 logger.error(f'✗ Outbound connection #{idx} validation error: {e}')
             else:

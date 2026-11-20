@@ -12,3 +12,6 @@ websockets>=12.0
 
 # Scales FreeRadioID avatars (500x500, ~750 KB) down to small WebP files
 Pillow>=10.0
+
+# Reads YAML configurations (ADN DMR Peer Server) in the configuration converter
+PyYAML>=6.0

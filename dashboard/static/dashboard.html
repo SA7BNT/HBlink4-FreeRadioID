@@ -1446,7 +1446,7 @@
         .toast.ok { border-color: rgba(48, 209, 88, 0.6); }
         .toast.err { border-color: rgba(255, 69, 58, 0.6); color: #ffb4ad; }
         @media (max-width: 700px) {
-            .hdr-btn.user span:not(.avatar):not(.role-tag) { display: none; }
+            .hdr-btn.user > span:not(.avatar):not(.role-tag) { display: none; }
             .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
         }
 
@@ -1489,6 +1489,75 @@
         .switch input:checked + span::before { transform: translateX(17px); }
         .switch input:focus-visible + span { outline: 2px solid var(--accent); }
 
+
+
+        /* ================= Fixed header with the main menu ================= */
+        header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "brand menu status"; align-items: center; gap: 8px 14px; }
+        header .header-branding { grid-area: brand; min-width: 0; }
+        header .status-badges { grid-area: status; justify-content: flex-end; flex-wrap: nowrap; }
+        header .main-tabs { grid-area: menu; justify-self: center; margin: 0; background: rgba(255,255,255,0.04); box-shadow: none; }
+        header .main-tabs button { padding: 7px 14px; font-size: 13.5px; }
+        .tab-pane { padding-top: 6px; }
+        .tab-pane > .section-header:first-child { margin-top: 10px; }
+        @media (max-width: 1640px) {
+            header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand status" "menu menu"; }
+            header .main-tabs { justify-self: stretch; justify-content: center; }
+        }
+        @media (max-width: 900px) {
+            header .status-badges { flex-wrap: wrap; gap: 6px; }
+            .hdr-lbl { display: none; }
+            header .user-menu .hdr-btn.user > span:not(.avatar), header .user-menu .role-tag { display: none; }
+            .connection-status, .audio-toggle, .links-btn, .hdr-btn { padding: 5px 10px !important; font-size: 11.5px !important; }
+        }
+        @media (max-width: 600px) {
+            .stats-bar { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; }
+            .stats-bar .stat-retx { display: none; }
+            .stats-bar .stat-card { padding: 8px 9px !important; }
+            .stats-bar .stat-label { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .stats-bar .stat-value { font-size: 17px !important; }
+            .stats-bar .stat-frid, .stats-bar .stat-obp, .stats-bar .stat-traffic { grid-column: span 3; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+            .stats-bar .stat-frid .stat-value, .stats-bar .stat-obp .stat-value, .stats-bar .stat-traffic .stat-value { font-size: 15px !important; }
+            .stats-bar .stat-frid .stat-sub, .stats-bar .stat-obp .stat-sub { display: inline !important; margin-left: 6px !important; }
+            header { grid-template-columns: minmax(0, 1fr); grid-template-areas: "brand" "status" "menu"; padding: 8px 10px !important; }
+            header .status-badges { justify-content: flex-start; }
+            header .main-tabs { width: 100%; }
+            header .main-tabs button { padding: 7px 2px; font-size: 12px; }
+        }
+
+        /* Admin window: always the same size, content scrolls inside */
+        .modal-content.admin { height: min(880px, calc(100vh - 32px)); }
+        .modal-content.admin .admin-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        @media (max-width: 600px) { .modal-content.admin { height: calc(100vh - 20px); max-height: none; } }
+        .tab-intro { padding: 2px 4px 10px; }
+        /* Import (configuration converter) */
+        .imp-layout { display: flex; flex-direction: column; gap: 12px; }
+        .imp-src { padding: 16px 18px; }
+        .imp-steps { display: flex; gap: 6px; margin: 4px 0 6px; }
+        .imp-steps span { font-size: 11.5px; font-weight: 750; color: var(--text-dim); padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); }
+        .imp-steps span.on { color: var(--text); background: rgba(var(--accent-rgb), .16); border-color: rgba(var(--accent-rgb), .4); }
+        .imp-drop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; border: 1.5px dashed rgba(255,255,255,.18); margin-bottom: 6px; }
+        .imp-drop.over { border-color: var(--accent); background: rgba(var(--accent-rgb), .08); }
+        .imp-help, .imp-res, .imp-done { padding: 16px 18px; }
+        .imp-help td:first-child { white-space: nowrap; font-weight: 700; }
+        .imp-done { border-color: rgba(48,209,88,.45); background: rgba(48,209,88,.1); font-size: 13.5px; }
+        .imp-sel { display: inline-flex; gap: 6px; }
+        .imp-group { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); margin: 14px 0 6px; }
+        .imp-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; cursor: pointer; margin-bottom: 6px;
+                    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+        .imp-item.on { background: rgba(var(--accent-rgb), 0.08); border-color: rgba(var(--accent-rgb), 0.35); }
+        .imp-item.same { opacity: .65; }
+        .imp-item input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 1px; flex: none; }
+        .imp-body { min-width: 0; flex: 1; }
+        .imp-title { font-weight: 700; font-size: 13.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .imp-val { font-size: 12.5px; margin-top: 2px; overflow-wrap: anywhere; }
+        .imp-val .old { color: var(--text-dim); text-decoration: line-through; }
+        .imp-tag { font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px;
+                   color: #8af5ab; border: 1px solid rgba(48,209,88,.45); }
+        .imp-tag.warn { color: #ffd60a; border-color: rgba(255,214,10,.45); }
+        .imp-warn { font-size: 12px; color: #ffd60a; margin-top: 3px; }
+        .imp-note { font-size: 12.5px; padding: 8px 12px; border-radius: 10px; margin: 6px 0; background: rgba(var(--accent-rgb), .08); border: 1px solid rgba(var(--accent-rgb), .25); }
+        .imp-apply { position: sticky; bottom: 0; padding: 10px 0 0; background: linear-gradient(transparent, rgba(16,22,40,.95) 40%); align-items: center; }
+        .imp-apply .muted { margin-right: auto; }
         /* ================= Admin area v2: sub navigation, appearance, links, OpenBridge editor ================= */
         .admin-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
         .admin-tabs button { white-space: nowrap; }
@@ -1956,12 +2025,20 @@
                     <div style="color: #64748b; font-size: 12px; margin-top: 4px;" id="serverName"></div>
                 </div>
             </div>
+            <!-- Main menu: part of the fixed header -->
+            <nav class="main-tabs" id="mainTabs" role="tablist">
+                <button type="button" role="tab" data-tab="live" class="active">🎙️ Live</button>
+                <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span> <span class="tab-count" id="tgStatsCount"></span></button>
+                <button type="button" role="tab" data-tab="obp" id="mainTabObp" style="display: none;">↔️ <span class="t-long">OpenBridge</span><span class="t-short">OBP</span> <span class="tab-count" id="obpTabCount"></span></button>
+                <button type="button" role="tab" data-tab="tgdir" id="mainTabTg">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
+                <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
+            </nav>
             <div class="status-badges">
                 <div class="links-menu" id="linksMenu" hidden><button type="button" class="links-btn" onclick="toggleLinks(event)"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
                 <a class="network-info-btn" id="networkInfoBtn" style="display: none;" target="_blank">🌐 Network Info</a>
                 <div class="connection-status clickable warning" id="wsStatus" title="Connecting to dashboard server...">Connecting...</div>
                 <div class="connection-status warning" id="hblinkStatus" title="Waiting for connection status...">Unknown</div>
-                <div class="audio-toggle disabled" id="audioToggle" title="Click to enable audio notifications">🔇 Notifications</div>
+                <div class="audio-toggle disabled" id="audioToggle" title="Click to enable audio notifications">🔇<span class="hdr-lbl">&nbsp;Notifications</span></div>
                 <div id="userArea"></div>
             </div>
         </header>
@@ -1973,17 +2050,8 @@
             <strong>📢 Announcement:</strong> <span id="announcementText"></span>
         </div>
         
-        <!-- Main tabs: live view / statistics -->
-        <nav class="main-tabs" id="mainTabs" role="tablist">
-            <button type="button" role="tab" data-tab="live" class="active">🎙️ Live</button>
-            <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span> <span class="tab-count" id="tgStatsCount"></span></button>
-            <button type="button" role="tab" data-tab="obp" id="mainTabObp" style="display: none;">↔️ <span class="t-long">OpenBridge</span><span class="t-short">OBP</span> <span class="tab-count" id="obpTabCount"></span></button>
-            <button type="button" role="tab" data-tab="tgdir" id="mainTabTg">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
-            <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
-        </nav>
 
         <div class="tab-pane" id="tabLive">
-        <h2 class="section-header">Statistics</h2>
         <div class="stats-bar">
                 <div class="stat-card">
                     <div class="stat-label">🔌 Connections</div>
@@ -1997,11 +2065,11 @@
                 <div class="stat-label">📞 Calls Today</div>
                 <div class="stat-value" id="statTotalCalls">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card stat-retx">
                 <div class="stat-label">🔁 Retransmitted Today</div>
                 <div class="stat-value" id="statRetransmittedCalls">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card stat-traffic">
                 <div class="stat-label">⏱️ Traffic Today</div>
                 <div class="stat-value" id="statTotalDuration">0:00:00</div>
             </div>
@@ -2242,11 +2310,11 @@
             const toggle = document.getElementById('audioToggle');
             if (audioEnabled) {
                 toggle.className = 'audio-toggle enabled';
-                toggle.textContent = '🔊 Notifications';
+                toggle.innerHTML = '🔊<span class="hdr-lbl">&nbsp;Notifications</span>';
                 toggle.title = 'Click to disable audio notifications';
             } else {
                 toggle.className = 'audio-toggle disabled';
-                toggle.textContent = '🔇 Notifications';
+                toggle.innerHTML = '🔇<span class="hdr-lbl">&nbsp;Notifications</span>';
                 toggle.title = 'Click to enable audio notifications';
             }
         }
@@ -2611,8 +2679,16 @@
 
         // ---------- Admin area ----------
         const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['appearance', '🎨 Appearance'],
-                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['sessions', '🔑 Sessions'],
+                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
+
+        // One line on top of the tabs that have no own heading
+        const ADMIN_INTRO = {
+            users: ['👥 Users', 'Who may log in. Admins see IP addresses and ports and change settings; users only see the dashboard.'],
+            sessions: ['🔑 Sessions', 'All current logins. End one with „Revoke“ – that device is logged out at once.'],
+            audit: ['📜 Log', 'Logins, failed attempts and every change in the admin area, with time, person and IP address.'],
+            system: ['🖥️ System', 'State of HTTPS, access and the DMR server, plus restart buttons.'],
+        };
 
         function openAdmin(tab = 'users') {
             const m = openModal(`
@@ -2637,8 +2713,10 @@
             if (!body) return;
             body.innerHTML = '<div class="muted">Loading…</div>';
             try {
-                body.innerHTML = await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
-                                          links: adminLinks, obp: adminObp, sessions: adminSessions,
+                const intro = ADMIN_INTRO[tab] ? `<div class="tab-intro"><h3 class="set-panel-title">${ADMIN_INTRO[tab][0]}</h3>
+                    <p class="set-panel-help">${ADMIN_INTRO[tab][1]}</p></div>` : '';
+                body.innerHTML = intro + await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
+                                          links: adminLinks, obp: adminObp, import: adminImport, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
         }
@@ -3209,6 +3287,150 @@
             catch (e) { toast(e.message, 'err'); }
         }
 
+        // ================= Configuration converter (import from other DMR servers) =================
+        const imp = { result: null, text: '', rules: '', format: 'auto', fileName: '', rulesName: '' };
+
+        async function adminImport() {
+            const sys = await loadSettingsData();
+            const { formats } = await api('GET', '/api/admin/import/formats');
+            setTimeout(impRenderResult);
+            return `${adminBanners(sys)}
+            <div class="imp-layout">
+                <form class="tile set-tile imp-src" onsubmit="event.preventDefault(); impAnalyze()">
+                    <div class="set-panel-head"><div><h3 class="set-panel-title">📥 Import a configuration</h3>
+                        <p class="set-panel-help">Moving from another DMR server? Load its configuration file; HBlink4 shows what it can take over.
+                        Nothing is changed before you click <b>Apply</b>.</p></div></div>
+                    <div class="imp-steps"><span class="on">① File</span><span id="impStep2">② Check</span><span id="impStep3">③ Apply</span></div>
+                    <div class="set-row"><label>Server software</label>
+                        <select id="impFormat" onchange="imp.format=this.value">${formats.map(([k, l]) =>
+                            `<option value="${k}" ${k === imp.format ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('')}</select>
+                        <small class="muted">Auto-detect recognises all of them.</small></div>
+                    <div class="set-row is-wide"><label>Configuration file</label>
+                        <div class="imp-drop" id="impDrop">
+                            <label class="btn-s btn-primary file-btn">📂 Choose file
+                                <input type="file" hidden accept=".cfg,.ini,.conf,.yaml,.yml,.json,.txt" onchange="impLoadFile(this, 'text')"></label>
+                            <span class="muted small" id="impFileName">${escapeHtml(imp.fileName || 'hblink.cfg, freedmr.cfg, adn-server.yaml or config.json – or drop it here')}</span>
+                        </div>
+                        <textarea id="impText" class="json-edit" rows="9" spellcheck="false" placeholder="…or paste the content here" oninput="imp.text=this.value">${escapeHtml(imp.text)}</textarea></div>
+                    <details class="set-adv" ${imp.rules ? 'open' : ''}><summary>HBlink3/FreeDMR: add rules.py (conference bridges)</summary>
+                        <div class="set-row is-wide"><label>rules.py</label>
+                            <div class="imp-drop"><label class="btn-s file-btn">📂 Choose rules.py
+                                <input type="file" hidden accept=".py,.txt" onchange="impLoadFile(this, 'rules')"></label>
+                                <span class="muted small" id="impRulesName">${escapeHtml(imp.rulesName || 'optional – its talkgroups become talkgroup lists')}</span></div>
+                            <textarea id="impRules" class="json-edit" rows="5" spellcheck="false" placeholder="BRIDGES = { … }" oninput="imp.rules=this.value">${escapeHtml(imp.rules)}</textarea>
+                            <small class="muted">Only read, never executed.</small></div>
+                    </details>
+                    <div class="set-actions">
+                        <button type="button" class="btn-s" onclick="impSample()">🧪 Load an HBlink3 example</button>
+                        <button type="submit" class="btn-s btn-primary">🔍 Analyse</button>
+                    </div>
+                </form>
+                <div id="impResult"></div>
+            </div>`;
+        }
+
+        function impLoadFile(input, kind) {
+            const f = input.files && input.files[0]; if (!f) return;
+            if (f.size > 512 * 1024) { toast('The file is too large (max. 512 KB)', 'err'); return; }
+            const r = new FileReader();
+            r.onload = () => {
+                if (kind === 'rules') { imp.rules = r.result; imp.rulesName = f.name; document.getElementById('impRules').value = r.result; document.getElementById('impRulesName').textContent = f.name; }
+                else { imp.text = r.result; imp.fileName = f.name; document.getElementById('impText').value = r.result; document.getElementById('impFileName').textContent = f.name;
+                       if (/rules.*\.py$/i.test(f.name)) toast('That looks like rules.py – put it under „add rules.py“', 'err'); }
+            };
+            r.readAsText(f);
+        }
+        function impBindDrop() {
+            const d = document.getElementById('impDrop'); if (!d || d.dataset.bound) return;
+            d.dataset.bound = '1';
+            ['dragover', 'dragenter'].forEach(e => d.addEventListener(e, ev => { ev.preventDefault(); d.classList.add('over'); }));
+            ['dragleave', 'drop'].forEach(e => d.addEventListener(e, ev => { ev.preventDefault(); d.classList.remove('over'); }));
+            d.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if (f) impLoadFile({ files: [f] }, /\.py$/i.test(f.name) ? 'rules' : 'text'); });
+        }
+
+        function impSample() {
+            imp.text = `[GLOBAL]\nPATH: ./\nPING_TIME: 5\nMAX_MISSED: 3\nUSE_ACL: True\nREG_ACL: PERMIT:ALL\nSUB_ACL: DENY:1\nTGID_TS1_ACL: PERMIT:ALL\nTGID_TS2_ACL: PERMIT:ALL\n\n[REPORTS]\nREPORT: True\nREPORT_PORT: 4321\n\n[LOGGER]\nLOG_LEVEL: INFO\n\n[OBP-1]\nMODE: OPENBRIDGE\nENABLED: True\nIP:\nPORT: 62035\nNETWORK_ID: 3129100\nPASSPHRASE: password\nTARGET_IP: 1.2.3.4\nTARGET_PORT: 62035\nUSE_ACL: True\nSUB_ACL: DENY:1\nTGID_ACL: PERMIT:ALL\n\n[MASTER-1]\nMODE: MASTER\nENABLED: True\nREPEAT: True\nMAX_PEERS: 10\nIP:\nPORT: 54000\nPASSPHRASE: s3cr37w0rd\nGROUP_HANGTIME: 5\nUSE_ACL: True\nREG_ACL: DENY:1\nSUB_ACL: DENY:1\nTGID_TS1_ACL: PERMIT:ALL\nTGID_TS2_ACL: PERMIT:ALL\n\n[REPEATER-1]\nMODE: PEER\nENABLED: False\nIP:\nPORT: 54001\nMASTER_IP: 172.16.1.1\nMASTER_PORT: 54000\nPASSPHRASE: homebrew\nCALLSIGN: W1ABC\nRADIO_ID: 312000\nUSE_ACL: True\nSUB_ACL: DENY:1\nTGID_TS1_ACL: PERMIT:ALL\nTGID_TS2_ACL: PERMIT:ALL\n`;
+            imp.rules = `BRIDGES = {\n    'HBLink-Peer-TG11': [\n        {'SYSTEM': 'MASTER-1', 'TS': 2, 'TGID': 11, 'ACTIVE': True, 'TIMEOUT': 30, 'TO_TYPE': 'OFF', 'ON': [11], 'OFF': [55], 'RESET': []},\n    ],\n}\n`;
+            imp.fileName = 'hblink.cfg (example of lz5pn/HBlink3)'; imp.rulesName = 'rules.py (example)';
+            adminTab('import');
+        }
+
+        async function impAnalyze() {
+            imp.text = document.getElementById('impText').value; imp.rules = (document.getElementById('impRules') || {}).value || '';
+            try {
+                imp.result = await api('POST', '/api/admin/import/analyze', { text: imp.text, rules: imp.rules, format: imp.format });
+                impRenderResult(); toast(`Recognised: ${imp.result.format_label}`, 'ok');
+                document.getElementById('impResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) { toast(e.message, 'err'); }
+        }
+
+        function impShow(v) {
+            if (v === null || v === undefined) return '–';
+            if (Array.isArray(v)) return v.length ? v.join(', ') : 'none';
+            if (typeof v === 'boolean') return v ? 'on' : 'off';
+            if (typeof v === 'object') return JSON.stringify(v);
+            return String(v);
+        }
+
+        function impRenderResult() {
+            impBindDrop();
+            const el = document.getElementById('impResult'); if (!el) return;
+            const r = imp.result;
+            ['impStep2', 'impStep3'].forEach((id, i) => { const s = document.getElementById(id); if (s) s.classList.toggle('on', !!r && (i === 0 || r.applied)); });
+            if (!r) { el.innerHTML = `<div class="tile imp-help"><h3 class="set-panel-title">What is taken over?</h3>
+                <table class="admin-table"><tbody>
+                <tr><td>🛰️ MASTER</td><td>DMR port, hotspot password, hang time, talkgroups per timeslot (ACL, <code>TS1/TS2_STATIC</code>, rules.py)</td></tr>
+                <tr><td>↔️ OPENBRIDGE</td><td>OpenBridge trunks incl. FreeDMR keep-alives, protocol version and talkgroups</td></tr>
+                <tr><td>🔗 PEER / XLXPEER</td><td>links to other servers</td></tr>
+                <tr><td>🚫 ACLs</td><td><code>DENY</code> lists of radio and repeater IDs become blacklist entries</td></tr>
+                <tr><td>📄 config.json</td><td>everything from another HBlink4: server, access, patterns, blacklist, links, trunks</td></tr>
+                </tbody></table>
+                <p class="muted small">Not taken over: reporting, logger, MySQL, AllStar, proxies, alias downloads – HBlink4 does that itself or does not need it. You see the list after the analysis.</p></div>`; return; }
+            const groups = [...new Set(r.items.map(i => i.group))];
+            el.innerHTML = `<div class="tile imp-res">
+                <div class="set-panel-head"><div><h3 class="set-panel-title">② ${escapeHtml(r.format_label)}</h3>
+                    <p class="set-panel-help">${r.items.length} setting${r.items.length === 1 ? '' : 's'} found${r.bridges ? `, ${r.bridges} conference bridge${r.bridges === 1 ? '' : 's'} from rules.py` : ''}. Tick what you want to take over.</p></div>
+                    <span class="imp-sel"><button type="button" class="btn-s" onclick="impAll(true)">☑️ All</button><button type="button" class="btn-s" onclick="impAll(false)">☐ None</button></span></div>
+                ${r.notes.map(n => `<div class="imp-note">ℹ️ ${escapeHtml(n)}</div>`).join('')}
+                ${r.skipped.length ? `<details class="set-adv imp-skipped"><summary>Not taken over <span class="muted">(${r.skipped.length})</span></summary>
+                    <table class="admin-table"><tbody>${r.skipped.map(s => `<tr><td><code>[${escapeHtml(s.section)}]</code></td><td>${escapeHtml(s.reason)}</td></tr>`).join('')}</tbody></table></details>` : ''}
+                ${groups.map(g => `<h4 class="imp-group">${escapeHtml(g)}</h4>` + r.items.filter(i => i.group === g).map(i => `
+                    <label class="imp-item ${i.selected ? 'on' : ''} ${i.same ? 'same' : ''}">
+                        <input type="checkbox" data-id="${i.id}" ${i.selected ? 'checked' : ''} onchange="impToggle('${i.id}', this.checked, this)">
+                        <div class="imp-body">
+                            <div class="imp-title">${escapeHtml(i.title)}
+                                ${i.merge ? `<span class="imp-tag ${i.replaces ? 'warn' : ''}">${i.replaces ? 'replaces existing' : 'new'}</span>` : ''}
+                                ${i.same ? '<span class="imp-tag">already set</span>' : ''}</div>
+                            ${i.merge ? `<div class="imp-val">${escapeHtml(i.detail)}</div>`
+                                : `<div class="imp-val">${'current' in i ? `<span class="old">${escapeHtml(impShow(i.current))}</span> → ` : ''}<b>${escapeHtml(impShow(i.show))}</b>
+                                   <span class="muted"> · ${escapeHtml(i.detail)}</span></div>`}
+                            ${i.warnings.map(w => `<div class="imp-warn">⚠️ ${escapeHtml(w)}</div>`).join('')}
+                        </div>
+                    </label>`).join('')).join('')}
+                <div class="set-actions imp-apply">
+                    <span class="muted small" id="impCount"></span>
+                    <button type="button" class="btn-s btn-primary" onclick="impApply(this)">③ Apply selected</button>
+                </div>
+            </div>`;
+            impCount();
+        }
+        function impToggle(id, on, box) { const it = imp.result.items.find(i => i.id === id); it.selected = on; box.closest('.imp-item').classList.toggle('on', on); impCount(); }
+        function impAll(on) { imp.result.items.forEach(i => i.selected = on); impRenderResult(); }
+        function impCount() { const n = imp.result.items.filter(i => i.selected).length; const c = document.getElementById('impCount'); if (c) c.textContent = `${n} of ${imp.result.items.length} selected`; }
+
+        async function impApply(btn) {
+            const sel = imp.result.items.filter(i => i.selected).map(i => ({ key: i.key, value: i.value, merge: i.merge }));
+            if (!sel.length) { toast('Nothing selected', 'err'); return; }
+            if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = `Really apply ${sel.length}?`; return; }
+            try {
+                const j = await api('POST', '/api/admin/import/apply', { items: sel, format: imp.result.format });
+                imp.result.applied = true; afterSettingsSaved(j); impRenderResult();
+                document.getElementById('impResult').insertAdjacentHTML('afterbegin',
+                    `<div class="imp-done tile">✅ <b>${j.changed.length} settings taken over.</b> Check them under ⚙️ Settings and ↔️ OpenBridge.
+                     ${j.dmr_restart_required ? 'Port, links and trunks change after a restart of the DMR server.' : ''}</div>`);
+            } catch (e) { btn.dataset.armed = ''; btn.textContent = '③ Apply selected'; toast(e.message, 'err'); }
+        }
+
         // ================= OpenBridge editor (admin) =================
         // Guided form for dmr.openbridge_connections. Options appear depending on the
         // protocol and the talkgroup filter; the raw JSON stays available for experts.
@@ -3758,7 +3980,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const el = document.getElementById('wsStatus');
             
             if (connected) {
-                el.textContent = '✓ Live Data';
+                el.innerHTML = '✓&nbsp;Live<span class="hdr-lbl">&nbsp;Data</span>';
                 el.className = 'connection-status clickable connected';
                 el.title = 'Live Data: Browser connected to the dashboard providing real-time updates - Click to reload';
             } else {
@@ -3772,11 +3994,11 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const el = document.getElementById('hblinkStatus');
             
             if (connected) {
-                el.textContent = '✓ DMR Server';
+                el.innerHTML = '✓&nbsp;DMR<span class="hdr-lbl">&nbsp;Server</span>';
                 el.className = 'connection-status connected';
                 el.title = 'DMR Server: Dashboard is connected to the DMR server';
             } else {
-                el.textContent = '✗ DMR Server';
+                el.innerHTML = '✗&nbsp;DMR<span class="hdr-lbl">&nbsp;Server</span>';
                 el.className = 'connection-status warning';
                 el.title = 'DMR Server: Dashboard is not connected to the DMR server';
                 
@@ -6123,7 +6345,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
         initCollapsibles();
         loadConfig();
         if (new URLSearchParams(location.search).has('demo')) {
-            renderUserArea();
+            loadMe();
             loadDemo();
             loadObpToday();
         } else {

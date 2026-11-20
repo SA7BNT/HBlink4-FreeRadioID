@@ -337,6 +337,15 @@ external links, ICO; max. 1 MB) sets the `logo` / `favicon` setting to the new i
 `links.enabled` / `.label` / `.style` (`menu` or `bar`) / `.items` (`label`, `url`, `icon`, `new_tab`)
 are part of the public `GET /api/config` and applied by the page.
 
+### Configuration converter (admin only)
+`GET /api/admin/import/formats`, `POST /api/admin/import/analyze` with
+`{"text": "...", "rules": "...", "format": "auto|hblink3|freedmr|adn|hblink4"}` returns proposed
+settings (`items` with key, value, current value, notes, warnings) and the sections that are not
+taken over (`skipped`). `POST /api/admin/import/apply` with `{"items": [{key, value, merge}]}`
+stores the chosen ones through the normal settings validation; list settings (trunks, links,
+patterns, blacklist) are merged by name. Parsing: configparser, `yaml.safe_load`, and `ast` for
+`rules.py` – nothing is executed. See `dashboard/converter.py`.
+
 ### Privacy
 Addresses and ports (`address`, `ip`, `port`, `remote_address`, `remote_port`, `local_address`,
 `local_port`, `target_address`, `target_port`) of repeaters, hotspots, links and trunks are removed

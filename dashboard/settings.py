@@ -277,6 +277,13 @@ class SettingsStore:
                                              raise_errors=True)
             except ValueError as e:
                 raise SettingsError(f"OpenBridge: {e}")
+        if "dmr.outbound_connections" in clean:
+            from hblink4.config import parse_outbound_connections
+            try:
+                parse_outbound_connections({"outbound_connections": clean["dmr.outbound_connections"]},
+                                           raise_errors=True)
+            except ValueError as e:
+                raise SettingsError(f"Links: {e}")
         if not any(k.startswith("dmr.repeater_configurations") or k.startswith("dmr.blacklist") for k in clean):
             return
         trial: Dict[str, Any] = {}
