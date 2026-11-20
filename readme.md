@@ -28,6 +28,7 @@ Ein DMR-Server für Repeater und Hotspots (HomeBrew-Protokoll, z. B. MMDVM, Pi-S
 | 🛡️ **FreeRadioID Secure Login** | Stationen melden sich mit ihrem persönlichen Passwort von [FreeRadioID.net](https://freeradioid.net) an und haben volle Rechte. Wer das allgemeine Passwort benutzt, ist **Gast** und darf nur auf die Gast-Talkgroups senden. |
 | 🗂️ **Talkgroup-Verzeichnis** | rund 1.400 Talkgroup-Namen aus der [N8schicht-Liste](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json), mit Suche, Aktivität und eigenen Namen; die Namen stehen auch in Last Heard, auf den Karten und in der Statistik |
 | 📈 **Talkgroup-Statistik** | Eigener Tab: welche Talkgroups wie viel laufen, Sprechzeit und Gespräche heute, über 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
+| ↔️ **OpenBridge-Tab** | Trunks zu anderen Netzen (z. B. FreeDMR) mit Status, Gegenstelle, Verkehr in beide Richtungen, Top-Talkgroups, letzten Gesprächen und durchsuchbarer Talkgroup-Liste. In der Live-Ansicht nur kompakt, in der Statistik mitgezählt. |
 | 🛠️ **Configuration-Tab** | Server, Port, FreeRadioID- und Gast-Passwort, Talkgroups und fertige Einstellungen für Pi-Star/WPSD und MMDVMHost, zum Kopieren |
 | 🎙️ **Live-Dashboard** | Wer gerade spricht, steht immer ganz oben (**ON AIR**). Last Heard zeigt Avatare und FreeRadioID-Profile. Die Darstellung ist für Smartphone und Desktop optimiert. |
 | ⚙️ **Adminbereich statt Config-Dateien** | Alle Einstellungen von Dashboard **und** DMR-Server liegen in SQLite und werden im Browser geändert. Änderungen am DMR-Server wirken sofort, ohne SSH. |
@@ -72,6 +73,10 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 <td><img src="docs/images/config-tab.png" alt="Configuration"><br><b>Tab 🛠️ Configuration</b>: alles zum Verbinden, mit N8schicht-Logo und Kopier-Knöpfen.</td>
 </tr>
 <tr>
+<td><img src="docs/images/openbridge-tab.png" alt="OpenBridge"><br><b>Tab ↔️ OpenBridge</b>: Trunk-Status, Verkehr empfangen/gesendet, Top-Talkgroups und alle Talkgroups des Trunks.</td>
+<td><img src="docs/images/openbridge-card.png" alt="OpenBridge-Karte"><br><b>Kompakt in der Live-Ansicht</b>: Anzahl der Talkgroups, Gespräche heute, laufende Gespräche.</td>
+</tr>
+<tr>
 <td><img src="docs/images/admin-settings-dmr.png" alt="DMR-Einstellungen"><br><b>DMR-Server im Browser</b>: Passwort, Talkgroups, FreeRadioID, Patterns.</td>
 <td><img src="docs/images/admin-users.png" alt="Benutzer"><br><b>Benutzerverwaltung</b> mit Rollen. IP-Adressen sehen nur Admins.</td>
 </tr>
@@ -82,7 +87,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 | Anleitung | Inhalt |
 |---|---|
 | 📦 [Installation](docs/de/installation.md) | Voraussetzungen, geführte Installation, HTTPS, Firewall, Aktualisieren |
-| 🎙️ [Dashboard](docs/de/dashboard.md) | Tabs Live/Statistics/Talkgroups/Configuration, ON AIR, Talkgroup-Statistik, Last Heard, Karten, Detailansicht, Login-Arten |
+| 🎙️ [Dashboard](docs/de/dashboard.md) | Tabs Live/Statistics/OpenBridge/Talkgroups/Configuration, ON AIR, Talkgroup-Statistik, Last Heard, Karten, Detailansicht, Login-Arten |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, alle Einstellungen, Sitzungen, Protokoll, System |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |

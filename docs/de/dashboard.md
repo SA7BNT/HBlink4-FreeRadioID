@@ -24,18 +24,56 @@ Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop u
 
 ## Statistik
 
-🔌 Verbindungen · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · 🛡️ FreeRadioID: verifizierte Stationen und Gäste. Diese Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist. Die Tageswerte werden um Mitternacht zurückgesetzt.
+🔌 Verbindungen (Repeater, Hotspots, Outbound-Links und aktive OpenBridge-Trunks) · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · ↔️ OpenBridge · 🛡️ FreeRadioID. Die Tageswerte werden um Mitternacht zurückgesetzt.
 
-## Tabs: 🎙️ Live, 📈 Statistics, 🗂️ Talkgroups, 🛠️ Configuration
+- **↔️ OpenBridge** zeigt aktive und eingerichtete Trunks (z. B. `1/1`) sowie die Gespräche von heute: ⬇ empfangen und ⬆ gesendet. Die Kachel erscheint nur, wenn ein Trunk eingerichtet ist. Ein Klick öffnet den [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
+- **🛡️ FreeRadioID** zeigt verifizierte Stationen und Gäste. Die Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist.
 
-Unter der Kopfzeile wählst du zwischen vier Ansichten:
+## Tabs: 🎙️ Live, 📈 Statistics, ↔️ OpenBridge, 🗂️ Talkgroups, 🛠️ Configuration
+
+Unter der Kopfzeile wählst du zwischen fünf Ansichten:
 
 - **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
 - **📈 Statistics**: die [Talkgroup-Statistik](#-talkgroup-statistik). Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
+- **↔️ OpenBridge** (am Smartphone „OBP“): [die Trunks im Detail](#️-openbridge--die-trunks-im-detail). Die Zahl am Tab zeigt aktive und eingerichtete Trunks. Der Tab erscheint nur, wenn ein Trunk eingerichtet ist.
 - **🗂️ Talkgroups** (am Smartphone „TGs“): [das Talkgroup-Verzeichnis](#️-talkgroups--das-verzeichnis) mit Suche.
 - **🛠️ Configuration** (am Smartphone „Setup“): [alles, was man zum Verbinden braucht](#️-configuration--so-verbindest-du-dich).
 
-Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#talkgroups`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#openbridge`, `…/#talkgroups`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+
+## ↔️ OpenBridge – die Trunks im Detail
+
+<p align="center">
+  <img src="../images/openbridge-tab.png" alt="Tab OpenBridge" width="72%">
+  &nbsp;
+  <img src="../images/openbridge-tab-mobile.png" alt="Tab OpenBridge am Smartphone" width="22%">
+</p>
+
+Ein OpenBridge-Trunk führt oft über tausend Talkgroups. In der Live-Ansicht steht deshalb nur eine kompakte Karte: Name, Netzwerk-ID, Gegenstelle, Laufzeit, die **Anzahl** der Talkgroups mit Zeitschlitz, die Gespräche von heute (⬇ empfangen, ⬆ gesendet) und die laufenden Gespräche. **Details ›** öffnet den Tab.
+
+<p align="center"><img src="../images/openbridge-card.png" alt="OpenBridge-Karte in der Live-Ansicht" width="90%"></p>
+
+Im Tab **↔️ OpenBridge** steht alles zu einem Trunk. Bei mehreren Trunks wählst du oben den Trunk aus.
+
+| Bereich | Inhalt |
+|---|---|
+| **Kopf** | Name, Beschreibung, **UP**/**DOWN**; Gegenstelle mit Port, lokaler UDP-Port, Netzwerk-ID, verbunden seit, letzter Verkehr, Anzahl Talkgroups, was als RptrId gesendet wird; darunter die laufenden Gespräche |
+| **Zeitraum / Messgröße** | Heute · 24 h · 7 Tage · 30 Tage, ⏱️ Sprechzeit oder 📞 Gespräche |
+| **Kennzahlen** | ⬇️ empfangen und ⬆️ gesendet (Gespräche, Sprechzeit, Sprecher), Sprechzeit gesamt mit Anteil empfangen/gesendet, aktive Talkgroups |
+| **Top talkgroups** | die 10 meistgenutzten Talkgroups auf dem Trunk; blau = empfangen, orange = gesendet |
+| **Traffic** | Verlauf pro Stunde oder Tag: empfangen über der Linie, gesendet darunter |
+| **Latest calls on the trunk** | die letzten 25 Gespräche mit Richtung, Station, Talkgroup, Zeitschlitz und Dauer |
+| **Talkgroups on the trunk** | die komplette Liste mit Namen und Zeitschlitz, mit Suche und Filtern (*Active*, *TS1*, *TS2*); aktive Talkgroups sind hervorgehoben |
+
+<p align="center">
+  <img src="../images/openbridge-talkgroups.png" alt="Talkgroups auf dem Trunk, Suche nach „nord“" width="80%">
+</p>
+
+<p align="center"><img src="../images/openbridge-tab-mobile-2.png" alt="OpenBridge-Diagramme am Smartphone" width="28%"></p>
+
+Jedes Gespräch über den Trunk wird mit Richtung, Talkgroup und Dauer in SQLite gespeichert, und zwar in beide Richtungen. Speicherdauer und Sichtbarkeit ohne Login sind dieselben wie bei der [Talkgroup-Statistik](#-talkgroup-statistik). Das Passwort (`passphrase`) des Trunks erscheint nirgends im Dashboard.
+
+Eingerichtet wird ein Trunk im [Adminbereich](adminbereich.md) unter *Patterns, links & trunks* → `openbridge_connections`. Nur Talkgroups aus dessen `talkgroup_slots` laufen über den Trunk; alle anderen verwirft HBlink4 in beide Richtungen.
 
 ## 🗂️ Talkgroups – das Verzeichnis
 
@@ -97,7 +135,12 @@ Der Tab **📈 Statistics** zeigt, **welche Talkgroups wie viel genutzt werden**
 | **Kennzahlen** | aktive Talkgroups, Gespräche, Sprechzeit, verschiedene Sprecher im Zeitraum |
 | **Top talkgroups** | die 10 meistgenutzten Talkgroups als Balken, mit Namen |
 | **Activity** | Verlauf pro Stunde (Heute, 24 h) bzw. pro Tag (7/30 Tage); die 5 größten Talkgroups farbig, der Rest grau als „other“ |
-| **Tabelle** | alle Talkgroups mit Gesprächen, Sprechzeit, Anteil, Sprechern, aktivster Station und letztem Gespräch |
+| **Where the calls come from** | Anteil der Gespräche von lokalen Repeatern und Hotspots, über OpenBridge und über Outbound-Links |
+| **Tabelle** | alle Talkgroups mit Gesprächen, Sprechzeit, Anteil, Sprechern, aktivster Station und letztem Gespräch; **↔ 40 %** zeigt, welcher Anteil der Sprechzeit über OpenBridge kam |
+
+<p align="center"><img src="../images/tg-stats-origin.png" alt="Herkunft der Gespräche" width="90%"></p>
+
+Gespräche über OpenBridge zählen in der Statistik mit, wenn sie hereinkommen. Was der Server selbst über den Trunk hinausschickt, ist eine Kopie eines Gesprächs, das schon gezählt ist; es steht im Tab OpenBridge als „gesendet“.
 
 Fährst du mit der Maus über eine Säule oder einen Balken, erscheinen die genauen Werte. Eine Talkgroup behält ihre Farbe, auch wenn du den Zeitraum wechselst. Die Ansicht aktualisiert sich nach jedem Gespräch von selbst.
 
@@ -144,7 +187,7 @@ Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen, die Talkgroup
 | <img src="../images/dashboard-guest-card.png" width="430"> | **👤 Guest**, gelber Rand: Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
 | ohne Badge | angemeldet mit dem Passwort eines eigenen Patterns, bei dem FreeRadioID aus ist |
 
-Gold markierte Talkgroups werden für diese Station übersetzt (🔀). **OpenBridge** und **Network Outbound** zeigen Verbindungen zu anderen Servern.
+Gold markierte Talkgroups werden für diese Station übersetzt (🔀). **OpenBridge** und **Network Outbound** zeigen Verbindungen zu anderen Servern. Bei OpenBridge steht statt der langen Talkgroup-Liste nur die Anzahl; alles Weitere zeigt der [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 
 ## Detailansicht
 

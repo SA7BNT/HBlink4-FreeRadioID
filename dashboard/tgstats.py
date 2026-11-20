@@ -29,6 +29,14 @@ CREATE INDEX IF NOT EXISTS tg_calls_ts ON tg_calls(ts);
 RANGES = ("today", "24h", "7d", "30d")
 TOP_SERIES = 5          # talkgroups with their own colour in the time chart; the rest is "other"
 MAX_TABLE = 100
+ORIGINS = ("repeater", "openbridge", "outbound")
+
+
+def origin_of(origin: str, source: str) -> str:
+    """Where a call came in. Older rows have no origin: a numeric source is a local repeater/hotspot."""
+    if origin in ORIGINS:
+        return origin
+    return "repeater" if (source or "").isdigit() or not source else "outbound"
 
 
 def parse_names(text: str) -> Dict[int, str]:
@@ -56,15 +64,24 @@ class TGStats:
         self._a = auth_store
         with self._a._lock:
             self._a._db.executescript(_SCHEMA)
+            cols = {r[1] for r in self._a._db.execute("PRAGMA table_info(tg_calls)")}
+            if "origin" not in cols:   # where the call came in: repeater | openbridge | outbound
+                self._a._db.execute("ALTER TABLE tg_calls ADD COLUMN origin TEXT NOT NULL DEFAULT ''")
+                self._a._db.commit()
 
     # ------------------------------------------------------------ writing
     def record(self, tg: int, duration: float, *, slot: Optional[int] = None, src_id: Optional[int] = None,
-               is_data: bool = False, source: str = "", ts: Optional[float] = None) -> None:
+               is_data: bool = False, source: str = "", ts: Optional[float] = None, origin: str = "") -> None:
         if not tg:
             return
-        self._a._x("INSERT INTO tg_calls (ts, tg, slot, src_id, duration, is_data, source) VALUES (?,?,?,?,?,?,?)",
+        self._a._x("INSERT INTO tg_calls (ts, tg, slot, src_id, duration, is_data, source, origin) VALUES (?,?,?,?,?,?,?,?)",
                    (float(ts or time.time()), int(tg), slot, src_id, max(0.0, float(duration or 0)),
-                    1 if is_data else 0, source or ""))
+                    1 if is_data else 0, source or "", origin or ""))
+
+    def tag_origin(self, source: str, origin: str) -> None:
+        """Older rows were stored without origin: mark those of a known trunk/link once it reports in."""
+        if source and origin in ORIGINS:
+            self._a._x("UPDATE tg_calls SET origin = ? WHERE origin = '' AND source = ?", (origin, source))
 
     def purge(self, keep_days: int) -> int:
         cur = self._a._x("DELETE FROM tg_calls WHERE ts < ?", (time.time() - max(1, int(keep_days)) * 86400,))
@@ -97,7 +114,7 @@ class TGStats:
         names = names or {}
         start, starts, kind = self.buckets(rng, now)
         t0 = start.timestamp()
-        rows = self._a._q("SELECT ts, tg, src_id, duration FROM tg_calls WHERE ts >= ? AND is_data = 0 ORDER BY ts",
+        rows = self._a._q("SELECT ts, tg, src_id, duration, source, origin FROM tg_calls WHERE ts >= ? AND is_data = 0 ORDER BY ts",
                           (t0,))
         edges = [s.timestamp() for s in starts]
 
@@ -114,11 +131,17 @@ class TGStats:
         per_tg: Dict[int, Dict[str, Any]] = {}
         per_bucket: Dict[int, List[List[float]]] = {}   # tg -> [[calls, dur] per bucket]
         all_users = set()
+        origins = {o: {"calls": 0, "duration": 0.0} for o in ORIGINS}
         n = len(starts)
         for r in rows:
             tg, dur, src, ts = int(r["tg"]), float(r["duration"] or 0), r["src_id"], float(r["ts"])
             t = per_tg.setdefault(tg, {"tg": tg, "calls": 0, "duration": 0.0, "users": set(), "last": 0.0,
-                                       "talkers": {}})
+                                       "talkers": {}, "obp": 0.0})
+            org = origin_of(r["origin"], r["source"])
+            origins[org]["calls"] += 1
+            origins[org]["duration"] += dur
+            if org == "openbridge":
+                t["obp"] += dur
             t["calls"] += 1
             t["duration"] += dur
             t["last"] = max(t["last"], ts)
@@ -139,6 +162,7 @@ class TGStats:
                 "tg": t["tg"], "name": names.get(t["tg"], ""),
                 "calls": t["calls"], "duration": round(t["duration"], 1), "users": len(t["users"]),
                 "last": t["last"], "share": round(t["duration"] / total_dur, 4) if total_dur else 0,
+                "obp_share": round(t["obp"] / t["duration"], 3) if t["duration"] else 0,
                 "top_talker": ({"id": top_id, "callsign": callsign(top_id) or "", "duration": round(top_dur, 1)}
                                if top_id else None),
             })
@@ -164,4 +188,5 @@ class TGStats:
                        "talkgroups": len(tgs), "users": len(all_users)},
             "talkgroups": table,
             "series": series,
+            "origins": {o: {"calls": v["calls"], "duration": round(v["duration"], 1)} for o, v in origins.items()},
         }

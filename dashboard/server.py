@@ -35,6 +35,7 @@ from .auth import AuthStore, AuthError, ADMIN_ROLES, redact_ips, sniff_image
 from .settings import SettingsStore, SettingsError, FIELD_BY_KEY
 from .avatars import AvatarStore, DEFAULT_URL as FRID_AVATAR_URL
 from .tgstats import TGStats, parse_names as _parse_tg_names, RANGES as TG_RANGES
+from .obpstats import OBPStats
 from .talkgroups import Talkgroups
 
 # Configure logging
@@ -259,6 +260,8 @@ class DashboardState:
 
         # Talkgroup statistics (one row per group call), same database
         self.tgstats = TGStats(self.auth)
+        # OpenBridge statistics (one row per stream and direction on a trunk)
+        self.obpstats = OBPStats(self.auth)
         # Talkgroup names (N8schicht list, bundled copy until the first download)
         self.talkgroups = Talkgroups(self.auth)
 
@@ -992,6 +995,9 @@ class EventReceiver:
                 # Talkgroup statistics: every received group call, once
                 if not data.get('is_assumed', stream.get('is_assumed', False)):
                     _record_tg_call(stream, data, connection_type, event.get('timestamp'))
+                # OpenBridge statistics: both directions on the trunk
+                if connection_type == 'openbridge':
+                    _record_obp_call(stream, data, event.get('timestamp'))
                 
                 # Update last_heard entry to mark as no longer active (only for repeater RX streams)
                 if connection_type != 'outbound':
@@ -1038,6 +1044,7 @@ class EventReceiver:
                 'last_activity': event['timestamp'],
                 'status': 'connected'
             }
+            _tag_origin(conn_name, 'outbound')
             logger.info(f"Outbound connection established: {conn_name} (radio_id={data.get('radio_id')}) at {data.get('remote_address')}:{data.get('remote_port')}")
 
         elif event_type == 'openbridge_connected':
@@ -1049,6 +1056,7 @@ class EventReceiver:
                 'last_activity': event['timestamp'],
                 'status': 'connected',
             }
+            _tag_origin(conn_name, 'openbridge')
             logger.info(f"OpenBridge trunk up: {conn_name} (network_id={data.get('network_id')}) "
                         f"→ {data.get('remote_address')}:{data.get('remote_port')} "
                         f"({len(data.get('talkgroups', {}))} talkgroups)")
@@ -1639,9 +1647,77 @@ def _record_tg_call(stream: dict, data: dict, connection_type: str, ts) -> None:
         state.tgstats.record(int(tg), float(data.get('duration') or 0), slot=data.get('slot') or stream.get('slot'),
                              src_id=stream.get('rf_src') or stream.get('src_id') or data.get('src_id'),
                              is_data=bool(stream.get('is_data') or data.get('is_data')), source=source,
-                             ts=float(ts) if ts else None)
+                             ts=float(ts) if ts else None,
+                             origin=connection_type if connection_type in ('openbridge', 'outbound') else 'repeater')
     except Exception as e:
         logger.warning(f"📈 Could not store talkgroup statistics: {e}")
+
+
+def _record_obp_call(stream: dict, data: dict, ts) -> None:
+    """Store one finished OBP stream (rx = from the far end, tx = to the far end)."""
+    if not _tg_cfg().get("enabled", True):
+        return
+    if (stream.get('call_type') or data.get('call_type') or 'group') != 'group':
+        return
+    tg = stream.get('dst_id') or data.get('dst_id')
+    trunk = data.get('connection_name') or stream.get('connection_name')
+    if not tg or not trunk:
+        return
+    tx = bool(data.get('is_assumed', stream.get('is_assumed', False)))
+    try:
+        state.obpstats.record(trunk, 'tx' if tx else 'rx', int(tg), float(data.get('duration') or 0),
+                              slot=data.get('slot') or stream.get('slot'),
+                              src_id=stream.get('rf_src') or stream.get('src_id') or data.get('src_id'),
+                              is_data=bool(stream.get('is_data') or data.get('is_data')),
+                              ts=float(ts) if ts else None)
+    except Exception as e:
+        logger.warning(f"↔️ Could not store OpenBridge statistics: {e}")
+
+
+def _tag_origin(source: str, origin: str) -> None:
+    try:
+        state.tgstats.tag_origin(source, origin)
+    except Exception as e:
+        logger.debug(f"origin backfill for {source}: {e}")
+
+
+def _obp_stats_allowed(request) -> bool:
+    cfg = _tg_cfg()
+    return bool(cfg.get("enabled", True)) and (bool(cfg.get("public", True)) or bool(current_user(request)))
+
+
+def _obp_public(o: dict) -> dict:
+    """Trunk info for the browser (never the passphrase)."""
+    tgs = o.get('talkgroups') or {}
+    ts1 = sum(1 for v in tgs.values() if str(v) == '1')
+    return {k: o.get(k) for k in ('connection_name', 'network_id', 'remote_address', 'remote_port', 'local_address',
+                                  'local_port', 'description', 'preserve_source_peer', 'status', 'connected_at',
+                                  'disconnected_at', 'last_activity')} | {
+        'talkgroup_count': len(tgs), 'ts1': ts1, 'ts2': len(tgs) - ts1}
+
+
+@app.get("/api/openbridge")
+async def get_openbridge(request: Request, range: str = "today", trunk: str = "", brief: int = 0):
+    """OpenBridge trunks: status, talkgroup map with names, traffic in both directions."""
+    if range not in TG_RANGES:
+        raise _HTTPError(400, f"range must be one of {', '.join(TG_RANGES)}")
+    allowed = _obp_stats_allowed(request)
+    today = await asyncio.to_thread(state.obpstats.today) if allowed else {}
+    out = {"stats": allowed, "range": range, "trunks": []}
+    names = _tg_names() if not brief else {}
+    for o in state.openbridges.values():
+        t = _obp_public(o)
+        t["today"] = today.get(o.get('connection_name'), {"rx": 0, "tx": 0, "rx_duration": 0.0, "tx_duration": 0.0})
+        if not brief and (not trunk or trunk == o.get('connection_name')):
+            tgs = o.get('talkgroups') or {}
+            t["talkgroups"] = sorted(([int(k), int(v), names.get(int(k), "")] for k, v in tgs.items()),
+                                     key=lambda x: x[0])
+            if allowed:
+                t["summary"] = await asyncio.to_thread(
+                    state.obpstats.summary, o.get('connection_name'), range, names,
+                    lambda rid: state.user_db.get(rid, '') if rid else '')
+        out["trunks"].append(t)
+    return out
 
 
 @app.get("/api/stats/talkgroups")
@@ -2005,6 +2081,7 @@ async def shutdown_event():
 def _purge_tg_stats():
     try:
         n = state.tgstats.purge(int(_tg_cfg().get("retention_days", 30) or 30))
+        n += state.obpstats.purge(int(_tg_cfg().get("retention_days", 30) or 30))
         if n:
             logger.info(f"📈 {n} old talkgroup calls removed from the statistics")
     except Exception as e:

@@ -216,10 +216,14 @@ The dashboard is started automatically with `./run_all.sh`, or separately with `
 ### Tabs
 The page has three tabs under the header: **🎙️ Live** (everything below),
 **📈 Statistics** (talkgroup statistics: top talkgroups, hourly/daily activity
-chart, table; see `GET /api/stats/talkgroups`) and **🛠️ Configuration** (how to
+chart, table, origin of the calls; see `GET /api/stats/talkgroups`), **↔️ OpenBridge**
+(trunk status, traffic received/sent, top talkgroups, latest calls and the full
+talkgroup list of each trunk; see `GET /api/openbridge`; only shown when a trunk is
+configured) and **🛠️ Configuration** (how to
 connect: server, port, FreeRadioID/guest password, talkgroups, Pi-Star and
 MMDVMHost snippets; see `GET /api/connect`). The tab is kept in the URL
-(`#stats`, `#config`). The Statistics tab is hidden when talkgroup statistics are switched
+(`#stats`, `#openbridge`, `#config`). On the Live tab an OpenBridge trunk is a
+compact card (talkgroup count instead of the full list, calls today, live streams). The Statistics tab is hidden when talkgroup statistics are switched
 off, or for visitors without login when "visible without login" is off.
 
 ### Statistics Cards
@@ -315,7 +319,18 @@ numbers everywhere in the dashboard.
 Talkgroup statistics: totals, per-talkgroup calls/airtime/speakers/top talker
 and an hourly (today, 24h) or daily (7d, 30d) series of the top 5 talkgroups
 plus "other". Every received group call is stored in SQLite (`tg_calls`); kept
-for `tg_stats.retention_days` (admin area → Talkgroup statistics).
+for `tg_stats.retention_days` (admin area → Talkgroup statistics). `origins`
+splits calls/airtime into local repeaters, OpenBridge and outbound links;
+`obp_share` per talkgroup is the airtime share that came in over OpenBridge.
+
+### GET /api/openbridge?range=today|24h|7d|30d[&trunk=NAME][&brief=1]
+OpenBridge trunks: name, network ID, far end, local port, description, status,
+talkgroup count per timeslot and today's calls per direction. Without `brief`
+also the talkgroup map with names and a summary per trunk: totals received
+(`rx`, from the far end) and sent (`tx`, to the far end), hourly/daily series per
+direction, top 10 talkgroups and the latest 25 calls. Every OBP stream end is
+stored in SQLite (`obp_calls`, both directions), same retention and visibility
+as the talkgroup statistics. The passphrase is never included.
 
 ### GET /api/stats
 Returns aggregate statistics

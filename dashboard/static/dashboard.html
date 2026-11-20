@@ -1525,6 +1525,79 @@
         .obp-tgs { font-size: 11.5px; margin-top: 3px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
         .obp-stream-pill { background: var(--surface-2); border-color: var(--glass-border); }
 
+        /* OpenBridge: compact live card (no talkgroup wall) */
+        .obp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .obp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+        .obp-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--text);
+                    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 3px 10px;
+                    font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .obp-chip .dim { color: var(--text-dim); font-weight: 500; }
+        .obp-chip .rx { color: #7fb2f2; } .obp-chip .tx { color: #f0935f; }
+        .obp-more { font: inherit; font-size: 12px; font-weight: 650; color: var(--accent); background: rgba(90,200,250,0.1);
+                    border: 1px solid rgba(90,200,250,0.35); border-radius: 999px; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
+        .obp-more:hover { background: rgba(90,200,250,0.2); }
+        .stat-card.stat-obp { background: linear-gradient(135deg, rgba(90,200,250,0.18), rgba(90,200,250,0.05)); border-color: rgba(90,200,250,0.35); cursor: pointer; }
+        .stat-card.stat-obp .stat-value { font-size: 20px; }
+        .stat-card.stat-obp .stat-sub { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
+
+        /* OpenBridge tab */
+        .obp-trunks { margin: 0 0 12px; flex-wrap: wrap; }
+        .obp-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: start; padding: 16px; margin-bottom: 14px; }
+        .obp-hero h3 { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .obp-hero .desc { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+        .obp-state { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: .08em; border-radius: 999px; padding: 4px 11px; }
+        .obp-state i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .obp-state.up { color: #8af5ab; background: rgba(48,209,88,0.14); box-shadow: inset 0 0 0 1px rgba(48,209,88,0.4); }
+        .obp-state.up i { box-shadow: 0 0 8px #30d158; }
+        .obp-state.down { color: #ff8a80; background: rgba(255,69,58,0.12); box-shadow: inset 0 0 0 1px rgba(255,69,58,0.4); }
+        .obp-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+        .obp-fact { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 8px 11px; min-width: 0; }
+        .obp-fact .k { color: var(--text-dim); font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+        .obp-fact.wide { grid-column: span 2; }
+        .obp-fact .v { font-size: 14px; font-weight: 650; margin-top: 2px; overflow-wrap: break-word; font-variant-numeric: tabular-nums; }
+        .obp-fact .v small { color: var(--text-dim); font-weight: 500; font-size: 12px; }
+        .obp-live { grid-column: 1 / -1; }
+        .obp-card { padding: 16px; margin-bottom: 14px; }
+        .obp-dir { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 750; border-radius: 6px; padding: 1px 7px; }
+        .obp-dir.rx { color: #a9cbf7; background: rgba(57,135,229,0.18); }
+        .obp-dir.tx { color: #f6b48f; background: rgba(217,89,38,0.18); }
+        .obp-kpi-sub { color: var(--text-dim); font-size: 11.5px; font-weight: 500; margin-top: 1px; }
+        .obp-tgbar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.07); margin: 8px 0 4px; gap: 2px; }
+        .obp-tgbar > div { height: 100%; }
+        .obp-tglist { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; margin-top: 10px; }
+        .obp-tg { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 6px 9px; min-width: 0; font-size: 12.5px; }
+        .obp-tg b { font-variant-numeric: tabular-nums; }
+        .obp-tg .n { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+        .obp-tg .ts { font-size: 10px; font-weight: 800; color: var(--accent); border: 1px solid rgba(90,200,250,0.35); border-radius: 5px; padding: 0 5px; }
+        .obp-tg.hot { border-color: rgba(90,200,250,0.4); background: rgba(90,200,250,0.08); }
+        .obp-tgcell span { color: var(--text-dim); }
+        @media (max-width: 600px) {
+            .obp-card .tgs-table td, .obp-card .tgs-table th { padding: 7px 5px; }
+            .obp-tgcell { max-width: 88px; overflow: hidden; text-overflow: ellipsis; }
+            .obp-card .tgs-table { font-size: 12px; }
+            .obp-dir { padding: 1px 5px; }
+        }
+        .obp-sub-h { margin: 16px 0 0; font-size: 12px; font-weight: 700; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; }
+        .obp-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+        .obp-tools .tgdir-search { flex: 1 1 220px; max-width: 360px; }
+        .origin-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; background: rgba(255,255,255,0.06); margin: 4px 0 8px; }
+        .origin-bar > div { height: 100%; }
+        .origin-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--text-dim); }
+        .origin-legend span { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+        .origin-legend b { color: var(--text); font-weight: 650; }
+        .origin-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .obp-badge { font-size: 10px; font-weight: 750; color: var(--text-dim); background: rgba(255,255,255,0.08); border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
+        @media (max-width: 600px) {
+            .obp-hero, .obp-card { padding: 12px; }
+            .obp-hero { grid-template-columns: 1fr; }
+            .obp-hero h3 { font-size: 17px; }
+            .obp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .obp-tglist { grid-template-columns: 1fr 1fr; }
+            .obp-tg { font-size: 12px; padding: 5px 7px; gap: 6px; }
+            .obp-tools .tgdir-search { max-width: none; }
+            .stat-card.stat-obp .stat-sub { display: block; margin: 2px 0 0; }
+        }
+
         /* ON AIR: talking stations glow and come first */
         .on-air-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -1739,6 +1812,7 @@
         <nav class="main-tabs" id="mainTabs" role="tablist">
             <button type="button" role="tab" data-tab="live" class="active">🎙️ Live</button>
             <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span> <span class="tab-count" id="tgStatsCount"></span></button>
+            <button type="button" role="tab" data-tab="obp" id="mainTabObp" style="display: none;">↔️ <span class="t-long">OpenBridge</span><span class="t-short">OBP</span> <span class="tab-count" id="obpTabCount"></span></button>
             <button type="button" role="tab" data-tab="tgdir" id="mainTabTg">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
             <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
         </nav>
@@ -1765,6 +1839,10 @@
             <div class="stat-card">
                 <div class="stat-label">⏱️ Traffic Today</div>
                 <div class="stat-value" id="statTotalDuration">0:00:00</div>
+            </div>
+            <div class="stat-card stat-obp" id="statObpCard" style="display: none;" title="OpenBridge trunks up / configured · calls today received (⬇) and sent (⬆) over the trunks">
+                <div class="stat-label">↔️ OpenBridge</div>
+                <div class="stat-value"><span id="statObp">0</span><span class="stat-sub" id="statObpSub"></span></div>
             </div>
             <div class="stat-card stat-frid" id="statFridCard" style="display: none;" title="Logins verified by FreeRadioID.net / guest logins on the default passphrase">
                 <div class="stat-label">🛡️ FreeRadioID</div>
@@ -1880,6 +1958,11 @@
                     <div class="tgs-panel"><h3><span>Top talkgroups</span><small id="tgsTopNote"></small></h3><div class="tgs-chart" id="tgsBars"></div></div>
                     <div class="tgs-panel"><h3><span>Activity</span><small id="tgsTimeNote"></small></h3><div class="tgs-legend" id="tgsLegend"></div><div class="tgs-chart" id="tgsTime"></div></div>
                 </div>
+                <div class="tgs-panel" style="margin-top: 14px;" id="tgsOriginPanel">
+                    <h3><span>Where the calls come from</span><small id="tgsOriginNote">by airtime</small></h3>
+                    <div class="origin-bar" id="tgsOriginBar"></div>
+                    <div class="origin-legend" id="tgsOriginLegend"></div>
+                </div>
                 <div class="tgs-table-wrap">
                     <table class="tgs-table">
                         <thead><tr><th>Talkgroup</th><th class="num">Calls</th><th class="num">Airtime</th><th class="hide-sm">Share</th><th class="num hide-sm">Speakers</th><th class="hide-sm">Most active</th><th class="hide-sm">Last call</th></tr></thead>
@@ -1889,6 +1972,12 @@
                 </div>
             </div>
         </div><!-- /tabStats -->
+
+        <div class="tab-pane" id="tabObp" style="display: none;">
+            <h2 class="section-header">↔️ OpenBridge <span id="obpHeadCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <div class="tgs-seg obp-trunks" id="obpTrunkSel" role="tablist" aria-label="Trunk" style="display: none;"></div>
+            <div id="obpBody"><div class="card"><div class="tgs-empty">Loading …</div></div></div>
+        </div><!-- /tabObp -->
 
         <div class="tab-pane" id="tabConfig" style="display: none;">
             <div id="cfBody"><div class="tgs-empty">Loading …</div></div>
@@ -2145,6 +2234,7 @@
                     updateRepeaters(state.repeaters);
                     updateOutbounds(state.outbounds);
                     updateOpenbridges(state.openbridges);
+                    loadObpToday();
                     updateStreams(state.streams);
                     updateEvents(state.events);
                     updateStats(state.stats, state.repeaters, state.streams);
@@ -2925,7 +3015,7 @@
             // Count connected outbound connections
             const outboundList = Array.isArray(state.outbounds) ? state.outbounds : Object.values(state.outbounds || {});
             const outboundCount = outboundList.filter(o => o.status === 'connected').length;
-            document.getElementById('statConnections').textContent = inboundCount + outboundCount;
+            document.getElementById('statConnections').textContent = inboundCount + outboundCount + obpUpCount();
             document.getElementById('statStreams').textContent = 
                 Array.isArray(streams) ? streams.filter(s => s.status === 'active').length :
                 (streams ? Object.keys(streams).length : 0);
@@ -2984,7 +3074,7 @@
             // Update total count in stats (inbound + connected outbound)
             const outboundList = Array.isArray(state.outbounds) ? state.outbounds : Object.values(state.outbounds || {});
             const outboundConnected = outboundList.filter(o => o.status === 'connected').length;
-            document.getElementById('statConnections').textContent = connected.length + outboundConnected;
+            document.getElementById('statConnections').textContent = connected.length + outboundConnected + obpUpCount();
             
             // Render each section
             renderConnectionGroup('repeaters', 'repeaterCount', groups.repeater, '📶');
@@ -3312,6 +3402,7 @@
             const countElement = document.getElementById('openbridgeCount');
             const section = document.getElementById('openbridgeSection');
             const list = Array.isArray(openbridges) ? openbridges : Object.values(openbridges || {});
+            obpUpdateTile(list);
 
             if (list.length === 0) {
                 if (section) section.style.display = 'none';
@@ -3323,18 +3414,23 @@
             if (countElement) countElement.textContent = upCount > 0 ? `${upCount}` : '';
 
             const streams = state.streams || [];
+            const n = v => Number(v || 0).toLocaleString('de-DE');
 
             container.innerHTML = list.map(o => {
                 const up = o.status === 'connected';
                 const headerClass = up ? 'outbound-header-connected' : 'outbound-header-disconnected';
                 const upDur = (up && o.connected_at) ? formatDuration(Date.now() / 1000 - o.connected_at) : '—';
 
-                // Talkgroup ownership map { "tgid": ts } -> "TS1/31, TS2/3120 …"
-                // (display as TS/TGID — standard DMR nomenclature; config keys by TGID
-                //  because the table's job is to assign each TGID a TS.)
+                // Talkgroups only as a count per timeslot — the full list lives in the OpenBridge tab
                 const tgs = o.talkgroups || {};
-                const tgList = Object.keys(tgs).sort((a, b) => Number(a) - Number(b))
-                    .map(t => `TS${tgs[t]}/${t}`).join(', ') || '—';
+                const tgKeys = Object.keys(tgs);
+                const ts1 = tgKeys.filter(t => String(tgs[t]) === '1').length, ts2 = tgKeys.length - ts1;
+                const tgChip = `<span class="obp-chip">📡 ${n(tgKeys.length)} TGs`
+                    + (tgKeys.length ? ` <span class="dim">· ${obpTsSplit(ts1, ts2)}</span>` : '') + `</span>`;
+                const t = (state.obpToday || {})[o.connection_name];
+                const todayChip = t
+                    ? `<span class="obp-chip"><span class="dim">Today</span> <span class="rx">⬇ ${n(t.rx)}</span> <span class="tx">⬆ ${n(t.tx)}</span>`
+                      + ` <span class="dim">· ${tgsFmtDur((t.rx_duration || 0) + (t.tx_duration || 0), true)}</span></span>` : '';
 
                 // Live streams on this trunk (OBP is stream-multiplexed — list them all)
                 const active = streams.filter(s =>
@@ -3342,35 +3438,66 @@
                     s.connection_name === o.connection_name &&
                     (s.status === 'active' || s.status === 'hang_time'));
                 const streamHtml = active.length
-                    ? `<div class="obp-streams">` + active.map(s => {
-                        const who = s.callsign ? `${s.callsign} (${s.src_id})` : s.src_id;
-                        // TX (assumed/forwarded) vs RX (received from the peer),
-                        // with a DATA override. OBP is stream-multiplexed with no
-                        // slot to protect and no hang time, so there is no HANG
-                        // state here (unlike renderSlot()).
-                        let badge = s.is_assumed ? 'transmitting' : 'receiving';
-                        let label = s.is_assumed ? '⬆️ TX' : '⬇️ RX';
-                        if (s.is_data) { badge = 'data'; label = 'DATA'; }
-                        return `<span class="obp-stream-pill">`
-                             + `<span class="slot-status-badge ${badge}">${label}</span> `
-                             + `${who} → <span class="slot-col-value highlight">TG${s.dst_id}</span> `
-                             + `<span class="muted">TS${s.slot}</span></span>`;
-                      }).join('') + `</div>`
+                    ? `<div class="obp-streams">` + active.map(obpStreamPill).join('') + `</div>`
                     : `<div class="obp-streams"><span class="obp-stream-pill idle">— idle —</span></div>`;
 
                 return `
                     <div class="repeater-card obp-card">
                         <div class="repeater-info">
-                            <div class="${headerClass}">↔️ ${o.connection_name}
-                                <span class="rid">NetID ${o.network_id}</span></div>
+                            <div class="obp-head">
+                                <div class="${headerClass}">↔️ ${escapeHtml(o.connection_name)}
+                                    <span class="rid">NetID ${o.network_id}</span></div>
+                                <button type="button" class="obp-more" onclick="obpOpen('${escapeHtml(o.connection_name)}')">Details ›</button>
+                            </div>
                             <div class="obp-meta">
-                                ${fmtAddr(o.remote_address, o.remote_port)} · up ${upDur} ·
-                                ${o.preserve_source_peer ? 'preserves source peer' : 'network_id in RptrId'}</div>
-                            <div class="obp-tgs"><span class="repeater-meta-label">TGs</span> ${tgList}</div>
+                                ${fmtAddr(o.remote_address, o.remote_port)} · up ${upDur}</div>
+                            <div class="obp-chips">${tgChip}${todayChip}</div>
                             ${streamHtml}
                         </div>
                     </div>`;
             }).join('');
+        }
+
+        function obpTsSplit(ts1, ts2) {
+            const n = v => Number(v || 0).toLocaleString('de-DE');
+            return !ts1 ? 'all on TS2' : !ts2 ? 'all on TS1' : `TS1 ${n(ts1)} · TS2 ${n(ts2)}`;
+        }
+
+        function obpStreamPill(s) {
+            const who = s.callsign ? `${escapeHtml(s.callsign)} (${s.src_id})` : s.src_id;
+            // TX (forwarded to the peer) vs RX (received from the peer), with a DATA
+            // override. OBP is stream-multiplexed with no hang time.
+            let badge = s.is_assumed ? 'transmitting' : 'receiving';
+            let label = s.is_assumed ? '⬆️ TX' : '⬇️ RX';
+            if (s.is_data) { badge = 'data'; label = 'DATA'; }
+            const nm = tgName(s.dst_id);
+            return `<span class="obp-stream-pill">`
+                 + `<span class="slot-status-badge ${badge}">${label}</span> `
+                 + `${who} → <span class="slot-col-value highlight">TG${s.dst_id}</span>`
+                 + (nm ? ` <span class="muted">${escapeHtml(nm)}</span>` : '')
+                 + ` <span class="muted">TS${s.slot}</span></span>`;
+        }
+
+        // Live tile + Connections count include the OpenBridge trunks
+        function obpList() { return Array.isArray(state.openbridges) ? state.openbridges : Object.values(state.openbridges || {}); }
+        function obpUpCount() { return obpList().filter(o => o.status === 'connected').length; }
+        function obpUpdateTile(list) {
+            list = list || obpList();
+            const card = document.getElementById('statObpCard');
+            const tab = document.getElementById('mainTabObp');
+            if (card) card.style.display = list.length ? '' : 'none';
+            if (tab) {
+                const was = tab.style.display !== 'none';
+                tab.style.display = list.length ? '' : 'none';
+                if (was !== !!list.length && typeof showTab === 'function') showTab(currentTab(), false);
+            }
+            const up = list.filter(o => o.status === 'connected').length;
+            const tc = document.getElementById('obpTabCount'); if (tc) tc.textContent = list.length ? `${up}/${list.length}` : '';
+            const v = document.getElementById('statObp'); if (v) v.textContent = `${up}/${list.length}`;
+            const today = Object.values(state.obpToday || {});
+            const rx = today.reduce((a, t) => a + (t.rx || 0), 0), tx = today.reduce((a, t) => a + (t.tx || 0), 0);
+            const sub = document.getElementById('statObpSub');
+            if (sub) sub.textContent = state.obpToday ? `⬇ ${rx.toLocaleString('de-DE')} · ⬆ ${tx.toLocaleString('de-DE')}` : '';
         }
 
         function updateOutbounds(outbounds) {
@@ -3862,6 +3989,7 @@
                     const endConnectionType = data.connection_type || 'repeater';
 
                     if (endConnectionType === 'openbridge') {
+                        obpScheduleRefresh();
                         // OBP has no hang time — drop the ended stream outright so
                         // the pill clears immediately (matches server.py, which
                         // deletes OBP streams on end). Multiplexed: match by
@@ -4137,7 +4265,7 @@
                 // Compute total connections: inbound repeaters + connected outbounds
                 const outboundList = Array.isArray(state.outbounds) ? state.outbounds : Object.values(state.outbounds || {});
                 const outboundConnected = outboundList.filter(o => o.status === 'connected').length;
-                document.getElementById('statConnections').textContent = data.repeaters_connected + outboundConnected;
+                document.getElementById('statConnections').textContent = data.repeaters_connected + outboundConnected + obpUpCount();
                 document.getElementById('statStreams').textContent = data.active_streams;
                 document.getElementById('statTotalCalls').textContent = data.stats.total_calls_today.toLocaleString();
                 document.getElementById('statRetransmittedCalls').textContent = data.stats.retransmitted_calls.toLocaleString();
@@ -4214,7 +4342,7 @@
         // ---------------------------------------------------------------------------
         // Demo mode (?demo in URL) — coherent static scenario, no WebSocket/server.
         // Paradigm (HBlink4 = edge access server fed by an HBlink3 core over OBP):
-        //   • KS-CORE OBP trunk carries US-Nationwide (31/TS1), KS-Statewide
+        //   • OBP-Funkerportal trunk carries US-Nationwide (31/TS1), KS-Statewide
         //     (3120/TS2) and MO-Local (3100/TS2) to/from the core.
         //   • N0CAL is transmitting KS-Statewide (3120) IN on the trunk → delivered
         //     to subscribed devices (W0ABC, KD0XYZ) on TS2.
@@ -4255,16 +4383,17 @@
             ];
 
             state.openbridges = [
-                { connection_name: 'KS-CORE', network_id: 3120, status: 'connected',
-                  connected_at: now - 8130,
-                  remote_address: 'core.ksdmr.net', remote_port: 62031,
-                  preserve_source_peer: true,
-                  talkgroups: { '31': 1, '3120': 2, '3100': 2 } },
+                { connection_name: 'OBP-Funkerportal', network_id: 2624, status: 'connected',
+                  connected_at: now - 8130, last_activity: now - 4,
+                  remote_address: 'freedmr.funkerportal.de', remote_port: 62046, local_port: 51084,
+                  description: 'N8schicht-Bridge zu freedmr.funkerportal.de (FreeDMR, klassisches OBP)',
+                  preserve_source_peer: false,
+                  talkgroups: demoObpTgs() },
             ];
 
             state.streams = [
                 // Call A: KS-Statewide (3120) inbound on the trunk → devices (TS2)
-                { connection_type: 'openbridge', connection_name: 'KS-CORE', slot: 2,
+                { connection_type: 'openbridge', connection_name: 'OBP-Funkerportal', slot: 2,
                   status: 'active', is_assumed: false, is_data: false, call_type: 'group',
                   src_id: 3188765, callsign: 'N0CAL', dst_id: 3120, start_time: now - 6 },
                 { repeater_id: 265800, slot: 2, status: 'active', is_assumed: true,
@@ -4274,7 +4403,7 @@
                 // Call B: XL0DIG keys US-Nationwide (31) on TS1 → egress OUT the trunk
                 { repeater_id: 265800, slot: 1, status: 'active', is_assumed: false,
                   is_data: false, call_type: 'group', src_id: 265800, dst_id: 31, start_time: now - 4 },
-                { connection_type: 'openbridge', connection_name: 'KS-CORE', slot: 1,
+                { connection_type: 'openbridge', connection_name: 'OBP-Funkerportal', slot: 1,
                   status: 'active', is_assumed: true, is_data: false, call_type: 'group',
                   src_id: 265800, callsign: 'XL0DIG', dst_id: 31, start_time: now - 4 },
                 // Call C: MO-Local (3100) just ended on KD0XYZ TS1 → TX hang
@@ -4285,7 +4414,7 @@
             state.last_heard = [
                 { radio_id: 3188765, callsign: 'N0CAL', talkgroup: 3120, slot: 2,
                   call_type: 'group', is_data: false, active: true,
-                  source_name: 'KS-CORE', last_heard: now - 6 },
+                  source_name: 'OBP-Funkerportal', last_heard: now - 6 },
                 { radio_id: 265800, callsign: 'XL0DIG', talkgroup: 31, slot: 1,
                   call_type: 'group', is_data: false, active: true,
                   source_name: 'XL0DIG', source_repeater_id: 265800, last_heard: now - 4, frid: true },
@@ -4329,6 +4458,10 @@
         function tgNameHtml(tg) { const n = tgName(tg); return n ? `<span class="tg-name" title="${escapeHtml(n)}">${escapeHtml(n)}</span>` : ''; }
         function refreshTgViews() {
             try { updateLastHeard(state.last_heard); updateRepeaters(state.repeaters); } catch (e) {}
+            try {
+                if (obpDemo() && obpList()[0]) { obpList()[0].talkgroups = demoObpTgs(); updateOpenbridges(state.openbridges); }
+                if (obp.visible) loadObp();
+            } catch (e) {}
             if (tgd.data) renderTgDir();
             if (typeof cf !== 'undefined' && cf.data) renderConnect();
         }
@@ -4378,6 +4511,258 @@
             });
         })();
 
+        // ================= OpenBridge tab =================
+        // Data: GET /api/openbridge?range=… (trunk info + SQLite traffic in both directions).
+        // RX = received from the far end, TX = sent to the far end. Colours from the validated
+        // categorical palette (slots 1 and 2, the adjacent pair passes the CVD check).
+        const OBP_RX = '#3987e5', OBP_TX = '#d95926';
+        const obp = { range: 'today', metric: 'duration', data: null, trunk: '', visible: false, timer: null,
+                      tgQ: '', tgF: 'all', tgLimit: 120 };
+        const obpDemo = () => new URLSearchParams(location.search).has('demo');
+
+        function obpOpen(name) { if (name) obp.trunk = name; showTab('obp', true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        document.getElementById('statObpCard').addEventListener('click', () => obpOpen());
+
+        async function loadObpToday() {
+            if (!obpList().length) return;
+            try {
+                if (obpDemo()) state.obpToday = demoObpToday();
+                else {
+                    const r = await fetch('/api/openbridge?brief=1', { credentials: 'same-origin' });
+                    if (!r.ok) return;
+                    const d = await r.json();
+                    state.obpToday = d.stats ? Object.fromEntries(d.trunks.map(t => [t.connection_name, t.today])) : null;
+                }
+                updateOpenbridges(state.openbridges);
+            } catch (e) { /* not critical */ }
+        }
+        function obpScheduleRefresh() {
+            clearTimeout(obp.timer);
+            obp.timer = setTimeout(() => { loadObpToday(); if (obp.visible) loadObp(); }, 2500);
+        }
+        setInterval(() => { loadObpToday(); if (obp.visible) loadObp(); }, 60000);
+
+        async function loadObp() {
+            try {
+                if (obpDemo()) obp.data = demoObp(obp.range);
+                else {
+                    const r = await fetch(`/api/openbridge?range=${obp.range}`, { credentials: 'same-origin' });
+                    if (!r.ok) return;
+                    obp.data = await r.json();
+                }
+                if (obp.data.stats) state.obpToday = Object.fromEntries(obp.data.trunks.map(t => [t.connection_name, t.today]));
+                renderObp();
+            } catch (e) { console.warn('OpenBridge:', e); }
+        }
+
+        function obpSeg(id, items, cur) {
+            return `<div class="tgs-seg" id="${id}" role="tablist">` + items.map(([v, l]) =>
+                `<button data-v="${escapeHtml(v)}" class="${v === cur ? 'active' : ''}">${l}</button>`).join('') + `</div>`;
+        }
+
+        function renderObp() {
+            const d = obp.data; if (!d) return;
+            const body = document.getElementById('obpBody');
+            const trunks = d.trunks || [];
+            document.getElementById('obpHeadCount').textContent = trunks.length > 1 ? trunks.length : '';
+            if (!trunks.length) { body.innerHTML = '<div class="card"><div class="tgs-empty">No OpenBridge trunk configured.</div></div>'; return; }
+            if (!trunks.some(t => t.connection_name === obp.trunk)) obp.trunk = trunks[0].connection_name;
+            const sel = document.getElementById('obpTrunkSel');
+            sel.style.display = trunks.length > 1 ? '' : 'none';
+            sel.innerHTML = trunks.map(t => `<button data-v="${escapeHtml(t.connection_name)}" class="${t.connection_name === obp.trunk ? 'active' : ''}">`
+                + `${t.status === 'connected' ? '🟢' : '🔴'} ${escapeHtml(t.connection_name)}</button>`).join('');
+            const t = trunks.find(x => x.connection_name === obp.trunk);
+            // live info (status, uptime) comes from the WebSocket state when available
+            const live = obpList().find(o => o.connection_name === t.connection_name) || {};
+            const o = { ...t, ...live };
+            const up = o.status === 'connected';
+            const n = v => Number(v || 0).toLocaleString('de-DE');
+            const dt = ts => ts ? new Date(ts * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
+            const ago = ts => { if (!ts) return '–'; const s = Date.now() / 1000 - ts; return s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : dt(ts); };
+            const tgCount = t.talkgroup_count ?? (t.talkgroups || []).length;
+
+            const active = (state.streams || []).filter(s => s.connection_type === 'openbridge' && s.connection_name === o.connection_name
+                && (s.status === 'active' || s.status === 'hang_time'));
+
+            let html = `<div class="card obp-hero">
+                <div><h3>↔️ ${escapeHtml(o.connection_name)} <span class="obp-state ${up ? 'up' : 'down'}"><i></i>${up ? 'UP' : 'DOWN'}</span></h3>
+                    ${o.description ? `<div class="desc">${escapeHtml(o.description)}</div>` : ''}</div>
+                <div></div>
+                <div class="obp-facts">
+                    <div class="obp-fact wide"><div class="k">Far end</div><div class="v">${escapeHtml(o.remote_address || '–')}<small>:${o.remote_port || '–'}</small></div></div>
+                    <div class="obp-fact"><div class="k">Local port</div><div class="v">${o.local_port ? 'UDP ' + o.local_port : '–'}</div></div>
+                    <div class="obp-fact"><div class="k">Network ID</div><div class="v">${o.network_id ?? '–'}</div></div>
+                    <div class="obp-fact"><div class="k">Up since</div><div class="v" data-obp-up="${up && o.connected_at ? o.connected_at : ''}">${up && o.connected_at ? formatDuration(Date.now() / 1000 - o.connected_at) : '–'}</div></div>
+                    <div class="obp-fact"><div class="k">Last traffic</div><div class="v">${ago(o.last_activity)}</div></div>
+                    <div class="obp-fact"><div class="k">Talkgroups</div><div class="v">${n(tgCount)} <small>${obpTsSplit(t.ts1, t.ts2)}</small></div></div>
+                    <div class="obp-fact"><div class="k">RptrId</div><div class="v" style="font-size:13px">${o.preserve_source_peer ? 'source peer' : 'network ID'}</div></div>
+                </div>
+                <div class="obp-live obp-streams">${active.length ? active.map(obpStreamPill).join('') : '<span class="obp-stream-pill idle">— no call on the trunk right now —</span>'}</div>
+            </div>`;
+
+            const S = t.summary;
+            if (d.stats && S) {
+                const T = S.totals, rxD = T.rx.duration, txD = T.tx.duration, all = rxD + txD;
+                html += `<div class="card obp-card">
+                    <div class="tgs-toolbar">
+                        ${obpSeg('obpRange', [['today', 'Today'], ['24h', '24 h'], ['7d', '7 days'], ['30d', '30 days']], obp.range)}
+                        ${obpSeg('obpMetric', [['duration', '⏱️ Airtime'], ['calls', '📞 Calls']], obp.metric)}
+                    </div>
+                    <div class="tgs-kpis">
+                        <div class="tgs-kpi"><div class="k">⬇️ Received</div><div class="v">${n(T.rx.calls)}</div><div class="obp-kpi-sub">${tgsFmtDur(rxD, true)} · ${n(T.rx.users)} speakers</div></div>
+                        <div class="tgs-kpi"><div class="k">⬆️ Sent</div><div class="v">${n(T.tx.calls)}</div><div class="obp-kpi-sub">${tgsFmtDur(txD, true)} · ${n(T.tx.users)} speakers</div></div>
+                        <div class="tgs-kpi"><div class="k">⏱️ Airtime</div><div class="v">${tgsFmtDur(all, true)}</div>
+                            <div class="obp-tgbar" title="Received / sent">${all ? `<div style="width:${rxD / all * 100}%;background:${OBP_RX}"></div><div style="flex:1;background:${OBP_TX}"></div>` : ''}</div></div>
+                        <div class="tgs-kpi"><div class="k">📡 Active TGs</div><div class="v">${n(S.active_talkgroups)}</div><div class="obp-kpi-sub">of ${n(tgCount)} on the trunk</div></div>
+                    </div>
+                    <div class="tgs-grid">
+                        <div class="tgs-panel"><h3><span>Top talkgroups</span><small>${obp.metric === 'calls' ? 'by calls' : 'by airtime'}</small></h3><div class="tgs-chart" id="obpBars"></div></div>
+                        <div class="tgs-panel"><h3><span>Traffic</span><small>${S.bucket === 'hour' ? 'per hour' : 'per day'}</small></h3>
+                            <div class="tgs-legend"><span><i style="background:${OBP_RX}"></i>⬇️ Received (above)</span><span><i style="background:${OBP_TX}"></i>⬆️ Sent (below)</span></div>
+                            <div class="tgs-chart" id="obpTime"></div></div>
+                    </div>
+                    <h3 class="obp-sub-h">Latest calls on the trunk</h3>
+                    <div class="tgs-table-wrap" style="margin-top:6px">
+                        <table class="tgs-table"><thead><tr><th>Time</th><th></th><th>Station</th><th>Talkgroup</th><th class="hide-sm">TS</th><th class="num">Duration</th></tr></thead>
+                        <tbody>${S.recent.length ? S.recent.map(r => `<tr>
+                            <td>${new Date(r.ts * 1000).toLocaleString('de-DE', obp.range === 'today' || obp.range === '24h' ? { hour: '2-digit', minute: '2-digit', second: '2-digit' } : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                            <td><span class="obp-dir ${r.dir}">${r.dir === 'rx' ? '⬇ RX' : '⬆ TX'}</span></td>
+                            <td><b>${escapeHtml(r.callsign || String(r.src_id || ''))}</b> <span class="hide-sm" style="color:var(--text-dim)">${r.callsign ? r.src_id || '' : ''}</span></td>
+                            <td class="obp-tgcell"><b>${r.tg}</b> <span>${escapeHtml(r.name || '')}</span></td>
+                            <td class="hide-sm">${r.slot ? 'TS' + r.slot : ''}</td>
+                            <td class="num">${tgsFmtDur(r.duration, true)}</td></tr>`).join('')
+                            : '<tr><td colspan="6" class="tgs-empty">No calls on the trunk in this period yet.</td></tr>'}</tbody></table>
+                    </div>
+                </div>`;
+            } else if (!d.stats) {
+                html += `<div class="card obp-card"><div class="tgs-empty">Traffic statistics are only shown after login.</div></div>`;
+            }
+
+            html += `<div class="card obp-card">
+                <h3 class="obp-sub-h" style="margin-top:0">Talkgroups on the trunk <span style="color:var(--accent)" id="obpTgCount"></span></h3>
+                <div class="obp-tools">
+                    <input type="text" id="obpTgSearch" class="tgdir-search" placeholder="🔎 Number or name, e.g. 262 or Bayern" autocomplete="off" value="${escapeHtml(obp.tgQ)}">
+                    ${obpSeg('obpTgFilter', [['all', 'All'], ['active', '📡 Active'], ['1', 'TS1'], ['2', 'TS2']], obp.tgF)}
+                </div>
+                <div class="obp-tglist" id="obpTgList"></div>
+                <div class="tgs-more" id="obpTgMore" style="display:none"><button type="button"></button></div>
+                <div class="tgdir-note" style="margin-top:10px;color:var(--text-dim);font-size:12px">Only talkgroups in this list pass the trunk (both directions); everything else is dropped. Set in the admin area → Patterns, links &amp; trunks → <code>openbridge_connections</code>.</div>
+            </div>`;
+            body.innerHTML = html;
+
+            if (d.stats && S) { renderObpBars(S); renderObpTime(S); }
+            renderObpTgs();
+            obpBind();
+        }
+
+        function obpBind() {
+            const seg = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) fn(b.dataset.v); }); };
+            seg('obpRange', v => { obp.range = v; loadObp(); });
+            seg('obpMetric', v => { obp.metric = v; renderObp(); });
+            seg('obpTgFilter', v => { obp.tgF = v; obp.tgLimit = 120; document.querySelectorAll('#obpTgFilter button').forEach(x => x.classList.toggle('active', x.dataset.v === v)); renderObpTgs(); });
+            let tm = null;
+            document.getElementById('obpTgSearch').addEventListener('input', ev => { clearTimeout(tm); tm = setTimeout(() => { obp.tgQ = ev.target.value; obp.tgLimit = 120; renderObpTgs(); }, 120); });
+            document.querySelector('#obpTgMore button').addEventListener('click', () => { obp.tgLimit = 1e9; renderObpTgs(); });
+        }
+        document.getElementById('obpTrunkSel').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) { obp.trunk = b.dataset.v; renderObp(); } });
+
+        function renderObpTgs() {
+            const t = (obp.data.trunks || []).find(x => x.connection_name === obp.trunk); if (!t) return;
+            const hot = new Set(((t.summary || {}).top || []).map(r => r.tg));
+            const q = obp.tgQ.trim().toLowerCase();
+            let rows = t.talkgroups || [];
+            if (obp.tgF === '1' || obp.tgF === '2') rows = rows.filter(r => String(r[1]) === obp.tgF);
+            if (obp.tgF === 'active') rows = rows.filter(r => hot.has(r[0]));
+            if (q) rows = rows.filter(r => String(r[0]).startsWith(q) || (r[2] || '').toLowerCase().includes(q));
+            document.getElementById('obpTgCount').textContent = rows.length.toLocaleString('de-DE');
+            const el = document.getElementById('obpTgList');
+            el.innerHTML = rows.length ? rows.slice(0, obp.tgLimit).map(([tg, ts, name]) =>
+                `<div class="obp-tg${hot.has(tg) ? ' hot' : ''}" title="${escapeHtml(tg + (name ? ' – ' + name : ''))}"><b>${tg}</b><span class="n">${escapeHtml(name || '')}</span><span class="ts">TS${ts}</span></div>`).join('')
+                : '<div class="tgs-empty" style="grid-column:1/-1">No talkgroup found.</div>';
+            const more = document.getElementById('obpTgMore');
+            more.style.display = rows.length > obp.tgLimit ? '' : 'none';
+            more.querySelector('button').textContent = `Show all ${rows.length.toLocaleString('de-DE')}`;
+        }
+
+        // Horizontal bars, RX and TX side by side in one bar (2px gap)
+        function renderObpBars(S) {
+            const el = document.getElementById('obpBars');
+            const m = obp.metric, k = m === 'calls' ? '' : '_duration';
+            const val = r => r['rx' + k] + r['tx' + k];
+            const rows = [...S.top].sort((a, b) => val(b) - val(a)).slice(0, 10).filter(r => val(r) > 0);
+            if (!rows.length) return tgsEmpty(el);
+            const fmt = v => m === 'calls' ? Math.round(v).toLocaleString('de-DE') : tgsFmtDur(v, true);
+            const W = Math.max(280, el.clientWidth || 420), rowH = 30, barH = 14;
+            const labelW = Math.min(150, Math.max(92, W * 0.32)), valW = 64, plotW = W - labelW - valW;
+            const max = Math.max(...rows.map(val)) || 1, H = rows.length * rowH;
+            let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Top talkgroups on the trunk">`;
+            rows.forEach((r, i) => {
+                const y = i * rowH + (rowH - barH) / 2, yc = i * rowH + rowH / 2 + 1;
+                const wr = (r['rx' + k] / max) * plotW, wt = (r['tx' + k] / max) * plotW;
+                const room = Math.floor((labelW - 16 - String(r.tg).length * 8.4) / 7.2);
+                const name = r.name && room >= 3 ? escapeHtml(r.name.length > room ? r.name.slice(0, room - 1) + '…' : r.name) : '';
+                svg += `<g class="obp-hit" data-i="${i}"><rect x="0" y="${i * rowH}" width="${W}" height="${rowH}" fill="transparent"/>`
+                    + `<text x="0" y="${yc}" dominant-baseline="middle" font-size="12.5" font-weight="700" fill="#f5f7fb">${r.tg}`
+                    + (name ? `<tspan font-weight="500" fill="rgba(235,240,250,0.62)" dx="6">${name}</tspan>` : '') + `</text>`;
+                let x = labelW;
+                const seg = (w, c, last) => { if (w <= 0) return ''; w = Math.max(3, w); const rr = last ? Math.min(4, w / 2) : 0;
+                    const p = `<path d="M${x},${y} h${w - rr} a${rr},${rr} 0 0 1 ${rr},${rr} v${barH - 2 * rr} a${rr},${rr} 0 0 1 -${rr},${rr} h-${w - rr} z" fill="${c}"/>`; x += w + 2; return p; };
+                svg += seg(wr, OBP_RX, wt <= 0) + seg(wt, OBP_TX, true);
+                svg += `<text x="${x + 6}" y="${yc}" dominant-baseline="middle" font-size="12" fill="rgba(235,240,250,0.8)">${fmt(val(r))}</text></g>`;
+            });
+            el.innerHTML = svg + '</svg>';
+            el.querySelectorAll('.obp-hit').forEach(g => {
+                const r = rows[+g.dataset.i];
+                g.addEventListener('mousemove', ev => tgsTip(ev, `<b>TG ${r.tg}${r.name ? ' ' + escapeHtml(r.name) : ''}</b>`
+                    + tgsRow(OBP_RX, '⬇ Received', `${r.rx} · ${tgsFmtDur(r.rx_duration, true)}`)
+                    + tgsRow(OBP_TX, '⬆ Sent', `${r.tx} · ${tgsFmtDur(r.tx_duration, true)}`)));
+                g.addEventListener('mouseleave', tgsHide);
+            });
+        }
+
+        // Mirrored columns: received above the baseline, sent below
+        function renderObpTime(S) {
+            const el = document.getElementById('obpTime');
+            const m = obp.metric, rx = S.series.rx[m], tx = S.series.tx[m], n = S.buckets.length;
+            if (!rx.some(v => v) && !tx.some(v => v)) return tgsEmpty(el);
+            const fmt = v => m === 'calls' ? Math.round(v).toLocaleString('de-DE') : tgsFmtDur(v, true);
+            const yMax = tgsNiceMax(Math.max(...rx, ...tx) || 1, m);
+            const W = Math.max(300, el.clientWidth || 600), H = 230, L = 44, R = 6, Tp = 6, B = 22;
+            const ph = (H - Tp - B), half = (ph - 2) / 2, base = Tp + half + 1;
+            const pw = W - L - R, cw = pw / n, bw = Math.max(3, Math.min(22, cw * 0.66));
+            const sc = v => (v / yMax) * half;
+            const lab = { range: S.range, buckets: S.buckets, bucket: S.bucket };
+            let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Traffic on the trunk">`;
+            [[1, ''], [0.5, '']].forEach(([f]) => {
+                [base - half * f, base + half * f].forEach(yy => { svg += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="rgba(255,255,255,0.07)"/>`; });
+                svg += `<text x="${L - 6}" y="${base - half * f}" text-anchor="end" dominant-baseline="middle" font-size="10.5" fill="rgba(235,240,250,0.55)">${fmt(yMax * f)}</text>`
+                     + `<text x="${L - 6}" y="${base + half * f}" text-anchor="end" dominant-baseline="middle" font-size="10.5" fill="rgba(235,240,250,0.55)">${fmt(yMax * f)}</text>`;
+            });
+            svg += `<line x1="${L}" x2="${W - R}" y1="${base}" y2="${base}" stroke="rgba(255,255,255,0.22)"/>`;
+            const every = n <= 8 ? 1 : n <= 24 ? 3 : 5;
+            for (let i = 0; i < n; i++) {
+                const cx = L + cw * i + cw / 2, xx = cx - bw / 2;
+                if (i % every === 0 || (n > 24 && i === n - 1))
+                    svg += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="rgba(235,240,250,0.55)">${tgsBucketLabel(lab, i)}</text>`;
+                const hu = rx[i] ? Math.max(1.5, sc(rx[i])) : 0, hd = tx[i] ? Math.max(1.5, sc(tx[i])) : 0;
+                if (hu) { const r = Math.min(4, bw / 2, hu); svg += `<path class="obp-col c${i}" d="M${xx},${base - 1} v-${hu - r} a${r},${r} 0 0 1 ${r},-${r} h${bw - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${hu - r} z" fill="${OBP_RX}"/>`; }
+                if (hd) { const r = Math.min(4, bw / 2, hd); svg += `<path class="obp-col c${i}" d="M${xx},${base + 1} v${hd - r} a${r},${r} 0 0 0 ${r},${r} h${bw - 2 * r} a${r},${r} 0 0 0 ${r},-${r} v-${hd - r} z" fill="${OBP_TX}"/>`; }
+                svg += `<rect class="obp-hitcol" data-i="${i}" x="${L + cw * i}" y="${Tp}" width="${cw}" height="${ph}" fill="transparent"/>`;
+            }
+            el.innerHTML = svg + '</svg>';
+            const cols = el.querySelectorAll('.obp-col');
+            el.querySelectorAll('.obp-hitcol').forEach(h => {
+                const i = +h.dataset.i;
+                h.addEventListener('mousemove', ev => {
+                    cols.forEach(c => c.style.opacity = c.classList.contains('c' + i) ? '1' : '0.35');
+                    tgsTip(ev, `<b>${tgsBucketLabel(lab, i, true)}</b>` + tgsRow(OBP_RX, '⬇ Received', fmt(rx[i])) + tgsRow(OBP_TX, '⬆ Sent', fmt(tx[i])));
+                });
+                h.addEventListener('mouseleave', () => { cols.forEach(c => c.style.opacity = ''); tgsHide(); });
+            });
+        }
+        window.addEventListener('resize', () => { if (obp.visible && obp.data) { clearTimeout(obp.rt); obp.rt = setTimeout(renderObp, 150); } });
+        setInterval(() => { if (!obp.visible) return; const el = document.querySelector('[data-obp-up]'); if (el && el.dataset.obpUp) el.textContent = formatDuration(Date.now() / 1000 - Number(el.dataset.obpUp)); }, 1000);
+
         // ================= Talkgroup statistics =================
         // Data: GET /api/stats/talkgroups?range=today|24h|7d|30d (one row per group call in SQLite).
         // Colours: validated categorical palette for the dark surface (dataviz check: all pass);
@@ -4417,11 +4802,13 @@
             if (location.hash === '#stats' && tgsAllowed()) return 'stats';
             if (location.hash === '#config' && cfAllowed()) return 'config';
             if (location.hash === '#talkgroups') return 'tgdir';
+            if (location.hash === '#openbridge' && obpList().length) return 'obp';
             return 'live';
         }
         function showTab(tab, push) {
             if (tab === 'stats' && !tgsAllowed()) tab = 'live';
             if (tab === 'config' && !cfAllowed()) tab = 'live';
+            if (tab === 'obp' && !obpList().length) tab = 'live';
             document.querySelectorAll('#mainTabs button').forEach(b => {
                 b.classList.toggle('active', b.dataset.tab === tab);
                 b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
@@ -4430,8 +4817,12 @@
             document.getElementById('tabStats').style.display = tab === 'stats' ? '' : 'none';
             document.getElementById('tabConfig').style.display = tab === 'config' ? '' : 'none';
             document.getElementById('tabTgDir').style.display = tab === 'tgdir' ? '' : 'none';
+            document.getElementById('tabObp').style.display = tab === 'obp' ? '' : 'none';
             tgs.visible = tab === 'stats';
-            if (push) history.replaceState(null, '', tab === 'live' ? location.pathname + location.search : '#' + (tab === 'tgdir' ? 'talkgroups' : tab));
+            const obpWas = obp.visible;
+            obp.visible = tab === 'obp';
+            if (push) history.replaceState(null, '', tab === 'live' ? location.pathname + location.search : '#' + ({ tgdir: 'talkgroups', obp: 'openbridge' }[tab] || tab));
+            if (obp.visible && !obpWas) { if (obp.data) renderObp(); loadObp(); }
             if (tab === 'config') loadConnect();
             if (tab === 'tgdir') loadTgDir();
             if (tgs.visible) { if (tgs.data) renderTgStats(); loadTgStats(); }   // widths are known only when shown
@@ -4482,6 +4873,20 @@
             renderTgBars(d);
             renderTgTime(d);
             renderTgTable(d);
+            renderTgOrigin(d);
+        }
+
+        // Origin of the calls: local repeaters/hotspots, OpenBridge trunks, outbound links
+        const ORIGIN_DEF = [['repeater', '📡 Local (repeaters & hotspots)', '#3987e5'], ['openbridge', '↔️ OpenBridge', '#d55181'], ['outbound', '🔗 Outbound links', '#c98500']];
+        function renderTgOrigin(d) {
+            const O = d.origins || {}, m = tgs.metric;
+            const tot = ORIGIN_DEF.reduce((a, [k]) => a + ((O[k] || {})[m] || 0), 0);
+            document.getElementById('tgsOriginNote').textContent = m === 'calls' ? 'by calls' : 'by airtime';
+            document.getElementById('tgsOriginBar').innerHTML = tot ? ORIGIN_DEF.filter(([k]) => (O[k] || {})[m])
+                .map(([k, l, c]) => `<div title="${l}" style="width:${O[k][m] / tot * 100}%;background:${c}"></div>`).join('') : '';
+            document.getElementById('tgsOriginLegend').innerHTML = ORIGIN_DEF.filter(([k]) => k !== 'outbound' || (O[k] || {}).calls)
+                .map(([k, l, c]) => { const v = (O[k] || {})[m] || 0;
+                    return `<span><i style="background:${c}"></i>${l} <b>${tot ? Math.round(v / tot * 100) : 0} %</b> · ${tgsFmt(v)}</span>`; }).join('');
         }
 
         function tgsEmpty(el) {
@@ -4538,8 +4943,8 @@
                         : t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }).replace(/\.$/, '');
         }
 
-        function tgsNiceMax(v) {
-            if (tgs.metric === 'duration') {   // seconds: steps of whole minutes / hours
+        function tgsNiceMax(v, metric) {
+            if ((metric || tgs.metric) === 'duration') {   // seconds: steps of whole minutes / hours
                 const steps = [60, 120, 300, 600, 900, 1200, 1800, 3600, 7200, 10800, 18000, 36000, 72000];
                 for (const s of steps) if (s * 4 >= v) return s * 4;
                 return Math.ceil(v / 4 / 3600) * 3600 * 4;
@@ -4614,7 +5019,8 @@
                 const tt = r.top_talker;
                 const talker = tt ? `${escapeHtml(tt.callsign || String(tt.id))} <span style="color:var(--text-dim)">· ${tgsFmtDur(tt.duration, true)}</span>` : '–';
                 const last = r.last ? new Date(r.last * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
-                return `<tr><td><span class="tgs-tg"><i style="background:${tgsColor(r.tg)}"></i>${r.tg}</span>${r.name ? ` <span style="color:var(--text-dim)">${escapeHtml(r.name)}</span>` : ''}</td>`
+                const ob = r.obp_share >= 0.05 ? `<span class="obp-badge" title="Share of the airtime that came in over OpenBridge">↔ ${Math.round(r.obp_share * 100)} %</span>` : '';
+                return `<tr><td><span class="tgs-tg"><i style="background:${tgsColor(r.tg)}"></i>${r.tg}</span>${r.name ? ` <span style="color:var(--text-dim)">${escapeHtml(r.name)}</span>` : ''}${ob}</td>`
                     + `<td class="num">${r.calls.toLocaleString('de-DE')}</td><td class="num">${tgsFmtDur(r.duration, true)}</td>`
                     + `<td class="hide-sm"><span class="tgs-share"><span class="bar"><div style="width:${(r.share / maxShare) * 100}%"></div></span>${Math.round(r.share * 100)} %</span></td>`
                     + `<td class="num hide-sm">${r.users}</td><td class="hide-sm">${talker}</td><td class="hide-sm">${last}</td></tr>`;
@@ -4650,6 +5056,40 @@
         let tgsResizeT = null;
         window.addEventListener('resize', () => { clearTimeout(tgsResizeT); tgsResizeT = setTimeout(() => { if (tgs.data) renderTgStats(); }, 150); });
         setInterval(() => scheduleTgRefresh(0), 60000);
+
+        // ---- OpenBridge demo data ----
+        function demoObpTgs() {
+            const keys = Object.keys(state.tgNames || {}).map(Number).filter(t => t >= 90 && t !== 4000 && t !== 5000 && !(t >= 9990 && t <= 9999));
+            const list = keys.length ? keys : [91, 92, 93, 98, 110, 113, 123, 129, 133, 202, 204, 206, 208, 214, 222, 226, 228, 230, 232, 234, 235, 238, 240, 242, 244, 250, 255, 260, 262, 263, 264, 265, 2624, 26200, 26201, 26202, 26203, 26204, 26205, 26206, 26207, 26208, 26209, 26250, 26251, 26252, 26253, 26254];
+            return Object.fromEntries(list.map(t => [String(t), 2]));
+        }
+        function demoObpToday() { return { 'OBP-Funkerportal': { rx: 142, tx: 87, rx_duration: 3260, tx_duration: 1920 } }; }
+        function demoObp(range) {
+            const base = demoTgStats(range), n = base.buckets.length, hourly = base.bucket === 'hour';
+            let seed = range.length * 31 + 7;
+            const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+            const tot = base.series.reduce((a, s) => a.map((v, i) => v + s.calls[i]), new Array(n).fill(0));
+            const rxC = tot.map(v => Math.round(v * 0.42 * (0.7 + 0.5 * rnd()))), txC = tot.map(v => Math.round(v * 0.26 * (0.6 + 0.6 * rnd())));
+            const rxD = rxC.map(c => Math.round(c * (16 + 10 * rnd()))), txD = txC.map(c => Math.round(c * (14 + 10 * rnd())));
+            const sum = a => a.reduce((x, y) => x + y, 0);
+            const top = [[262, .34, .3], [2624, .2, .26], [91, .14, .1], [265, .1, .12], [263, .06, .05], [92, .05, .04], [26250, .04, .06], [98, .03, .02]]
+                .map(([tg, fr, ft]) => ({ tg, name: tgName(tg), rx: Math.round(sum(rxC) * fr), tx: Math.round(sum(txC) * ft),
+                    rx_duration: Math.round(sum(rxD) * fr), tx_duration: Math.round(sum(txD) * ft), last: Date.now() / 1000 - 60 }));
+            const calls = ['DL1ABC', 'DO5ALF', 'DB0NAC', 'DK2XYZ', 'DG9NAU', 'DO1KLM', 'DL7BER', 'DM3HH', 'DO7TOM', 'DL4FUN'];
+            const recent = Array.from({ length: 12 }, (_, i) => { const tg = top[i % top.length].tg;
+                return { ts: Date.now() / 1000 - 40 - i * 197, dir: i % 3 === 1 ? 'tx' : 'rx', tg, name: tgName(tg), slot: 2,
+                         src_id: 2621000 + i * 37, callsign: calls[i % calls.length], duration: 6 + Math.round(rnd() * 40) }; });
+            const live = obpList()[0] || {};
+            const tgsMap = live.talkgroups || demoObpTgs();
+            const tgArr = Object.keys(tgsMap).map(Number).sort((a, b) => a - b).map(t => [t, Number(tgsMap[t]), tgName(t)]);
+            return { stats: true, range, trunks: [{ connection_name: 'OBP-Funkerportal', network_id: 2624, remote_address: 'freedmr.funkerportal.de', remote_port: 62046,
+                local_port: 51084, description: live.description, preserve_source_peer: false, status: 'connected', connected_at: live.connected_at, last_activity: live.last_activity,
+                talkgroup_count: tgArr.length, ts1: tgArr.filter(r => r[1] === 1).length, ts2: tgArr.filter(r => r[1] === 2).length,
+                today: demoObpToday()['OBP-Funkerportal'], talkgroups: tgArr,
+                summary: { range, bucket: base.bucket, buckets: base.buckets, data_calls: 3, active_talkgroups: hourly ? 23 : 64,
+                    totals: { rx: { calls: sum(rxC), duration: sum(rxD), users: hourly ? 31 : 118 }, tx: { calls: sum(txC), duration: sum(txD), users: hourly ? 14 : 52 } },
+                    series: { rx: { calls: rxC, duration: rxD }, tx: { calls: txC, duration: txD } }, top, recent } }] };
+        }
 
         // Demo data for ?demo (screenshots without a server)
         function demoTgStats(range) {
@@ -4693,7 +5133,12 @@
             const series = order.slice(0, 5).map(tg => ({ tg, name: byTg[tg].name, calls: byTg[tg].calls, duration: byTg[tg].duration }));
             const rest = order.slice(5).map(tg => byTg[tg]);
             series.push({ tg: null, name: `${rest.length} other`, calls: buckets.map((_, i) => sum(rest.map(r => r.calls[i]))), duration: buckets.map((_, i) => sum(rest.map(r => r.duration[i]))) });
-            return { range, bucket: hourly ? 'hour' : 'day', buckets, series, talkgroups: table,
+            const obpShare = { 262: 0.38, 2624: 0.52, 91: 0.61, 265: 0.22, 263: 0.18 };
+            table.forEach(t => t.obp_share = obpShare[t.tg] || 0);
+            const origins = { repeater: { calls: Math.round(sum(table.map(t => t.calls)) * 0.58), duration: Math.round(total * 0.6) },
+                              openbridge: { calls: Math.round(sum(table.map(t => t.calls)) * 0.42), duration: Math.round(total * 0.4) },
+                              outbound: { calls: 0, duration: 0 } };
+            return { range, bucket: hourly ? 'hour' : 'day', buckets, series, talkgroups: table, origins,
                      totals: { calls: sum(table.map(t => t.calls)), duration: total, talkgroups: table.length, users: hourly ? 47 : 186 } };
         }
 
@@ -4851,6 +5296,7 @@
         if (new URLSearchParams(location.search).has('demo')) {
             renderUserArea();
             loadDemo();
+            loadObpToday();
         } else {
             loadMe().then(() => {
                 if (!state.publicDashboard && !state.me) {

@@ -4323,6 +4323,9 @@ class HBProtocol(asyncio.DatagramProtocol):
             'network_id': cfg.network_id,
             'remote_address': cfg.target_address,
             'remote_port': state.port,
+            'local_address': cfg.local_address,
+            'local_port': cfg.local_port,
+            'description': cfg.description or '',
             'preserve_source_peer': cfg.preserve_source_peer,
             'talkgroups': {str(int.from_bytes(t, 'big')): ts
                            for t, ts in cfg.talkgroup_slots.items()},
