@@ -70,8 +70,9 @@ Das erstellt `scripts/setup.sh`; die Vorlagen sind `config/config_sample.json` u
 
 | Abschnitt | Schlüssel | Vorgabe |
 |---|---|---|
-| 🏷️ General | `dashboard_title`, `server_name`, `server_description`, `logo`, `favicon` | DMR Die N8schicht, dmr.die-n8schicht.de, N8schicht DMR Network, N8schicht-Logo |
-| 📢 Announcement | `announcement.enabled` / `.text`, `network_info.enabled` / `.button_text` / `.url` | aus |
+| 🎨 Appearance | `dashboard_title`, `server_name`, `server_description`, `page_title`, `theme.preset` / `.accent` / `.background` / `.glow` / `.glass` / `.blur`, `logo`, `logo_size`, `logo_radius`, `favicon` | DMR Die N8schicht, dmr.die-n8schicht.de, N8schicht DMR Network, leer, N8 Night, Profilfarben, 100, 50, an, N8schicht-Logo, 44 px, 0 % |
+| 🔗 Link menu | `links.enabled`, `links.label`, `links.style` (`menu`/`bar`), `links.items` (Liste aus `label`, `url`, `icon`, `new_tab`), `network_info.enabled` / `.button_text` / `.url` | aus, „🔗 Links“, Menü |
+| 📢 Announcement | `announcement.enabled` / `.text` | aus |
 | 🔐 Access | `auth.public_dashboard`, `auth.session_hours`, `auth.remember_days` | öffentlich, 12 h, 30 Tage |
 | 🛡️ FreeRadioID data | `freeradioid.avatars`, `freeradioid.profile_lookup`, `user_database.freeradioid.enabled` | alles an |
 | 📘 Callsign database | `user_database.source_url`, `user_database.filter.countries`, `user_database.refresh.time_of_day` | **FreeRadioID.net**, alle Länder, 03:17 |
@@ -86,7 +87,8 @@ Das erstellt `scripts/setup.sh`; die Vorlagen sind `config/config_sample.json` u
 | 🛰️ DMR server | `global.port_ipv4` 🔄, `global.max_missed`, `global.timeout_duration`, `global.stream_timeout`, `global.stream_hang_time`, `global.reconnect_report_threshold` | 62031, 3, 30 s, 2,0 s, 10,0 s, 3600 s |
 | 🔑 Access | `repeater_configurations.default.passphrase`, `.slot1_talkgroups`, `.slot2_talkgroups`, `.trust`, `.default_unit_calls` | passw0rd, aus der Datei, aus, aus |
 | 🛡️ FreeRadioID login | `freeradioid.enabled`, `freeradioid.guest_talkgroups`, `freeradioid.timeout` | **an**, 26501–26503, 3,0 s |
-| 🧩 Advanced | `repeater_configurations.patterns`, `blacklist.patterns`, `outbound_connections` 🔄, `openbridge_connections` 🔄 | leer |
+| 🧩 Patterns, blacklist & links | `repeater_configurations.patterns`, `blacklist.patterns`, `outbound_connections` 🔄 | leer |
+| ↔️ OpenBridge | `openbridge_connections` 🔄 (im Adminbereich als Formular) | leer |
 
 🔄 = wirkt erst nach einem Neustart (Knopf im Adminbereich).
 
@@ -132,7 +134,7 @@ Mehr Beispiele, auch für `outbound_connections` und `openbridge_connections`, s
 
 ## OpenBridge zu einem FreeDMR-Server
 
-OpenBridge-Trunks stehen im Adminbereich unter *Patterns, links & trunks* → `openbridge_connections` (Neustart nötig). HBlink4 spricht zwei Varianten:
+OpenBridge-Trunks richtest du im Adminbereich unter **↔️ OpenBridge** mit einem Formular ein ([Anleitung](adminbereich.md#️-openbridge)); dort gibt es auch die JSON-Ansicht. Nach dem Speichern braucht der DMR-Server einen Neustart. HBlink4 spricht zwei Varianten:
 
 - **Klassisches OpenBridge** (Brandmeister, HBlink3): `DMRD` mit HMAC-SHA1. Das ist die Vorgabe.
 - **FreeDMR-OpenBridge** (FreeDMR, FDMR+, FDMR-Secure-Server von FreeRadioID): `DMRE`-Pakete (v5) mit BLAKE2b, Zeitstempel und Hop-Zähler, dazu Keep-alives (`BCKA`), Versionsabgleich (`BCVE`) und Source Quench (`BCSQ`).
@@ -168,7 +170,9 @@ Beispiel:
   "enhanced_obp": true,
   "proto_ver": 5,
   "relax_checks": true,
-  "talkgroup_slots": { "262": "2", "2624": "2" }
+  "all_talkgroups": true,
+  "default_slot": 2,
+  "talkgroup_slots": {}
 }
 ```
 
@@ -178,6 +182,8 @@ Beispiel:
 | `proto_ver` | `1` = klassisch, `5` = FreeDMR `DMRE`. HBlink4 stellt automatisch auf die Version der Gegenstelle um. |
 | `relax_checks` | Pakete mit gültiger Signatur auch von anderer Adresse oder anderem Port annehmen und der Adresse aus den Keep-alives folgen (hilft hinter NAT). |
 | `server_id` | optional: die „Source Server“-ID in `DMRE`-Paketen, 4 bis 7 Ziffern; Vorgabe ist `network_id` |
+| `all_talkgroups` | `true` = kein Talkgroup-Filter: alle Talkgroups laufen über den Trunk, außer den lokalen (1–79, 4000, 5000, 9990–9999). Nur **ein** aktiver Trunk darf das. Einträge in `talkgroup_slots` gelten trotzdem und legen ihren eigenen Zeitschlitz fest. |
+| `default_slot` | Zeitschlitz auf unserer Seite für Talkgroups ohne eigenen Eintrag bei `all_talkgroups`, Vorgabe `2` |
 
 In FreeDMR-Paketen steht immer die `network_id` als Absender; `preserve_source_peer` spielt dort keine Rolle. Den echten Repeater überträgt das `DMRE`-Paket in einem eigenen Feld.
 

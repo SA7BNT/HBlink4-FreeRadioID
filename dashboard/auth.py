@@ -108,7 +108,9 @@ def _token_hash(token: str) -> str:
 
 # ------------------------------------------------------------ IP redaction
 
-IP_KEYS = frozenset({"address", "remote_address", "remote_port", "ip", "client_ip", "source_ip"})
+# Addresses and ports of stations, links and trunks: admins only
+IP_KEYS = frozenset({"address", "remote_address", "remote_port", "ip", "client_ip", "source_ip",
+                     "local_address", "local_port", "target_address", "target_port", "port"})
 _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b")
 _IPV6_RE = re.compile(r"\[?\b(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}\b\]?(?::\d{1,5})?")
 

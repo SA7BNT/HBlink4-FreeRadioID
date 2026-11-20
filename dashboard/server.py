@@ -11,6 +11,8 @@ import os
 import ipaddress
 import sys
 import atexit
+import base64
+import re
 import time
 from datetime import datetime, date, timedelta
 from collections import deque
@@ -1139,7 +1141,8 @@ class EventReceiver:
 # ======================================================================
 SESSION_COOKIE = "n8dash_session"
 _PUBLIC_CONFIG_KEYS = ("server_name", "server_description", "dashboard_title", "logo", "favicon",
-                       "announcement", "network_info", "refresh_interval", "max_events")
+                       "announcement", "network_info", "refresh_interval", "max_events",
+                       "page_title", "theme", "logo_size", "logo_radius", "links")
 _redact_memo: tuple = (None, None)
 
 
@@ -1483,6 +1486,87 @@ async def admin_restart(request: Request):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- branding
+# Own logo and favicon, uploaded in the admin area and kept in SQLite.
+_BRANDING_KINDS = {"logo": "logo", "favicon": "favicon"}
+_BRANDING_MAX = 1024 * 1024
+_SVG_FORBIDDEN = re.compile(rb"<script|<foreignobject|\bon[a-z]+\s*=|javascript:|<iframe|<embed|<object"
+                            rb"|xlink:href\s*=\s*[\"']\s*(?!#|data:image/)|\bhref\s*=\s*[\"']\s*(?!#|data:image/)",
+                            re.I)
+
+
+def _branding_db():
+    state.auth._x("CREATE TABLE IF NOT EXISTS branding (kind TEXT PRIMARY KEY, mime TEXT NOT NULL, "
+                  "data BLOB NOT NULL, updated REAL NOT NULL)")
+
+
+def _sniff_branding(data: bytes) -> Optional[str]:
+    mime = sniff_image(data)
+    if mime:
+        return mime
+    if data[:4] == b"\x00\x00\x01\x00":
+        return "image/x-icon"
+    head = data[:2048].lstrip().lower()
+    if head.startswith(b"<?xml") or head.startswith(b"<svg") or b"<svg" in head:
+        if _SVG_FORBIDDEN.search(data):
+            raise _HTTPError(400, "This SVG contains scripts or external links and is not accepted.")
+        return "image/svg+xml"
+    return None
+
+
+@app.get("/branding/{kind}")
+async def get_branding(kind: str):
+    if kind not in _BRANDING_KINDS:
+        raise _HTTPError(404, "Not found")
+    _branding_db()
+    rows = state.auth._q("SELECT mime, data FROM branding WHERE kind = ?", (kind,))
+    if not rows:
+        return FileResponse(Path(__file__).parent / "static" / "n8schicht-icon.svg", media_type="image/svg+xml")
+    return Response(bytes(rows[0]["data"]), media_type=rows[0]["mime"], headers={
+        "Cache-Control": "public, max-age=86400",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:"})
+
+
+@app.post("/api/admin/branding/{kind}")
+async def upload_branding(kind: str, request: Request, body: dict = Body(...)):
+    actor = _require_admin(request)
+    if kind not in _BRANDING_KINDS:
+        raise _HTTPError(404, "Unknown image.")
+    raw = str(body.get("data") or "")
+    if "," in raw and raw.startswith("data:"):
+        raw = raw.split(",", 1)[1]
+    try:
+        data = base64.b64decode(raw, validate=True)
+    except Exception:
+        raise _HTTPError(400, "The image could not be read.")
+    if not data or len(data) > _BRANDING_MAX:
+        raise _HTTPError(400, "The image must be smaller than 1 MB.")
+    mime = _sniff_branding(data)
+    if not mime:
+        raise _HTTPError(400, "Please upload a PNG, JPEG, GIF, WebP, SVG or ICO image.")
+    _branding_db()
+    now = time.time()
+    state.auth._x("INSERT OR REPLACE INTO branding (kind, mime, data, updated) VALUES (?,?,?,?)", (kind, mime, data, now))
+    url = f"/branding/{kind}?v={int(now)}"
+    changed = state.settings.update(dashboard_config, {kind: url}, actor["username"])
+    state.auth.audit("branding_uploaded", actor["username"], f"{kind} ({mime}, {len(data)} bytes)", _client_ip(request))
+    await _after_settings_change(changed)
+    return {"ok": True, "url": url, "mime": mime, "size": len(data)}
+
+
+@app.delete("/api/admin/branding/{kind}")
+async def delete_branding(kind: str, request: Request):
+    actor = _require_admin(request)
+    if kind not in _BRANDING_KINDS:
+        raise _HTTPError(404, "Unknown image.")
+    _branding_db()
+    state.auth._x("DELETE FROM branding WHERE kind = ?", (kind,))
+    changed = state.settings.update(dashboard_config, {kind: ""}, actor["username"])
+    state.auth.audit("branding_removed", actor["username"], kind, _client_ip(request))
+    await _after_settings_change(changed)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- avatars
 # Only for IDs registered at FreeRadioID, served from SQLite (see dashboard/avatars.py).
 # Proxying also keeps viewers' IPs away from third parties.
@@ -1699,7 +1783,7 @@ def _obp_public(o: dict) -> dict:
     return {k: o.get(k) for k in ('connection_name', 'network_id', 'remote_address', 'remote_port', 'local_address',
                                   'local_port', 'description', 'preserve_source_peer', 'status', 'connected_at',
                                   'disconnected_at', 'last_activity', 'alive', 'last_keepalive', 'peer_version',
-                                  'tx_version', 'protocol', 'enhanced_obp')} | {
+                                  'tx_version', 'protocol', 'enhanced_obp', 'all_talkgroups', 'default_slot')} | {
         'talkgroup_count': len(tgs), 'ts1': ts1, 'ts2': len(tgs) - ts1}
 
 
@@ -1724,7 +1808,7 @@ async def get_openbridge(request: Request, range: str = "today", trunk: str = ""
                     state.obpstats.summary, o.get('connection_name'), range, names,
                     lambda rid: state.user_db.get(rid, '') if rid else '')
         out["trunks"].append(t)
-    return out
+    return view_for(current_user(request), out)
 
 
 @app.get("/api/stats/talkgroups")

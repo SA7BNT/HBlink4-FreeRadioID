@@ -38,7 +38,7 @@
             width: auto;
         }
         
-        h1 { color: #38bdf8; font-size: 30px; }
+        h1 { color: var(--accent); font-size: 30px; }
         
         .status-badges {
             display: flex;
@@ -86,7 +86,7 @@
             display: inline-block;
             background: #0ea5e9;
             color: #ffffff;
-            border: 1px solid #38bdf8;
+            border: 1px solid var(--accent);
         }
         
         .network-info-btn:hover {
@@ -134,7 +134,7 @@
         
         .modal-header h2 {
             margin: 0;
-            color: #38bdf8;
+            color: var(--accent);
             font-size: 22px;
         }
         
@@ -204,12 +204,12 @@
         }
         
         .modal-highlight {
-            color: #38bdf8;
+            color: var(--accent);
             font-weight: 600;
         }
         
         .modal-link {
-            color: #38bdf8;
+            color: var(--accent);
             text-decoration: none;
         }
         
@@ -344,7 +344,7 @@
             transition: transform 0.15s ease;
         }
         .collapsible:hover .collapse-caret {
-            color: #38bdf8;
+            color: var(--accent);
         }
         .collapsed .collapse-caret {
             transform: rotate(-90deg);
@@ -376,7 +376,7 @@
         .repeater-header {
             font-size: 14px;
             font-weight: 600;
-            color: #38bdf8;
+            color: var(--accent);
             margin-bottom: 4px;
         }
         
@@ -494,7 +494,7 @@
         }
         
         .slot-col-value.highlight {
-            color: #38bdf8;
+            color: var(--accent);
             font-weight: 600;
         }
         
@@ -788,7 +788,7 @@
         .outbound-header-connected {
             font-size: 14px;
             font-weight: 600;
-            color: #38bdf8;
+            color: var(--accent);
             margin-bottom: 4px;
         }
         
@@ -820,6 +820,10 @@
             --radius-md: 16px;
             --radius-sm: 12px;
             --accent: #5ac8fa;
+            --accent-rgb: 90, 200, 250;
+            --title-to: #9bd8ff;
+            --logo-size: 44px;
+            --logo-radius: 0px;
             --green: #30d158;
             --amber: #ffd60a;
             --text: #f5f7fb;
@@ -860,12 +864,12 @@
             background: rgba(20, 26, 45, 0.55);
         }
 
-        .logo { height: 56px; filter: drop-shadow(0 4px 12px rgba(90, 200, 250, 0.35)); }
+        .logo { height: var(--logo-size); border-radius: var(--logo-radius); filter: drop-shadow(0 4px 12px rgba(var(--accent-rgb), 0.35)); }
         h1 {
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.02em;
-            background: linear-gradient(90deg, #ffffff 0%, #9bd8ff 100%);
+            background: linear-gradient(90deg, #ffffff 0%, var(--title-to) 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -1060,7 +1064,7 @@
         @media (max-width: 600px) {
             body { padding: 10px; }
             header { top: 6px; padding: 8px 12px; }
-            .logo { height: 40px; }
+            .logo { height: min(var(--logo-size, 44px), 48px); }
             h1 { font-size: 20px; }
             .stats-bar { grid-template-columns: repeat(2, 1fr); }
             .stat-value { font-size: 20px; }
@@ -1248,7 +1252,7 @@
             font-size: 11px;
             font-weight: 800;
             color: var(--accent);
-            background: rgba(90, 200, 250, 0.12);
+            background: rgba(var(--accent-rgb), 0.12);
             border-radius: 8px;
             padding: 3px 7px;
         }
@@ -1278,7 +1282,7 @@
         /* ============ Slimmer layout (v3) ============ */
         body { padding: 12px; }
         header { padding: 6px 12px; top: 8px; }
-        .logo { height: 44px; }
+        .logo { height: var(--logo-size, 44px); }
         h1 { font-size: 21px; }
         #serverName { font-size: 11px !important; margin-top: 1px !important; }
         .section-header { margin: 16px 4px 8px; font-size: 12px; }
@@ -1408,7 +1412,7 @@
         .small { font-size: 12px; }
 
         /* Admin area */
-        .modal-content.admin { width: min(980px, 100%); max-width: 980px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+        .modal-content.admin { width: min(1180px, 100%); max-width: 1180px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
         .admin-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px 20px; }
         .admin-head h2 { font-size: 19px; margin: 0; }
         .tabs { display: flex; gap: 4px; padding: 4px 16px 10px; flex-wrap: wrap; border-bottom: 1px solid var(--glass-border); }
@@ -1484,6 +1488,159 @@
         .switch input:checked + span { background: var(--green); }
         .switch input:checked + span::before { transform: translateX(17px); }
         .switch input:focus-visible + span { outline: 2px solid var(--accent); }
+
+        /* ================= Admin area v2: sub navigation, appearance, links, OpenBridge editor ================= */
+        .admin-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+        .admin-tabs button { white-space: nowrap; }
+        .admin-tabs button.active { background: rgba(var(--accent-rgb), 0.16); border-color: rgba(var(--accent-rgb), 0.4); }
+        .admin-tab-select { display: none; }
+        .set-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; align-items: start; }
+        .set-nav { position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: var(--radius-md);
+                   background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); }
+        .set-nav-group { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); padding: 10px 8px 4px; }
+        .set-nav-group small { font-weight: 600; letter-spacing: 0; text-transform: none; opacity: .7; margin-left: 4px; }
+        .set-nav button { display: flex; align-items: center; gap: 9px; text-align: left; background: transparent; border: 1px solid transparent;
+                          color: var(--text-dim); font: inherit; font-size: 13px; font-weight: 600; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+        .set-nav button .ic { width: 20px; text-align: center; }
+        .set-nav button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+        .set-nav button.active { color: var(--text); background: rgba(var(--accent-rgb), 0.16); border-color: rgba(var(--accent-rgb), 0.35); }
+        .set-nav-select { display: none; }
+        .set-panel { min-width: 0; }
+        .set-panel-form, .ap-main .set-tile, #lnForm, .obe-form { padding: 16px 18px; }
+        .set-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+        .set-panel-title { font-size: 16px; font-weight: 750; margin: 0; letter-spacing: -0.01em; text-transform: none; color: var(--text); }
+        .set-panel-help { color: var(--text-dim); font-size: 12.5px; margin: 3px 0 4px; }
+        .dirty-tag { display: none; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #ffd60a;
+                     border: 1px solid rgba(255,214,10,.45); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+        .is-dirty .dirty-tag, .dirty-tag.on { display: inline-block; }
+        .set-row[hidden] { display: none !important; }
+        .set-row { border-top: 1px solid rgba(255,255,255,0.05); padding: 9px 0; }
+        .set-row label { font-weight: 600; }
+        .set-adv { margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 6px; }
+        .set-adv > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--accent); padding: 6px 0; list-style: none; }
+        .set-adv > summary::-webkit-details-marker { display: none; }
+        .set-adv > summary::before { content: '▸ '; } .set-adv[open] > summary::before { content: '▾ '; }
+        .range-wrap { display: flex; align-items: center; gap: 10px; }
+        .range-wrap input[type=range] { flex: 1; accent-color: var(--accent); }
+        .range-wrap output { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); }
+        .color-wrap { display: flex; gap: 6px; align-items: center; }
+        .color-wrap input[type=color] { width: 40px; height: 32px; padding: 2px; border-radius: 9px; border: 1px solid var(--glass-border); background: transparent; cursor: pointer; flex: none; }
+        .color-wrap input:not([type=color]) { flex: 1; font-family: ui-monospace, Menlo, monospace; }
+
+        .ap-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+        .ap-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+        .ap-side { position: sticky; top: 0; }
+        .ap-preview { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .pv-browser { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border-radius: 10px 10px 4px 4px; padding: 6px 10px; font-size: 12px; }
+        .pv-browser img { width: 16px; height: 16px; object-fit: contain; }
+        .pv-tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pv-header { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: rgba(20,26,45,0.55); border: 1px solid var(--glass-border); }
+        .pv-header .logo { height: var(--logo-size); max-height: 80px; }
+        .pv-title { font-size: 19px; font-weight: 750; letter-spacing: -0.02em; background: linear-gradient(90deg, #fff 0%, var(--title-to) 100%);
+                    -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .pv-sub { color: var(--text-dim); font-size: 11.5px; }
+        .pv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .pv-chip { font-size: 11px; font-weight: 700; color: #8af5ab; border: 1px solid rgba(48,209,88,.45); border-radius: 999px; padding: 3px 10px; }
+        .pv-tab { font-size: 12px; font-weight: 650; padding: 5px 12px; border-radius: 999px; background: rgba(var(--accent-rgb), .18); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .35); }
+        .pv-num { font-size: 22px; font-weight: 750; color: var(--accent); margin-left: auto; }
+        .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 8px 0 4px; }
+        .preset { position: relative; display: flex; align-items: flex-end; gap: 7px; height: 64px; padding: 8px 10px; border-radius: 14px; cursor: pointer;
+                  border: 1px solid rgba(255,255,255,0.12); color: #fff; font: inherit; font-size: 12px; font-weight: 650; text-align: left; }
+        .preset i { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 10px currentColor; }
+        .preset.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .preset.active::after { content: '✓'; position: absolute; top: 6px; right: 9px; font-weight: 800; }
+        .img-pick { display: flex; gap: 14px; align-items: flex-start; }
+        .img-thumb { flex: none; width: 92px; height: 92px; border-radius: 16px; display: grid; place-items: center; background: repeating-conic-gradient(rgba(255,255,255,.06) 0 25%, transparent 0 50%) 0 0 / 14px 14px;
+                     border: 1px solid var(--glass-border); }
+        .img-thumb.favicon { width: 56px; height: 56px; border-radius: 12px; }
+        .img-thumb img { max-width: 80%; max-height: 80%; object-fit: contain; }
+        .img-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; flex: 1; }
+        .img-actions small { flex-basis: 100%; }
+        .img-actions .img-url { flex-basis: 100%; }
+        .file-btn { cursor: pointer; display: inline-flex; align-items: center; }
+
+        .links-menu { position: relative; }
+        .links-btn { font: inherit; font-size: 12.5px; font-weight: 650; color: var(--text); cursor: pointer; border-radius: 999px; padding: 7px 14px;
+                     background: rgba(var(--accent-rgb), 0.14); border: 1px solid rgba(var(--accent-rgb), 0.4); }
+        .links-pop { display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 230px; z-index: 80; padding: 6px; border-radius: 14px;
+                     background: rgba(16,22,40,0.97); border: 1px solid var(--glass-border); box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+        .links-menu.open .links-pop { display: block; }
+        .links-pop a { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 10px; color: var(--text); text-decoration: none; font-size: 13.5px; font-weight: 600; }
+        .links-pop a:hover { background: rgba(var(--accent-rgb), 0.14); }
+        .li-ic { width: 20px; text-align: center; }
+        .links-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 2px 0; }
+        .links-bar[hidden], .links-menu[hidden] { display: none; }
+        .links-bar a { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 650; color: var(--text); text-decoration: none;
+                       padding: 6px 12px; border-radius: 999px; background: var(--glass-bg); border: 1px solid var(--glass-border); }
+        .links-bar a:hover { border-color: rgba(var(--accent-rgb), .5); }
+        .ln-list { display: flex; flex-direction: column; gap: 6px; }
+        .ln-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1.4fr) auto auto; gap: 6px; align-items: center;
+                  background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 6px; }
+        .ln-row input:not([type=checkbox]) { width: 100%; }
+        .ln-icon { text-align: center; font-size: 16px; }
+        .ln-newtab { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-dim); white-space: nowrap; }
+        .ln-move { display: inline-flex; gap: 4px; }
+        .ln-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+
+        .obe-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 14px; align-items: start; }
+        .obe-list { padding: 12px; display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; }
+        .obe-item { display: grid; grid-template-columns: 10px 1fr; gap: 2px 8px; align-items: center; text-align: left; font: inherit; cursor: pointer; color: var(--text);
+                    background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 8px 10px; }
+        .obe-item.active { background: rgba(var(--accent-rgb), 0.14); border-color: rgba(var(--accent-rgb), 0.4); }
+        .obe-dot { width: 9px; height: 9px; border-radius: 50%; }
+        .obe-dot.on { background: #30d158; box-shadow: 0 0 8px #30d158; } .obe-dot.off { background: #6b7385; }
+        .obe-name { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .obe-meta { grid-column: 2; font-size: 11px; color: var(--text-dim); }
+        .obe-main { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+        .obe-form fieldset { border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 6px 14px 10px; margin: 12px 0 0; }
+        .obe-form legend { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); padding: 0 6px; }
+        .obe-form [hidden] { display: none !important; }
+        .obe-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+        .obe-grid .set-row { grid-template-columns: 1fr; }
+        #obePwHint.warn { color: #ffd60a; }
+        .obe-tg-tools, .obe-tg-bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+        .obe-tg-tools .tgdir-search { flex: 1 1 220px; }
+        .obe-count { font-size: 12.5px; color: var(--text-dim); margin-right: auto; } .obe-count b { color: var(--accent); }
+        .obe-tg-bulk select, .obe-tgrow select { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--glass-border); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 12px; }
+        .obe-tg-bulk select option, .obe-tgrow select option { background: #1c2238; }
+        .obe-addtg { display: inline-flex; gap: 4px; } .obe-addtg input { width: 150px; }
+        .obe-tglist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin-top: 10px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+        .obe-tgrow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 8px; border-radius: 10px; cursor: pointer;
+                     background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); min-width: 0; }
+        .obe-tgrow.on { background: rgba(var(--accent-rgb), 0.1); border-color: rgba(var(--accent-rgb), 0.38); }
+        .obe-tgrow input { accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
+        .obe-tgrow .n { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+        .obe-tgrow select:disabled { opacity: .35; }
+        .obe-stanza { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.5;
+                      font-family: ui-monospace, Menlo, monospace; white-space: pre-wrap; margin: 6px 0 0; }
+        .obe-json { padding: 10px 14px; } .obe-json textarea { width: 100%; }
+        .obe-save { position: sticky; bottom: 0; padding: 10px; border-radius: 14px; background: rgba(16,22,40,0.92); border: 1px solid var(--glass-border); align-items: center; }
+
+        @media (max-width: 900px) {
+            .admin-tabs { display: none; }
+            .admin-tab-select { display: flex; align-items: center; gap: 8px; padding: 4px 16px 10px; font-size: 12px; font-weight: 700; color: var(--text-dim); border-bottom: 1px solid var(--glass-border); }
+            .admin-tab-select select, .set-nav-select select { flex: 1; font: inherit; font-size: 14px; font-weight: 650; color: var(--text); padding: 9px 10px; border-radius: 12px;
+                background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.4); }
+            .admin-tab-select option, .set-nav-select option, .set-nav-select optgroup { background: #1c2238; }
+            .set-layout, .ap-layout, .obe-layout { grid-template-columns: minmax(0, 1fr); }
+            .set-nav-select select, .admin-tab-select select { min-width: 0; width: 100%; }
+            .set-row > * { min-width: 0; }
+            .set-nav { display: none; }
+            .set-nav-select { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-dim); }
+            .ap-side, .obe-list { position: static; }
+            .obe-list { flex-direction: row; flex-wrap: wrap; } .obe-list h3 { flex-basis: 100%; } .obe-item { flex: 1 1 160px; }
+        }
+        @media (max-width: 600px) {
+            .set-panel-form, .ap-main .set-tile, #lnForm, .obe-form { padding: 12px; }
+            .obe-grid { grid-template-columns: 1fr; }
+            .ln-row { grid-template-columns: 46px 1fr auto; }
+            .ln-label { grid-column: 2 / -1; }
+            .ln-url { grid-column: 1 / -1; grid-row: 2; }
+            .ln-newtab { grid-column: 1 / 3; grid-row: 3; } .ln-move { grid-column: 3; grid-row: 3; justify-self: end; }
+            .img-pick { flex-direction: column; }
+            .obe-tglist { grid-template-columns: 1fr; max-height: 360px; }
+            .links-pop { right: auto; left: 0; }
+        }
         @media (max-width: 760px) {
             .settings-grid { grid-template-columns: 1fr; }
             .set-row { grid-template-columns: 1fr; }
@@ -1533,10 +1690,10 @@
                     font-variant-numeric: tabular-nums; white-space: nowrap; }
         .obp-chip .dim { color: var(--text-dim); font-weight: 500; }
         .obp-chip .rx { color: #7fb2f2; } .obp-chip .tx { color: #f0935f; }
-        .obp-more { font: inherit; font-size: 12px; font-weight: 650; color: var(--accent); background: rgba(90,200,250,0.1);
-                    border: 1px solid rgba(90,200,250,0.35); border-radius: 999px; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
-        .obp-more:hover { background: rgba(90,200,250,0.2); }
-        .stat-card.stat-obp { background: linear-gradient(135deg, rgba(90,200,250,0.18), rgba(90,200,250,0.05)); border-color: rgba(90,200,250,0.35); cursor: pointer; }
+        .obp-more { font: inherit; font-size: 12px; font-weight: 650; color: var(--accent); background: rgba(var(--accent-rgb), 0.1);
+                    border: 1px solid rgba(var(--accent-rgb), 0.35); border-radius: 999px; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
+        .obp-more:hover { background: rgba(var(--accent-rgb), 0.2); }
+        .stat-card.stat-obp { background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.05)); border-color: rgba(var(--accent-rgb), 0.35); cursor: pointer; }
         .stat-card.stat-obp .stat-value { font-size: 20px; }
         .stat-card.stat-obp .stat-sub { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
 
@@ -1570,8 +1727,8 @@
         .obp-tg { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 6px 9px; min-width: 0; font-size: 12.5px; }
         .obp-tg b { font-variant-numeric: tabular-nums; }
         .obp-tg .n { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
-        .obp-tg .ts { font-size: 10px; font-weight: 800; color: var(--accent); border: 1px solid rgba(90,200,250,0.35); border-radius: 5px; padding: 0 5px; }
-        .obp-tg.hot { border-color: rgba(90,200,250,0.4); background: rgba(90,200,250,0.08); }
+        .obp-tg .ts { font-size: 10px; font-weight: 800; color: var(--accent); border: 1px solid rgba(var(--accent-rgb), 0.35); border-radius: 5px; padding: 0 5px; }
+        .obp-tg.hot { border-color: rgba(var(--accent-rgb), 0.4); background: rgba(var(--accent-rgb), 0.08); }
         .obp-tgcell span { color: var(--text-dim); }
         @media (max-width: 600px) {
             .obp-card .tgs-table td, .obp-card .tgs-table th { padding: 7px 5px; }
@@ -1579,6 +1736,9 @@
             .obp-card .tgs-table { font-size: 12px; }
             .obp-dir { padding: 1px 5px; }
         }
+        .obp-nofilter { font-size: 13px; color: var(--text-dim); margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px;
+                        background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); }
+        .obp-nofilter b { color: var(--text); }
         .obp-sub-h { margin: 16px 0 0; font-size: 12px; font-weight: 700; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; }
         .obp-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
         .obp-tools .tgdir-search { flex: 1 1 220px; max-width: 360px; }
@@ -1630,7 +1790,7 @@
         #lastHeardBody thead th:nth-child(4) { text-align: center !important; }
         .ts-chip {
             font-size: 10.5px; font-weight: 800; color: var(--accent);
-            background: rgba(90, 200, 250, 0.12); border-radius: 7px; padding: 2px 7px;
+            background: rgba(var(--accent-rgb), 0.12); border-radius: 7px; padding: 2px 7px;
         }
 
         /* Events */
@@ -1651,8 +1811,8 @@
                      background: var(--glass-bg); border: 1px solid var(--glass-border); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
         .main-tabs button { background: transparent; border: 0; color: var(--text-dim); font: inherit; font-size: 14px; font-weight: 650; padding: 8px 18px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s; display: inline-flex; align-items: center; gap: 6px; }
         .main-tabs button:hover { color: var(--text); }
-        .main-tabs button.active { background: rgba(90,200,250,0.18); color: var(--text); box-shadow: inset 0 0 0 1px rgba(90,200,250,0.35); }
-        .main-tabs .tab-count:not(:empty) { font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(90,200,250,0.12); border-radius: 999px; padding: 1px 7px; }
+        .main-tabs button.active { background: rgba(var(--accent-rgb), 0.18); color: var(--text); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.35); }
+        .main-tabs .tab-count:not(:empty) { font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(var(--accent-rgb), 0.12); border-radius: 999px; padding: 1px 7px; }
         .main-tabs button { white-space: nowrap; }
         .main-tabs .t-short { display: none; }
         @media (max-width: 600px) {
@@ -1683,7 +1843,7 @@
         .cf-row .v code, .cf-code code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
         .cf-row .v code { background: rgba(255,255,255,0.07); padding: 3px 8px; border-radius: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .cf-copy { background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border); color: var(--text); border-radius: 8px; font-size: 12px; padding: 4px 8px; cursor: pointer; flex: none; }
-        .cf-copy:hover { background: rgba(90,200,250,0.18); }
+        .cf-copy:hover { background: rgba(var(--accent-rgb), 0.18); }
         .cf-copy.ok { background: rgba(48,209,88,0.22); border-color: rgba(48,209,88,0.45); }
         .cf-login { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .cf-tsgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -1700,7 +1860,7 @@
         .cf-ts:last-child { margin-bottom: 0; }
         .cf-ts .h { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
         .cf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-        .cf-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 12px; background: rgba(90,200,250,0.12); border: 1px solid rgba(90,200,250,0.30); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+        .cf-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 12px; background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.30); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
         .cf-chip small { font-weight: 500; font-size: 12px; color: var(--text-dim); }
         .cf-chip.guest { background: rgba(255,214,10,0.12); border-color: rgba(255,214,10,0.35); }
         .cf-chip.any { background: rgba(255,255,255,0.06); border-color: var(--glass-border); font-weight: 600; font-size: 13px; }
@@ -1711,7 +1871,7 @@
         .cf-code .cf-copy { position: absolute; top: 8px; right: 8px; }
         .cf-sw { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); margin-bottom: 4px; }
         .cf-sw button { background: transparent; border: 0; color: var(--text-dim); font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
-        .cf-sw button.active { background: rgba(90,200,250,0.18); color: var(--text); }
+        .cf-sw button.active { background: rgba(var(--accent-rgb), 0.18); color: var(--text); }
         .cf-note { white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
         .cf-note a { color: var(--accent); }
         @media (max-width: 900px) { .cf-grid, .cf-tsgrid { grid-template-columns: 1fr; } }
@@ -1732,8 +1892,8 @@
         .chip .tg-name { display: inline; font-size: 11px; margin-left: 4px; }
         .tgdir-search { flex: 1; max-width: 440px; min-width: 200px; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px;
                         padding: 8px 12px; color: var(--text); font: inherit; outline: none; }
-        .tgdir-search:focus { border-color: rgba(90,200,250,0.6); box-shadow: 0 0 0 3px rgba(90,200,250,0.15); }
-        .own-tag { font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid rgba(90,200,250,.4); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+        .tgdir-search:focus { border-color: rgba(var(--accent-rgb), 0.6); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15); }
+        .own-tag { font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid rgba(var(--accent-rgb), .4); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
 
         /* ---------------- Talkgroup statistics ---------------- */
         #tgStatsBody { padding: 16px; }
@@ -1741,7 +1901,7 @@
         .tgs-seg { display: inline-flex; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 999px; padding: 3px; gap: 2px; }
         .tgs-seg button { background: transparent; border: 0; color: var(--text-dim); font: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s; }
         .tgs-seg button:hover { color: var(--text); }
-        .tgs-seg button.active { background: rgba(90,200,250,0.18); color: var(--text); box-shadow: inset 0 0 0 1px rgba(90,200,250,0.35); }
+        .tgs-seg button.active { background: rgba(var(--accent-rgb), 0.18); color: var(--text); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.35); }
         .tgs-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
         .tgs-kpi { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 10px 12px; }
         .tgs-kpi .k { color: var(--text-dim); font-size: 11px; font-weight: 600; letter-spacing: .02em; }
@@ -1797,6 +1957,7 @@
                 </div>
             </div>
             <div class="status-badges">
+                <div class="links-menu" id="linksMenu" hidden><button type="button" class="links-btn" onclick="toggleLinks(event)"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
                 <a class="network-info-btn" id="networkInfoBtn" style="display: none;" target="_blank">🌐 Network Info</a>
                 <div class="connection-status clickable warning" id="wsStatus" title="Connecting to dashboard server...">Connecting...</div>
                 <div class="connection-status warning" id="hblinkStatus" title="Waiting for connection status...">Unknown</div>
@@ -1805,6 +1966,8 @@
             </div>
         </header>
         
+        <nav class="links-bar" id="linksBar" hidden></nav>
+
         <!-- Announcement Banner (hidden by default, shown if announcement text exists) -->
         <div id="announcementBanner" class="announcement-banner" style="display: none;">
             <strong>📢 Announcement:</strong> <span id="announcementText"></span>
@@ -1883,7 +2046,7 @@
 
         <!-- OpenBridge Trunks (positioned above Repeaters) -->
         <div id="openbridgeSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="openbridge" data-collapse-target="openbridgeBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>↔️ OpenBridge <span id="openbridgeCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="openbridge" data-collapse-target="openbridgeBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>↔️ OpenBridge <span id="openbridgeCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="openbridgeBody">
                 <div id="openbridgesContainer"></div>
             </div>
@@ -1891,7 +2054,7 @@
 
         <!-- Repeaters Section -->
         <div id="repeatersSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="repeaters" data-collapse-target="repeatersBody"><span class="collapse-caret">▾</span>📶 Repeaters <span id="repeaterCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="repeaters" data-collapse-target="repeatersBody"><span class="collapse-caret">▾</span>📶 Repeaters <span id="repeaterCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="repeatersBody">
                 <div id="repeatersContainer"></div>
             </div>
@@ -1899,7 +2062,7 @@
 
         <!-- Hotspots Section -->
         <div id="hotspotsSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="hotspots" data-collapse-target="hotspotsBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>📱 Hotspots <span id="hotspotCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="hotspots" data-collapse-target="hotspotsBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>📱 Hotspots <span id="hotspotCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="hotspotsBody">
                 <div id="hotspotsContainer"></div>
             </div>
@@ -1907,7 +2070,7 @@
 
         <!-- Network Inbound Section -->
         <div id="networksSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="networks" data-collapse-target="networksBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Inbound <span id="networkCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="networks" data-collapse-target="networksBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Inbound <span id="networkCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="networksBody">
                 <div id="networksContainer"></div>
             </div>
@@ -1915,7 +2078,7 @@
 
         <!-- Unknown Connections Section (fallback for unrecognized software) -->
         <div id="unknownSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="unknown" data-collapse-target="unknownBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>❓ Other Connections <span id="unknownCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="unknown" data-collapse-target="unknownBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>❓ Other Connections <span id="unknownCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="unknownBody">
                 <div id="unknownContainer"></div>
             </div>
@@ -1923,7 +2086,7 @@
 
         <!-- Network Outbound -->
         <div id="outboundSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="outbound" data-collapse-target="outboundBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Outbound <span id="outboundCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="outbound" data-collapse-target="outboundBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Outbound <span id="outboundCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="outboundBody">
                 <div id="outboundsContainer"></div>
             </div>
@@ -1976,7 +2139,7 @@
         </div><!-- /tabStats -->
 
         <div class="tab-pane" id="tabObp" style="display: none;">
-            <h2 class="section-header">↔️ OpenBridge <span id="obpHeadCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header">↔️ OpenBridge <span id="obpHeadCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="tgs-seg obp-trunks" id="obpTrunkSel" role="tablist" aria-label="Trunk" style="display: none;"></div>
             <div id="obpBody"><div class="card"><div class="tgs-empty">Loading …</div></div></div>
         </div><!-- /tabObp -->
@@ -1986,7 +2149,7 @@
         </div><!-- /tabConfig -->
 
         <div class="tab-pane" id="tabTgDir" style="display: none;">
-            <h2 class="section-header">🗂️ Talkgroups <span id="tgDirCount" style="color: #38bdf8; font-weight: 700;"></span></h2>
+            <h2 class="section-header">🗂️ Talkgroups <span id="tgDirCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" style="padding: 16px;">
                 <div class="tgs-toolbar">
                     <input type="text" id="tgDirSearch" class="tgdir-search" placeholder="🔎 Search: number or name, e.g. 262 or Bayern" autocomplete="off">
@@ -2151,8 +2314,10 @@
                     ? config.dashboard_title : 'DMR Die N8schicht';
                 const serverName = (config.server_name && config.server_name !== 'HBlink4 Server')
                     ? config.server_name : 'dmr.die-n8schicht.de';
-                document.title = title;
+                document.title = (config.page_title || '').trim() || title;
                 document.getElementById('dashboardTitle').textContent = title;
+                applyTheme(config);
+                renderLinks(config);
                 document.getElementById('serverName').textContent = serverName;
 
                 // Optional branding: own logo and favicon (paths under /static or full URLs)
@@ -2330,8 +2495,8 @@
             modal.className = 'modal-overlay';
             modal.innerHTML = `<div class="modal-content ${cls || ''}" onclick="event.stopPropagation()">${html}</div>`;
             const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
-            const onKey = (e) => { if (e.key === 'Escape' && closable) close(); };
-            if (closable) modal.onclick = (e) => { if (e.target === modal) close(); };
+            const onKey = (e) => { if (e.key === 'Escape' && closable) modal._close(); };
+            if (closable) modal.onclick = (e) => { if (e.target === modal) modal._close(); };
             document.addEventListener('keydown', onKey);
             modal._close = close;
             document.body.appendChild(modal);
@@ -2445,7 +2610,8 @@
         }
 
         // ---------- Admin area ----------
-        const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['sessions', '🔑 Sessions'],
+        const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['appearance', '🎨 Appearance'],
+                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
 
         function openAdmin(tab = 'users') {
@@ -2454,19 +2620,25 @@
                     <h2>⚙️ Admin area</h2>
                     <button class="modal-close" aria-label="Close" onclick="this.closest('.modal-overlay')._close()">×</button>
                 </div>
-                <nav class="tabs">${ADMIN_TABS.map(([k, l]) => `<button data-tab="${k}" onclick="adminTab('${k}')">${l}</button>`).join('')}</nav>
+                <nav class="tabs admin-tabs">${ADMIN_TABS.map(([k, l]) => `<button data-tab="${k}" onclick="adminTab('${k}')">${l}</button>`).join('')}</nav>
+                <label class="admin-tab-select">Area <select onchange="adminTab(this.value)">${ADMIN_TABS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
                 <div class="admin-body" id="adminBody"></div>`, 'admin');
             m.id = 'adminModal';
+            // unsaved appearance changes are only a preview: closing restores the saved look
+            const close = m._close; m._close = () => { close(); loadConfig(); };
             adminTab(tab);
         }
 
         async function adminTab(tab) {
             document.querySelectorAll('#adminModal .tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            const tsel = document.querySelector('#adminModal .admin-tab-select select'); if (tsel) tsel.value = tab;
+            if (tab !== 'appearance' && document.getElementById('apForm')) loadConfig();
             const body = document.getElementById('adminBody');
             if (!body) return;
             body.innerHTML = '<div class="muted">Loading…</div>';
             try {
-                body.innerHTML = await ({ users: adminUsers, settings: adminSettings, sessions: adminSessions,
+                body.innerHTML = await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
+                                          links: adminLinks, obp: adminObp, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
         }
@@ -2589,20 +2761,31 @@
         // ---------- Settings (SQLite) ----------
         let _sysInfo = null;
 
-        function settingInput(f) {
+        // ================= Settings: sub navigation, dependencies, advanced options =================
+        // Sections with their own admin tab are not listed here.
+        const SET_CUSTOM = new Set(['appearance', 'links', 'dmr_obp']);
+        const setUi = { sections: null, current: null, advanced: false };
+
+        function setIcon(title) { const m = title.match(/^(\S+)\s/); return m ? m[1] : '•'; }
+        function setName(title) { return title.replace(/^\S+\s/, ''); }
+
+        function settingInput(f, opts = {}) {
             const id = `set-${f.key.replace(/\./g, '-')}`;
             const v = f.value;
-            const name = `name="${escapeHtml(f.key)}" id="${id}"`;
+            const name = `name="${escapeHtml(f.key)}" id="${id}" data-kind="${f.kind}"`;
             let input;
             if (f.kind === 'bool') {
                 input = `<label class="switch"><input type="checkbox" ${name} ${v ? 'checked' : ''}><span></span></label>`;
             } else if (f.kind === 'longtext') {
-                input = `<textarea ${name} rows="2">${escapeHtml(v ?? '')}</textarea>`;
+                input = `<textarea ${name} rows="3">${escapeHtml(v ?? '')}</textarea>`;
             } else if (f.kind === 'choice') {
                 input = `<select ${name}>${f.choices.map(([val, label]) =>
                     `<option value="${escapeHtml(val)}" ${val === v ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>`;
             } else if (f.kind === 'countries') {
                 input = `<input ${name} value="${escapeHtml(Array.isArray(v) ? v.join(', ') : (v || ''))}">`;
+            } else if ((f.kind === 'int' || f.kind === 'float') && opts.slider) {
+                input = `<span class="range-wrap"><input type="range" ${name} min="${f.min}" max="${f.max}" step="1" value="${escapeHtml(v)}"
+                           oninput="this.nextElementSibling.textContent = this.value"><output>${escapeHtml(v)}</output></span>`;
             } else if (f.kind === 'int' || f.kind === 'float') {
                 input = `<input type="number" ${name} min="${f.min}" max="${f.max}" step="${f.kind === 'float' ? '0.1' : '1'}" value="${escapeHtml(v)}">`;
             } else if (f.kind === 'password') {
@@ -2615,40 +2798,90 @@
                 input = `<textarea ${name} class="json-edit" rows="${Array.isArray(v) && v.length ? 7 : 2}" spellcheck="false">${escapeHtml(JSON.stringify(v ?? [], null, 2))}</textarea>`;
             } else if (f.kind === 'time') {
                 input = `<input type="time" ${name} value="${escapeHtml(v || '')}">`;
+            } else if (f.kind === 'color') {
+                input = `<span class="color-wrap"><input type="color" value="${escapeHtml(v || opts.placeholder || '#5ac8fa')}"
+                            oninput="const t=this.nextElementSibling; t.value=this.value; t.dispatchEvent(new Event('input', {bubbles:true}))">
+                         <input ${name} value="${escapeHtml(v || '')}" placeholder="${escapeHtml(opts.placeholder || 'from the profile')}" maxlength="7"
+                            oninput="if (/^#[0-9a-f]{6}$/i.test(this.value)) this.previousElementSibling.value = this.value">
+                         <button type="button" class="btn-s" title="Back to the profile colour"
+                            onclick="const t=this.previousElementSibling; t.value=''; t.dispatchEvent(new Event('input', {bubbles:true}))">↺</button></span>`;
             } else {
                 input = `<input ${name} value="${escapeHtml(v ?? '')}" ${f.kind === 'url' ? 'placeholder="https://…"' : ''}>`;
             }
-            return `<div class="set-row ${f.kind === 'bool' ? 'is-bool' : ''} ${f.kind === 'json' ? 'is-wide' : ''}">
+            return `<div class="set-row ${f.kind === 'bool' ? 'is-bool' : ''} ${['json', 'longtext'].includes(f.kind) ? 'is-wide' : ''}"
+                        ${f.depends ? `data-depends="${escapeHtml(f.depends)}"` : ''}>
                 <label for="${id}">${escapeHtml(f.label)}${f.restart ? ' <span class="restart-tag" title="Takes effect after a restart">restart</span>' : ''}</label>
                 ${input}
                 ${f.help ? `<small class="muted">${escapeHtml(f.help)}</small>` : ''}
             </div>`;
         }
 
-        function settingsSectionsHtml(sections) {
-            const block = (list, title, sub) => list.length ? `
-                <h3 class="settings-group">${title}<small>${sub}</small></h3>
-                <div class="settings-grid">${list.map(settingsSectionHtml).join('')}</div>` : '';
-            return block(sections.filter(s => !s.dmr), '📊 Dashboard', 'takes effect immediately; HTTPS & ports after a dashboard restart') +
-                   block(sections.filter(s => s.dmr), '🛰️ DMR server (HBlink4)', 'sent to the DMR server on save; port, links & trunks after a DMR server restart');
+        // Rows whose switch is off are hidden (and ignored): fewer things to read.
+        function setApplyDepends(root) {
+            root.querySelectorAll('[data-depends]').forEach(row => {
+                const sw = root.querySelector(`[name="${CSS.escape(row.dataset.depends)}"]`);
+                row.hidden = !!(sw && sw.type === 'checkbox' && !sw.checked);
+            });
+        }
+        function setWatch(form) {
+            form.addEventListener('change', () => setApplyDepends(form));
+            form.addEventListener('input', () => { form.classList.add('is-dirty'); });
+            setApplyDepends(form);
         }
 
         function settingsSectionHtml(sec) {
+            const basic = sec.fields.filter(f => !f.advanced), adv = sec.fields.filter(f => f.advanced);
             return `
-                <form class="tile set-tile" data-section="${sec.id}" onsubmit="event.preventDefault(); saveSettings(this)">
-                    <h3>${escapeHtml(sec.title)}</h3>
-                    ${sec.fields.map(settingInput).join('')}
+                <form class="tile set-tile set-panel-form" data-section="${sec.id}" onsubmit="event.preventDefault(); saveSettings(this)">
+                    <div class="set-panel-head">
+                        <div><h3 class="set-panel-title">${escapeHtml(sec.title)}</h3>
+                            ${sec.help ? `<p class="set-panel-help">${escapeHtml(sec.help)}</p>` : ''}</div>
+                        <span class="dirty-tag">unsaved</span>
+                    </div>
+                    ${basic.map(f => settingInput(f)).join('')}
+                    ${adv.length ? `<details class="set-adv" ${setUi.advanced ? 'open' : ''} ontoggle="setUi.advanced = this.open">
+                        <summary>Advanced options <span class="muted">(${adv.length})</span></summary>
+                        ${adv.map(f => settingInput(f)).join('')}</details>` : ''}
                     <div class="set-actions">
                         ${sec.id === 'userdb' ? '<button type="button" class="btn-s" onclick="refreshUserDb()">⟳ Refresh now</button>' : ''}
-                        <button type="button" class="btn-s" onclick="resetSettings('${sec.id}', this)" title="Take the values of this section from dashboard/config.json again">↺ config.json</button>
-                        <button type="submit" class="btn-s btn-primary">Save</button>
+                        <button type="button" class="btn-s" onclick="resetSettings('${sec.id}', this)" title="Take the values of this section from the config file again">↺ Defaults from file</button>
+                        <button type="submit" class="btn-s btn-primary">💾 Save</button>
                     </div>
                 </form>`;
         }
 
-        async function adminSettings() {
-            const [{ sections }, sys] = await Promise.all([api('GET', '/api/admin/settings'), api('GET', '/api/admin/system')]);
-            _sysInfo = sys;
+        function setNavHtml(sections) {
+            const list = sections.filter(s => !SET_CUSTOM.has(s.id));
+            const group = (dmr) => list.filter(s => s.dmr === dmr).map(s =>
+                `<button type="button" class="${s.id === setUi.current ? 'active' : ''}" data-sec="${s.id}" onclick="setShow('${s.id}')">
+                    <span class="ic">${setIcon(s.title)}</span>${escapeHtml(setName(s.title))}</button>`).join('');
+            const opt = (dmr) => list.filter(s => s.dmr === dmr).map(s =>
+                `<option value="${s.id}" ${s.id === setUi.current ? 'selected' : ''}>${escapeHtml(s.title)}</option>`).join('');
+            return `<nav class="set-nav">
+                    <div class="set-nav-group">📊 Dashboard <small>live</small></div>${group(false)}
+                    <div class="set-nav-group">🛰️ DMR server <small>HBlink4</small></div>${group(true)}
+                </nav>
+                <label class="set-nav-select">Section
+                    <select onchange="setShow(this.value)">
+                        <optgroup label="📊 Dashboard">${opt(false)}</optgroup>
+                        <optgroup label="🛰️ DMR server (HBlink4)">${opt(true)}</optgroup>
+                    </select></label>`;
+        }
+
+        function setShow(id) {
+            setUi.current = id;
+            const sec = setUi.sections.find(s => s.id === id);
+            const panel = document.getElementById('setPanel');
+            if (!sec || !panel) return;
+            panel.innerHTML = settingsSectionHtml(sec) + (sec.dmr
+                ? '<p class="muted small">Sent to the DMR server on save. Port, links and trunks change after a DMR server restart.</p>'
+                : '<p class="muted small">Takes effect immediately. HTTPS and ports after a dashboard restart.</p>');
+            document.querySelectorAll('.set-nav button').forEach(b => b.classList.toggle('active', b.dataset.sec === id));
+            const sel = document.querySelector('.set-nav-select select'); if (sel) sel.value = id;
+            setWatch(panel.querySelector('form'));
+        }
+
+        function adminBanners(sys) {
             return `
                 <div id="restartBanner" class="restart-banner" hidden>
                     Some changes take effect after a restart of the dashboard.
@@ -2658,39 +2891,595 @@
                 <div id="dmrBanner" class="restart-banner" hidden>
                     <span id="dmrBannerText"></span>
                     ${sys.systemd ? '<button class="btn-s btn-primary" onclick="restartDmr()">Restart DMR server</button>' : ''}
-                </div>
-                <div id="settingsGrid">${settingsSectionsHtml(sections)}</div>
-                <p class="muted small">On the first start these values were taken from <code>dashboard/config.json</code>;
-                since then they live in the database (<code>dashboard/data/dashboard.db</code>) and are edited here.
-                The superadmin and the HBlink4 server settings (<code>config/config.json</code>) stay in the files.</p>`;
+                </div>`;
+        }
+
+        async function loadSettingsData() {
+            const [{ sections }, sys] = await Promise.all([api('GET', '/api/admin/settings'), api('GET', '/api/admin/system')]);
+            setUi.sections = sections;
+            _sysInfo = sys;
+            return sys;
+        }
+        function setField(key) {
+            for (const s of setUi.sections || []) for (const f of s.fields) if (f.key === key) return f;
+            return null;
+        }
+
+        async function adminSettings() {
+            const sys = await loadSettingsData();
+            if (!setUi.current || SET_CUSTOM.has(setUi.current)) setUi.current = 'announcement';
+            setTimeout(() => setShow(setUi.current));
+            return `${adminBanners(sys)}
+                <div class="set-layout">${setNavHtml(setUi.sections)}<div class="set-panel" id="setPanel"></div></div>
+                <p class="muted small">All values live in the database (<code>dashboard/data/dashboard.db</code>). Only the
+                superadmin and the start-up addresses stay in the config files.</p>`;
         }
 
         function collectSettings(form) {
             const changes = {};
             for (const el of form.elements) {
-                if (!el.name) continue;
+                if (!el.name || el.dataset.skip) continue;
                 changes[el.name] = el.type === 'checkbox' ? el.checked : el.value;
             }
             return changes;
         }
 
         function afterSettingsSaved(j) {
-            document.getElementById('settingsGrid').innerHTML = settingsSectionsHtml(j.sections);
-            if (j.restart_required) document.getElementById('restartBanner').hidden = false;
+            setUi.sections = j.sections;
+            if (document.getElementById('setPanel') && setUi.current) setShow(setUi.current);
+            if (typeof afterCustomSaved === 'function') afterCustomSaved(j);
+            if (j.restart_required) { const b = document.getElementById('restartBanner'); if (b) b.hidden = false; }
             if (j.dmr_changed) {
                 const b = document.getElementById('dmrBanner');
                 const t = document.getElementById('dmrBannerText');
-                if (!j.dmr_applied) {
+                if (b && t && !j.dmr_applied) {
                     t.textContent = 'Saved. The DMR server is not connected right now; it uses the new values when it starts.';
                     b.hidden = false;
-                } else if (j.dmr_restart_required) {
-                    t.textContent = 'Saved and sent. Port, links and trunks change after a restart of the DMR server.';
+                } else if (b && t && j.dmr_restart_required) {
+                    t.textContent = 'Saved. Port, links and trunks change after a restart of the DMR server.';
                     b.hidden = false;
                 }
             }
             toast(!j.changed.length ? 'No changes'
                   : j.dmr_changed && j.dmr_applied ? `Saved and applied to the DMR server (${j.changed.length})`
                   : `Saved (${j.changed.length} changed)`, 'ok');
+            loadConfig();
+        }
+
+        // ================= Appearance: colour profiles, titles, logos =================
+        const THEMES = {
+            n8:       { accent: '#5ac8fa', bg: '#070b17', glows: ['#0a84ff', '#bf5af2', '#30d158'] },
+            ocean:    { accent: '#22d3ee', bg: '#04121c', glows: ['#0ea5e9', '#14b8a6', '#3b82f6'] },
+            aurora:   { accent: '#34d399', bg: '#04130e', glows: ['#10b981', '#22d3ee', '#a3e635'] },
+            ember:    { accent: '#fb923c', bg: '#140906', glows: ['#f97316', '#ef4444', '#facc15'] },
+            violet:   { accent: '#c084fc', bg: '#0d0918', glows: ['#8b5cf6', '#ec4899', '#6366f1'] },
+            graphite: { accent: '#a3b1c6', bg: '#0b0c0f', glows: ['#64748b', '#475569', '#94a3b8'] },
+        };
+        const hexRgb = h => { const n = parseInt((h || '#000000').slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+        const mixHex = (h, w, t) => { const a = hexRgb(h), b = hexRgb(w); return '#' + a.map((x, i) => Math.round(x + (b[i] - x) * t).toString(16).padStart(2, '0')).join(''); };
+
+        // cfg: { theme: {preset, accent, background, glow, glass, blur}, logo_size, logo_radius }
+        function applyTheme(cfg) {
+            const t = (cfg && cfg.theme) || {};
+            const p = THEMES[t.preset] || THEMES.n8;
+            const accent = /^#[0-9a-f]{6}$/i.test(t.accent || '') ? t.accent : p.accent;
+            const bg = /^#[0-9a-f]{6}$/i.test(t.background || '') ? t.background : p.bg;
+            const glow = Math.max(0, Math.min(150, Number(t.glow ?? 100))) / 100;
+            const glass = Math.max(0, Math.min(100, Number(t.glass ?? 50))) / 100;
+            const root = document.documentElement.style;
+            root.setProperty('--accent', accent);
+            root.setProperty('--accent-rgb', hexRgb(accent).join(', '));
+            root.setProperty('--title-to', mixHex(accent, '#ffffff', 0.45));
+            root.setProperty('--glass-bg', `rgba(255, 255, 255, ${(0.02 + glass * 0.07).toFixed(3)})`);
+            root.setProperty('--glass-blur', t.blur === false ? 'none' : 'blur(22px) saturate(170%)');
+            root.setProperty('--logo-size', `${Math.max(24, Math.min(96, Number(cfg.logo_size || 44)))}px`);
+            root.setProperty('--logo-radius', `${Math.max(0, Math.min(50, Number(cfg.logo_radius || 0)))}%`);
+            const g = (c, a) => `rgba(${hexRgb(c).join(', ')}, ${(a * glow).toFixed(3)})`;
+            let el = document.getElementById('themeStyle');
+            if (!el) { el = document.createElement('style'); el.id = 'themeStyle'; document.head.appendChild(el); }
+            el.textContent = `body { background:
+                radial-gradient(1100px 700px at 8% -10%, ${g(p.glows[0], 0.35)}, transparent 60%),
+                radial-gradient(900px 650px at 100% 0%, ${g(p.glows[1], 0.28)}, transparent 60%),
+                radial-gradient(900px 700px at 50% 110%, ${g(p.glows[2], 0.18)}, transparent 60%),
+                linear-gradient(180deg, ${bg} 0%, ${mixHex(bg, '#1a2440', 0.18)} 100%) !important;
+                background-attachment: fixed !important; }
+                .btn-primary, .btn-s.btn-primary { background: linear-gradient(135deg, ${accent}, ${mixHex(accent, '#5e5ce6', 0.55)}) !important; }`;
+        }
+
+        function appearanceValues(form) {
+            const v = k => form.elements[k] ? (form.elements[k].type === 'checkbox' ? form.elements[k].checked : form.elements[k].value) : undefined;
+            return { theme: { preset: v('theme.preset'), accent: v('theme.accent'), background: v('theme.background'),
+                              glow: v('theme.glow'), glass: v('theme.glass'), blur: v('theme.blur') },
+                     logo_size: v('logo_size'), logo_radius: v('logo_radius'),
+                     dashboard_title: v('dashboard_title'), server_name: v('server_name'),
+                     logo: v('logo'), favicon: v('favicon') };
+        }
+
+        function appearancePreview(form) {
+            const a = appearanceValues(form);
+            applyTheme(a);                               // the real dashboard behind the window changes live
+            const pv = document.getElementById('apPreview'); if (!pv) return;
+            pv.querySelector('.pv-title').textContent = a.dashboard_title || 'DMR Die N8schicht';
+            pv.querySelector('.pv-sub').textContent = a.server_name || '';
+            pv.querySelector('.pv-logo').src = a.logo || '/static/n8schicht-icon.svg';
+            pv.querySelector('.pv-fav').src = a.favicon || a.logo || '/static/n8schicht-icon.svg';
+            pv.querySelector('.pv-tab-title').textContent = form.elements['page_title'].value || a.dashboard_title || 'DMR Die N8schicht';
+            document.querySelectorAll('#apPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.v === a.theme.preset));
+            const P = THEMES[a.theme.preset] || THEMES.n8;
+            [['theme.accent', P.accent], ['theme.background', P.bg]].forEach(([k, dflt]) => {
+                const t = form.elements[k]; if (!t) return;
+                t.placeholder = dflt;
+                const pick = t.previousElementSibling; if (pick && pick.type === 'color') pick.value = /^#[0-9a-f]{6}$/i.test(t.value) ? t.value : dflt;
+            });
+        }
+
+        function presetSwatches(cur) {
+            const f = setField('theme.preset');
+            return `<div class="presets" id="apPresets">${f.choices.map(([k, label]) => {
+                const p = THEMES[k] || THEMES.n8;
+                return `<button type="button" class="preset ${k === cur ? 'active' : ''}" data-v="${k}" onclick="pickPreset(this)"
+                    style="background: radial-gradient(60px 40px at 15% 0%, ${p.glows[0]}88, transparent), radial-gradient(60px 40px at 100% 0%, ${p.glows[1]}77, transparent), ${p.bg}">
+                    <i style="background:${p.accent}"></i><span>${escapeHtml(label)}</span></button>`; }).join('')}</div>`;
+        }
+        function pickPreset(btn) {
+            const form = btn.closest('form');
+            form.elements['theme.preset'].value = btn.dataset.v;
+            form.classList.add('is-dirty');
+            appearancePreview(form);
+        }
+
+        function imagePicker(f, kind) {
+            const v = f.value || '';
+            return `<div class="set-row is-wide img-row">
+                <label>${escapeHtml(f.label)}</label>
+                <div class="img-pick">
+                    <span class="img-thumb ${kind}"><img src="${escapeHtml(v || '/static/n8schicht-icon.svg')}" alt=""></span>
+                    <div class="img-actions">
+                        <input type="hidden" name="${f.key}" value="${escapeHtml(v)}">
+                        <label class="btn-s btn-primary file-btn">⬆️ Upload image
+                            <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml,image/x-icon,.ico,.svg" hidden
+                                   onchange="uploadBranding('${kind}', this)"></label>
+                        <button type="button" class="btn-s" onclick="removeBranding('${kind}')" ${v ? '' : 'disabled'}>↺ N8 logo</button>
+                        <small class="muted">${escapeHtml(f.help || '')} · PNG, JPEG, WebP, GIF, SVG${kind === 'favicon' ? ', ICO' : ''} · max. 1 MB</small>
+                        <input class="img-url" data-skip="1" placeholder="…or address of an image (https://… or /static/…)" value="${escapeHtml(v.startsWith('/branding/') ? '' : v)}"
+                               onchange="const h=this.closest('.img-pick').querySelector('input[type=hidden]'); h.value=this.value.trim(); this.closest('.img-pick').querySelector('img').src = h.value || '/static/n8schicht-icon.svg'; h.dispatchEvent(new Event('input', {bubbles:true}))">
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        async function uploadBranding(kind, input) {
+            const file = input.files && input.files[0]; if (!file) return;
+            if (file.size > 1024 * 1024) { toast('The image must be smaller than 1 MB', 'err'); return; }
+            const data = await new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(file); });
+            try {
+                const j = await api('POST', `/api/admin/branding/${kind}`, { data });
+                toast(kind === 'logo' ? 'Logo replaced' : 'Browser icon replaced', 'ok');
+                await loadSettingsData(); adminTab('appearance'); loadConfig();
+            } catch (e) { toast(e.message, 'err'); }
+        }
+        async function removeBranding(kind) {
+            try { await api('DELETE', `/api/admin/branding/${kind}`); toast('Back to the N8schicht logo', 'ok');
+                  await loadSettingsData(); adminTab('appearance'); loadConfig(); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        async function adminAppearance() {
+            const sys = await loadSettingsData();
+            const F = k => setField(k);
+            const row = (k, o) => settingInput(F(k), o);
+            const P = THEMES[F('theme.preset').value] || THEMES.n8;
+            setTimeout(() => { const f = document.getElementById('apForm'); if (f) { setWatch(f); appearancePreview(f);
+                f.addEventListener('input', () => appearancePreview(f)); f.addEventListener('change', () => appearancePreview(f)); } });
+            return `${adminBanners(sys)}
+            <form id="apForm" class="ap-layout" onsubmit="event.preventDefault(); saveAppearance(this)">
+                <div class="ap-main">
+                    <section class="tile set-tile">
+                        <div class="set-panel-head"><div><h3 class="set-panel-title">🏷️ Titles</h3>
+                            <p class="set-panel-help">What the header and the browser tab say.</p></div><span class="dirty-tag">unsaved</span></div>
+                        ${row('dashboard_title')}${row('server_name')}${row('server_description')}${row('page_title')}
+                    </section>
+                    <section class="tile set-tile">
+                        <div class="set-panel-head"><div><h3 class="set-panel-title">🎨 Colours</h3>
+                            <p class="set-panel-help">Pick a profile; fine-tune below if you like. You see the result right away.</p></div></div>
+                        <input type="hidden" name="theme.preset" value="${escapeHtml(F('theme.preset').value)}">
+                        ${presetSwatches(F('theme.preset').value)}
+                        ${row('theme.accent', { placeholder: P.accent })}${row('theme.background', { placeholder: P.bg })}
+                        ${row('theme.glow', { slider: true })}${row('theme.glass', { slider: true })}${row('theme.blur')}
+                    </section>
+                    <section class="tile set-tile">
+                        <div class="set-panel-head"><div><h3 class="set-panel-title">🖼️ Logo &amp; browser icon</h3>
+                            <p class="set-panel-help">Upload your own images or go back to the N8schicht logo at any time.</p></div></div>
+                        ${imagePicker(F('logo'), 'logo')}
+                        ${row('logo_size', { slider: true })}${row('logo_radius', { slider: true })}
+                        ${imagePicker(F('favicon'), 'favicon')}
+                    </section>
+                </div>
+                <aside class="ap-side">
+                    <div class="tile ap-preview" id="apPreview">
+                        <h3 class="set-panel-title">👁️ Preview</h3>
+                        <div class="pv-browser"><img class="pv-fav" alt=""><span class="pv-tab-title"></span></div>
+                        <div class="pv-header"><img class="pv-logo logo" alt=""><div><div class="pv-title"></div><div class="pv-sub"></div></div></div>
+                        <div class="pv-row"><span class="pv-chip">✓ Live Data</span><span class="pv-tab">🎙️ Live</span><span class="pv-num">1.287</span></div>
+                        <p class="muted small">The whole dashboard behind this window already shows your changes. Not saved yet? Close the window and everything returns.</p>
+                        <div class="set-actions">
+                            <button type="button" class="btn-s" onclick="resetAppearance()">↺ N8 standard</button>
+                            <button type="submit" class="btn-s btn-primary">💾 Save appearance</button>
+                        </div>
+                    </div>
+                </aside>
+            </form>`;
+        }
+
+        function resetAppearance() {
+            const f = document.getElementById('apForm');
+            const set = (k, v) => { if (f.elements[k]) { if (f.elements[k].type === 'checkbox') f.elements[k].checked = v; else f.elements[k].value = v; } };
+            set('theme.preset', 'n8'); set('theme.accent', ''); set('theme.background', ''); set('theme.glow', 100);
+            set('theme.glass', 50); set('theme.blur', true); set('logo_size', 44); set('logo_radius', 0);
+            f.querySelectorAll('.range-wrap').forEach(w => w.querySelector('output').textContent = w.querySelector('input').value);
+            f.classList.add('is-dirty');
+            appearancePreview(f);
+        }
+
+        async function saveAppearance(form) {
+            try { afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes: collectSettings(form) })); form.classList.remove('is-dirty'); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        // ================= Link menu =================
+        function renderLinks(cfg) {
+            const L = (cfg && cfg.links) || {};
+            const items = (L.enabled && Array.isArray(L.items)) ? L.items.filter(i => i && i.label && i.url) : [];
+            const btn = document.getElementById('linksMenu'), bar = document.getElementById('linksBar');
+            const a = i => `<a href="${escapeHtml(i.url)}" ${i.new_tab !== false && !/^[#/]/.test(i.url) ? 'target="_blank" rel="noopener"' : ''}>`
+                + `<span class="li-ic">${escapeHtml(i.icon || '🔗')}</span>${escapeHtml(i.label)}</a>`;
+            if (!items.length) { btn.hidden = true; bar.hidden = true; return; }
+            if (L.style === 'bar') {
+                btn.hidden = true; bar.hidden = false;
+                bar.innerHTML = items.map(a).join('');
+            } else {
+                bar.hidden = true; btn.hidden = false;
+                btn.querySelector('.links-label').textContent = L.label || '🔗 Links';
+                btn.querySelector('.links-pop').innerHTML = items.map(a).join('');
+            }
+        }
+        function toggleLinks(ev) {
+            ev.stopPropagation();
+            const m = document.getElementById('linksMenu');
+            m.classList.toggle('open');
+        }
+        document.addEventListener('click', ev => { const m = document.getElementById('linksMenu'); if (m && !m.contains(ev.target)) m.classList.remove('open'); });
+
+        let lnItems = [];
+        function lnRows() {
+            const el = document.getElementById('lnList'); if (!el) return;
+            el.innerHTML = lnItems.length ? lnItems.map((it, i) => `
+                <div class="ln-row" data-i="${i}">
+                    <input class="ln-icon" value="${escapeHtml(it.icon || '')}" placeholder="🔗" maxlength="8" title="Emoji in front of the name" oninput="lnSet(${i}, 'icon', this.value)">
+                    <input class="ln-label" value="${escapeHtml(it.label || '')}" placeholder="Name, e.g. N8schicht website" maxlength="40" oninput="lnSet(${i}, 'label', this.value)">
+                    <input class="ln-url" value="${escapeHtml(it.url || '')}" placeholder="https://…" oninput="lnSet(${i}, 'url', this.value)">
+                    <label class="ln-newtab" title="Open in a new browser tab"><span class="switch"><input type="checkbox" ${it.new_tab !== false ? 'checked' : ''} onchange="lnSet(${i}, 'new_tab', this.checked)"><span></span></span> new tab</label>
+                    <span class="ln-move">
+                        <button type="button" class="btn-s" title="Up" onclick="lnMove(${i}, -1)" ${i ? '' : 'disabled'}>↑</button>
+                        <button type="button" class="btn-s" title="Down" onclick="lnMove(${i}, 1)" ${i < lnItems.length - 1 ? '' : 'disabled'}>↓</button>
+                        <button type="button" class="btn-s danger" title="Remove" onclick="lnDel(${i})">🗑</button></span>
+                </div>`).join('') : '<div class="tgs-empty">No links yet. Add the first one below.</div>';
+        }
+        function lnDirty() { const f = document.getElementById('lnForm'); if (f) f.classList.add('is-dirty'); }
+        function lnSet(i, k, v) { lnItems[i][k] = v; lnDirty(); }
+        function lnMove(i, d) { const j = i + d; [lnItems[i], lnItems[j]] = [lnItems[j], lnItems[i]]; lnRows(); lnDirty(); }
+        function lnDel(i) { lnItems.splice(i, 1); lnRows(); lnDirty(); }
+        function lnAdd(tpl) { lnItems.push(tpl || { icon: '🔗', label: '', url: '', new_tab: true }); lnRows(); lnDirty();
+            const rows = document.querySelectorAll('#lnList .ln-label'); if (rows.length) rows[rows.length - 1].focus(); }
+
+        async function adminLinks() {
+            const sys = await loadSettingsData();
+            const F = k => setField(k);
+            lnItems = JSON.parse(JSON.stringify(F('links.items').value || []));
+            setTimeout(() => { lnRows(); const f = document.getElementById('lnForm'); if (f) setWatch(f); });
+            const adv = ['network_info.enabled', 'network_info.button_text', 'network_info.url'].map(k => settingInput(F(k))).join('');
+            return `${adminBanners(sys)}
+            <form id="lnForm" class="tile set-tile" onsubmit="event.preventDefault(); saveLinks(this)">
+                <div class="set-panel-head"><div><h3 class="set-panel-title">🔗 Link menu</h3>
+                    <p class="set-panel-help">${escapeHtml(F('links.enabled') ? 'Your own links in the header: website, chat group, wiki, donation page… Everyone sees them, also without login.' : '')}</p></div>
+                    <span class="dirty-tag">unsaved</span></div>
+                ${settingInput(F('links.enabled'))}${settingInput(F('links.label'))}${settingInput(F('links.style'))}
+                <div class="set-row is-wide" data-depends="links.enabled">
+                    <label>Links <small class="muted">(order = order in the menu)</small></label>
+                    <div id="lnList" class="ln-list"></div>
+                    <div class="ln-add">
+                        <button type="button" class="btn-s btn-primary" onclick="lnAdd()">➕ Add link</button>
+                        <span class="muted small">Quick start:</span>
+                        <button type="button" class="btn-s" onclick="lnAdd({icon:'🌐', label:'Website', url:'https://', new_tab:true})">🌐 Website</button>
+                        <button type="button" class="btn-s" onclick="lnAdd({icon:'💬', label:'Chat group', url:'https://', new_tab:true})">💬 Chat</button>
+                        <button type="button" class="btn-s" onclick="lnAdd({icon:'✉️', label:'Contact', url:'mailto:', new_tab:false})">✉️ E-mail</button>
+                        <button type="button" class="btn-s" onclick="lnAdd({icon:'🛠️', label:'How to connect', url:'#config', new_tab:false})">🛠️ Setup tab</button>
+                    </div>
+                </div>
+                <details class="set-adv"><summary>Advanced options <span class="muted">(single extra button)</span></summary>${adv}</details>
+                <div class="set-actions"><button type="submit" class="btn-s btn-primary">💾 Save links</button></div>
+            </form>`;
+        }
+
+        async function saveLinks(form) {
+            const changes = collectSettings(form);
+            changes['links.items'] = lnItems;
+            try { afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes })); form.classList.remove('is-dirty');
+                  lnItems = JSON.parse(JSON.stringify((setField('links.items') || {}).value || [])); lnRows(); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        // ================= OpenBridge editor (admin) =================
+        // Guided form for dmr.openbridge_connections. Options appear depending on the
+        // protocol and the talkgroup filter; the raw JSON stays available for experts.
+        const obe = { trunks: [], idx: 0, names: {}, q: '', show: 'all', limit: 150, newTs: 2 };
+        const OBP_PROTOCOLS = [
+            ['freedmr', '🟢 FreeDMR v5 (FDMR+, FDMR-Secure-Server)'],
+            ['classic', '⚪ Classic OpenBridge (Brandmeister, HBlink3)'],
+        ];
+
+        function obeBlank() {
+            return { enabled: true, name: `OBP-${obe.trunks.length + 1}`, description: '', network_id: 2624,
+                     local_address: '0.0.0.0', local_port: 51084, target_address: '', target_port: 62046, passphrase: '',
+                     preserve_source_peer: false, enhanced_obp: true, proto_ver: 5, relax_checks: true,
+                     all_talkgroups: true, default_slot: 2, talkgroup_slots: {} };
+        }
+        const obeProto = t => (t.enhanced_obp || (t.proto_ver || 1) > 1) ? 'freedmr' : 'classic';
+        const obeCur = () => obe.trunks[obe.idx];
+
+        async function adminObp() {
+            const sys = await loadSettingsData();
+            obe.trunks = JSON.parse(JSON.stringify((setField('dmr.openbridge_connections') || {}).value || []));
+            if (obe.idx >= obe.trunks.length) obe.idx = 0;
+            try { obe.names = (await (await fetch('/api/talkgroups', { credentials: 'same-origin' })).json()).names || {}; } catch (e) { obe.names = state.tgNames || {}; }
+            setTimeout(obeRender);
+            return `${adminBanners(sys)}<div id="obeRoot"></div>`;
+        }
+
+        function obeRender() {
+            const root = document.getElementById('obeRoot'); if (!root) return;
+            const list = obe.trunks.map((t, i) => {
+                const all = t.all_talkgroups, n = Object.keys(t.talkgroup_slots || {}).length;
+                return `<button type="button" class="obe-item ${i === obe.idx ? 'active' : ''}" onclick="obe.idx=${i}; obeRender()">
+                    <span class="obe-dot ${t.enabled === false ? 'off' : 'on'}"></span>
+                    <span class="obe-name">${escapeHtml(t.name || 'unnamed')}</span>
+                    <span class="obe-meta">${obeProto(t) === 'freedmr' ? 'FreeDMR v5' : 'Classic'} · ${all ? 'all TGs' : n.toLocaleString('de-DE') + ' TGs'}</span></button>`;
+            }).join('');
+            root.innerHTML = `
+                <div class="obe-layout">
+                    <aside class="obe-list tile">
+                        <h3 class="set-panel-title">↔️ Trunks</h3>
+                        ${list || '<p class="muted small">No trunk yet.</p>'}
+                        <button type="button" class="btn-s btn-primary" onclick="obe.trunks.push(obeBlank()); obe.idx = obe.trunks.length - 1; obeRender(); obeDirty()">➕ New trunk</button>
+                    </aside>
+                    <div class="obe-main">${obe.trunks.length ? obeFormHtml(obeCur()) : `<div class="tile"><div class="tgs-empty">
+                        OpenBridge connects this server with another network, e.g. a FreeDMR server.<br>Click <b>➕ New trunk</b> to start.</div></div>`}
+                        <details class="tile set-adv obe-json"><summary>🧑‍💻 Expert: all trunks as JSON</summary>
+                            <textarea class="json-edit" id="obeJson" rows="10" spellcheck="false">${escapeHtml(JSON.stringify(obe.trunks, null, 2))}</textarea>
+                            <div class="set-actions"><button type="button" class="btn-s" onclick="obeFromJson()">⤴ Take over JSON into the form</button></div>
+                        </details>
+                        <div class="set-actions obe-save">
+                            <span class="dirty-tag" id="obeDirty">unsaved</span>
+                            <button type="button" class="btn-s btn-primary" onclick="obeSave()">💾 Save trunks</button>
+                        </div>
+                    </div>
+                </div>`;
+            if (obe.trunks.length) { obeApplyVisibility(); obeTgRender(); }
+        }
+
+        function obeFormHtml(t) {
+            const proto = obeProto(t);
+            const sw = (k, label, help, dep) => `<div class="set-row is-bool" ${dep ? `data-show="${dep}"` : ''}>
+                <label>${label}</label><label class="switch"><input type="checkbox" data-k="${k}" ${t[k] ? 'checked' : ''}><span></span></label>
+                ${help ? `<small class="muted">${help}</small>` : ''}</div>`;
+            const inp = (k, label, help, type = 'text', extra = '') => `<div class="set-row" ${extra}>
+                <label>${label}</label><input data-k="${k}" type="${type}" value="${escapeHtml(t[k] ?? '')}">
+                ${help ? `<small class="muted">${help}</small>` : ''}</div>`;
+            return `
+            <form class="tile set-tile obe-form" id="obeForm" onsubmit="event.preventDefault(); obeSave()" oninput="obeInput(event)" onchange="obeInput(event)">
+                <div class="set-panel-head"><div><h3 class="set-panel-title">${escapeHtml(t.name || 'Trunk')}</h3>
+                    <p class="set-panel-help">Fill in from top to bottom. The far end gets a ready-made stanza at the end.</p></div>
+                    <button type="button" class="btn-s danger" onclick="obeDelete(this)">🗑 Delete trunk</button></div>
+
+                <fieldset><legend>① Basics</legend>
+                    ${sw('enabled', 'Trunk active', 'Off = keep the settings but do not connect')}
+                    ${inp('name', 'Name', 'Shown in the dashboard, e.g. OBP-Funkerportal')}
+                    ${inp('description', 'Description', 'Optional, for you')}
+                </fieldset>
+
+                <fieldset><legend>② Protocol</legend>
+                    <div class="set-row"><label>Far end runs</label>
+                        <select data-k="_proto">${OBP_PROTOCOLS.map(([v, l]) => `<option value="${v}" ${v === proto ? 'selected' : ''}>${l}</option>`).join('')}</select>
+                        <small class="muted" data-show="freedmr">The far end has <code>ENHANCED_OBP: True</code> / <code>PROTO_VER: 5</code>. Keep-alives, version check and source quench are on.</small>
+                        <small class="muted" data-show="classic">Plain DMRD with HMAC, no keep-alives. For Brandmeister and HBlink3.</small></div>
+                    ${sw('enhanced_obp', 'Keep-alives (enhanced OBP)', 'Must match <code>ENHANCED_OBP</code> of the far end', 'freedmr')}
+                    ${sw('relax_checks', 'Accept changing address (relaxed checks)', 'Helps when the far end sits behind NAT. Matches <code>RELAX_CHECKS: True</code>', 'freedmr')}
+                    ${sw('preserve_source_peer', 'Send the real repeater ID', 'Off = our network ID (Brandmeister standard)', 'classic')}
+                </fieldset>
+
+                <fieldset><legend>③ Connection</legend>
+                    <div class="obe-grid">
+                        ${inp('target_address', 'Far end address', 'Host name or IP of the other server')}
+                        ${inp('target_port', 'Far end port (UDP)', 'Their <code>PORT</code>', 'number')}
+                        ${inp('local_port', 'Our port (UDP)', 'Their <code>TARGET_PORT</code>; open it in the firewall', 'number')}
+                        ${inp('network_id', 'Network ID', 'Same number as <code>NETWORK_ID</code> on the far end', 'number')}
+                    </div>
+                    <div class="set-row"><label>Passphrase</label>
+                        <span class="pw-wrap"><input type="password" data-k="passphrase" value="${escapeHtml(t.passphrase || '')}" autocomplete="off">
+                        <button type="button" class="btn-s pw-eye" onclick="const i=this.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'">👁</button></span>
+                        <small class="muted" id="obePwHint">Identical on both sides.</small></div>
+                    <details class="set-adv"><summary>Advanced options</summary>
+                        ${inp('local_address', 'Bind address', '0.0.0.0 = all network interfaces')}
+                        ${inp('server_id', 'Source server ID', 'FreeDMR only; empty = network ID', 'number', 'data-show="freedmr"')}
+                    </details>
+                </fieldset>
+
+                <fieldset><legend>④ Talkgroups</legend>
+                    <div class="set-row"><label>Talkgroup filter</label>
+                        <select data-k="_tgmode">
+                            <option value="all" ${t.all_talkgroups ? 'selected' : ''}>🌐 All talkgroups – no filter</option>
+                            <option value="list" ${t.all_talkgroups ? '' : 'selected'}>☑️ Only selected talkgroups</option>
+                        </select></div>
+                    <div data-show="all">
+                        <div class="set-row"><label>Timeslot on our side</label>
+                            <select data-k="default_slot"><option value="1" ${t.default_slot == 1 ? 'selected' : ''}>TS1</option><option value="2" ${t.default_slot != 1 ? 'selected' : ''}>TS2</option></select>
+                            <small class="muted">Every talkgroup runs over the trunk. Local ones never leave the server: 1–79, 4000, 5000, 9990–9999. Only one active trunk may be unfiltered.</small></div>
+                    </div>
+                    <div data-show="list" class="obe-tg">
+                        <div class="obe-tg-tools">
+                            <input class="tgdir-search" id="obeTgQ" placeholder="🔎 Number or name, e.g. 262 or Bayern" value="${escapeHtml(obe.q)}" oninput="obe.q=this.value; obe.limit=150; obeTgRender()">
+                            <div class="tgs-seg" id="obeTgShow">${[['all', 'All'], ['on', '☑️ Selected'], ['off', 'Not selected']].map(([v, l]) =>
+                                `<button type="button" data-v="${v}" class="${obe.show === v ? 'active' : ''}" onclick="obe.show='${v}'; obe.limit=150; obeTgRender()">${l}</button>`).join('')}</div>
+                        </div>
+                        <div class="obe-tg-bulk">
+                            <span class="obe-count" id="obeTgCount"></span>
+                            <label class="muted small">new ones on <select id="obeNewTs" onchange="obe.newTs=+this.value"><option value="1" ${obe.newTs === 1 ? 'selected' : ''}>TS1</option><option value="2" ${obe.newTs === 2 ? 'selected' : ''}>TS2</option></select></label>
+                            <button type="button" class="btn-s" onclick="obeBulk(true)">☑️ Select all shown</button>
+                            <button type="button" class="btn-s" onclick="obeBulk(false)">☐ Clear all shown</button>
+                            <span class="obe-addtg"><input id="obeAddTg" type="number" min="1" placeholder="TG not in the list"><button type="button" class="btn-s" onclick="obeAddTg()">➕</button></span>
+                        </div>
+                        <div class="obe-tglist" id="obeTgList"></div>
+                        <div class="tgs-more" id="obeTgMore" hidden><button type="button" onclick="obe.limit=1e9; obeTgRender()"></button></div>
+                    </div>
+                </fieldset>
+
+                <fieldset><legend>⑤ For the far end</legend>
+                    <p class="muted small">Send this to the sysop of the other server (FreeDMR <code>hblink.cfg</code>). Our address comes from the Configuration tab setting or the subtitle.</p>
+                    <pre class="obe-stanza" id="obeStanza"></pre>
+                    <div class="set-actions"><button type="button" class="btn-s" onclick="navigator.clipboard.writeText(document.getElementById('obeStanza').textContent).then(() => toast('Copied', 'ok'))">⧉ Copy</button></div>
+                </fieldset>
+            </form>`;
+        }
+
+        function obeApplyVisibility() {
+            const f = document.getElementById('obeForm'); if (!f) return;
+            const t = obeCur(), proto = obeProto(t), mode = t.all_talkgroups ? 'all' : 'list';
+            f.querySelectorAll('[data-show]').forEach(el => { el.hidden = ![proto, mode].includes(el.dataset.show); });
+            const pw = (t.passphrase || '').length;
+            const hint = document.getElementById('obePwHint');
+            hint.innerHTML = proto === 'freedmr' && pw > 20 ? '⚠️ FreeDMR uses only the first 20 characters – use at most 20.'
+                : pw === 0 ? 'Required. Identical on both sides.' : 'Identical on both sides.';
+            hint.classList.toggle('warn', proto === 'freedmr' && pw > 20);
+            document.getElementById('obeStanza').textContent = obeStanza(t);
+            const j = document.getElementById('obeJson'); if (j) j.value = JSON.stringify(obe.trunks, null, 2);
+        }
+
+        function obeInput(ev) {
+            const el = ev.target, k = el.dataset && el.dataset.k; if (!k) return;
+            const t = obeCur();
+            if (k === '_proto') {
+                if (el.value === 'freedmr') Object.assign(t, { enhanced_obp: true, proto_ver: 5, relax_checks: true, preserve_source_peer: false });
+                else Object.assign(t, { enhanced_obp: false, proto_ver: 1, relax_checks: false });
+                obeRenderKeepScroll();
+            } else if (k === '_tgmode') {
+                t.all_talkgroups = el.value === 'all';
+                if (!t.all_talkgroups && !Object.keys(t.talkgroup_slots || {}).length) obe.show = 'all';
+            } else if (el.type === 'checkbox') t[k] = el.checked;
+            else if (['target_port', 'local_port', 'network_id', 'server_id', 'default_slot'].includes(k)) {
+                if (el.value === '') delete t[k]; else t[k] = Number(el.value);
+            } else t[k] = el.value;
+            if (k === 'name') {
+                const it = document.querySelector('.obe-item.active .obe-name'); if (it) it.textContent = el.value || 'unnamed';
+                const h = document.querySelector('#obeForm .set-panel-title'); if (h) h.textContent = el.value || 'Trunk';
+            }
+            obeApplyVisibility(); obeDirty();
+            if (k === '_tgmode') obeTgRender();
+        }
+        function obeRenderKeepScroll() { const b = document.getElementById('adminBody'); const y = b ? b.scrollTop : 0; obeRender(); if (b) b.scrollTop = y; }
+        function obeDirty() { const d = document.getElementById('obeDirty'); if (d) d.classList.add('on'); }
+
+        function obeTgRows() {
+            const t = obeCur(), sel = t.talkgroup_slots || {};
+            const keys = new Set([...Object.keys(obe.names).filter(k => Number(k) >= 80), ...Object.keys(sel)]);
+            let rows = [...keys].map(k => ({ tg: k, name: obe.names[k] || '', ts: sel[k] }));
+            const q = obe.q.trim().toLowerCase();
+            if (q) rows = rows.filter(r => r.tg.startsWith(q) || r.name.toLowerCase().includes(q));
+            if (obe.show === 'on') rows = rows.filter(r => r.ts);
+            if (obe.show === 'off') rows = rows.filter(r => !r.ts);
+            return rows.sort((a, b) => (b.ts ? 1 : 0) - (a.ts ? 1 : 0) || Number(a.tg) - Number(b.tg));   // selected first
+        }
+        function obeTgRender() {
+            const el = document.getElementById('obeTgList'); if (!el) return;
+            const t = obeCur(), rows = obeTgRows(), sel = t.talkgroup_slots || {};
+            const n = Object.keys(sel).length, total = Object.keys(obe.names).filter(k => Number(k) >= 80).length;
+            document.getElementById('obeTgCount').innerHTML = `<b>${n.toLocaleString('de-DE')}</b> of ${total.toLocaleString('de-DE')} known talkgroups selected`;
+            el.innerHTML = rows.length ? rows.slice(0, obe.limit).map(r => `
+                <label class="obe-tgrow ${r.ts ? 'on' : ''}" data-tg="${r.tg}">
+                    <input type="checkbox" ${r.ts ? 'checked' : ''} onchange="obeTgToggle('${r.tg}', this.checked, this)">
+                    <b>${r.tg}</b><span class="n">${escapeHtml(r.name)}</span>
+                    <select onclick="event.stopPropagation()" onchange="obeTgTs('${r.tg}', this.value)" ${r.ts ? '' : 'disabled'}>
+                        <option value="1" ${String(r.ts) === '1' ? 'selected' : ''}>TS1</option><option value="2" ${String(r.ts) !== '1' ? 'selected' : ''}>TS2</option></select>
+                </label>`).join('') : '<div class="tgs-empty">No talkgroup found.</div>';
+            const more = document.getElementById('obeTgMore');
+            more.hidden = rows.length <= obe.limit;
+            more.querySelector('button').textContent = `Show all ${rows.length.toLocaleString('de-DE')}`;
+        }
+        function obeTgToggle(tg, on, box) {
+            const t = obeCur(); t.talkgroup_slots = t.talkgroup_slots || {};
+            if (on) t.talkgroup_slots[tg] = String(obe.newTs); else delete t.talkgroup_slots[tg];
+            const row = box.closest('.obe-tgrow'); row.classList.toggle('on', on);
+            const s = row.querySelector('select'); s.disabled = !on; if (on) s.value = String(obe.newTs);
+            const n = Object.keys(t.talkgroup_slots).length;
+            document.getElementById('obeTgCount').querySelector('b').textContent = n.toLocaleString('de-DE');
+            obeApplyVisibility(); obeDirty();
+        }
+        function obeTgTs(tg, ts) { obeCur().talkgroup_slots[tg] = String(ts); obeApplyVisibility(); obeDirty(); }
+        function obeBulk(on) {
+            const t = obeCur(); t.talkgroup_slots = t.talkgroup_slots || {};
+            obeTgRows().forEach(r => { if (on) t.talkgroup_slots[r.tg] = t.talkgroup_slots[r.tg] || String(obe.newTs); else delete t.talkgroup_slots[r.tg]; });
+            obeTgRender(); obeApplyVisibility(); obeDirty();
+        }
+        function obeAddTg() {
+            const i = document.getElementById('obeAddTg'), v = parseInt(i.value, 10);
+            if (!(v >= 1 && v <= 16777215)) { toast('Talkgroup number 1–16777215', 'err'); return; }
+            const t = obeCur(); t.talkgroup_slots = t.talkgroup_slots || {}; t.talkgroup_slots[String(v)] = String(obe.newTs);
+            i.value = ''; obe.q = String(v); document.getElementById('obeTgQ').value = obe.q; obeTgRender(); obeApplyVisibility(); obeDirty();
+        }
+
+        function obeStanza(t) {
+            const host = ((setField('connect.host') || {}).value || (setField('server_name') || {}).value || 'our.server.example').trim();
+            const fd = obeProto(t) === 'freedmr';
+            const tgs = t.all_talkgroups ? 'PERMIT:ALL' : 'PERMIT:' + (Object.keys(t.talkgroup_slots || {}).sort((a, b) => a - b).join(',') || 'ALL');
+            return `[${t.name || 'OBP-N8schicht'}]
+MODE: OPENBRIDGE
+ENABLED: True
+IP:
+PORT: ${t.target_port || ''}
+NETWORK_ID: ${t.network_id || ''}
+PASSPHRASE: ${t.passphrase || ''}
+TARGET_IP: ${host}
+TARGET_PORT: ${t.local_port || ''}
+USE_ACL: True
+SUB_ACL: PERMIT:ALL
+TGID_ACL: ${tgs}
+RELAX_CHECKS: ${fd && t.relax_checks ? 'True' : 'False'}
+ENHANCED_OBP: ${fd && t.enhanced_obp ? 'True' : 'False'}
+PROTO_VER: ${fd ? 5 : 1}`;
+        }
+
+        function obeDelete(btn) {
+            if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Really delete?'; return; }
+            obe.trunks.splice(obe.idx, 1); obe.idx = 0; obeRender(); obeDirty();
+        }
+        function obeFromJson() {
+            try {
+                const v = JSON.parse(document.getElementById('obeJson').value || '[]');
+                if (!Array.isArray(v)) throw new Error('a list [ … ] is expected');
+                obe.trunks = v; obe.idx = 0; obeRender(); obeDirty(); toast('Taken over – check and save', 'ok');
+            } catch (e) { toast('JSON: ' + e.message, 'err'); }
+        }
+        async function obeSave() {
+            const clean = obe.trunks.map(t => {
+                const o = { ...t };
+                if (!o.all_talkgroups) delete o.default_slot;
+                if (!o.server_id) delete o.server_id;
+                if (!(o.enhanced_obp || o.proto_ver > 1)) { delete o.enhanced_obp; delete o.relax_checks; o.proto_ver = 1; }
+                return o;
+            });
+            try {
+                afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes: { 'dmr.openbridge_connections': clean } }));
+                const d = document.getElementById('obeDirty'); if (d) d.classList.remove('on');
+            } catch (e) { toast(e.message, 'err'); }
         }
 
         async function restartDmr() {
@@ -3427,8 +4216,10 @@
                 const tgs = o.talkgroups || {};
                 const tgKeys = Object.keys(tgs);
                 const ts1 = tgKeys.filter(t => String(tgs[t]) === '1').length, ts2 = tgKeys.length - ts1;
-                const tgChip = `<span class="obp-chip">📡 ${n(tgKeys.length)} TGs`
-                    + (tgKeys.length ? ` <span class="dim">· ${obpTsSplit(ts1, ts2)}</span>` : '') + `</span>`;
+                const tgChip = o.all_talkgroups
+                    ? `<span class="obp-chip">📡 All TGs <span class="dim">· no filter · TS${o.default_slot || 2}</span></span>`
+                    : `<span class="obp-chip">📡 ${n(tgKeys.length)} TGs`
+                      + (tgKeys.length ? ` <span class="dim">· ${obpTsSplit(ts1, ts2)}</span>` : '') + `</span>`;
                 const t = (state.obpToday || {})[o.connection_name];
                 const todayChip = t
                     ? `<span class="obp-chip"><span class="dim">Today</span> <span class="rx">⬇ ${n(t.rx)}</span> <span class="tx">⬆ ${n(t.tx)}</span>`
@@ -4405,11 +5196,17 @@
                 { connection_name: 'OBP-Funkerportal', network_id: 2624, status: 'connected',
                   connected_at: now - 8130, last_activity: now - 4,
                   remote_address: 'freedmr.funkerportal.de', remote_port: 62046, local_port: 51084,
-                  description: 'N8schicht-Bridge zu freedmr.funkerportal.de (FreeDMR, klassisches OBP)',
+                  description: 'N8schicht-Bridge zum Funkerportal (FreeDMR, DMRE v5)',
                   preserve_source_peer: false, enhanced_obp: true, alive: true, last_keepalive: now - 4,
                   peer_version: 5, tx_version: 5, protocol: 'FreeDMR OBP v5 enhanced relaxed',
-                  talkgroups: demoObpTgs() },
+                  all_talkgroups: true, default_slot: 2, talkgroups: {} },
             ];
+
+            // Like the server does for visitors: addresses and ports only for admins (?demo&admin shows them)
+            if (!new URLSearchParams(location.search).has('admin')) {
+                const strip = o => ['remote_address', 'remote_port', 'local_address', 'local_port', 'address', 'port'].forEach(k => delete o[k]);
+                state.openbridges.forEach(strip); state.outbounds.forEach(strip); state.repeaters.forEach(strip);
+            }
 
             state.streams = [
                 // Call A: KS-Statewide (3120) inbound on the trunk → devices (TS2)
@@ -4479,7 +5276,7 @@
         function refreshTgViews() {
             try { updateLastHeard(state.last_heard); updateRepeaters(state.repeaters); } catch (e) {}
             try {
-                if (obpDemo() && obpList()[0]) { obpList()[0].talkgroups = demoObpTgs(); updateOpenbridges(state.openbridges); }
+                if (obpDemo() && obpList()[0] && !obpList()[0].all_talkgroups) { obpList()[0].talkgroups = demoObpTgs(); updateOpenbridges(state.openbridges); }
                 if (obp.visible) loadObp();
             } catch (e) {}
             if (tgd.data) renderTgDir();
@@ -4615,12 +5412,12 @@
                     ${o.description ? `<div class="desc">${escapeHtml(o.description)}</div>` : ''}</div>
                 <div></div>
                 <div class="obp-facts">
-                    <div class="obp-fact wide"><div class="k">Far end</div><div class="v">${escapeHtml(o.remote_address || '–')}<small>:${o.remote_port || '–'}</small></div></div>
-                    <div class="obp-fact"><div class="k">Local port</div><div class="v">${o.local_port ? 'UDP ' + o.local_port : '–'}</div></div>
+                    <div class="obp-fact wide"><div class="k">Far end</div><div class="v">${o.remote_address ? `${escapeHtml(o.remote_address)}<small>:${o.remote_port || '–'}</small>` : fmtAddr()}</div></div>
+                    <div class="obp-fact"><div class="k">Local port</div><div class="v">${o.local_port ? 'UDP ' + o.local_port : fmtAddr()}</div></div>
                     <div class="obp-fact"><div class="k">Network ID</div><div class="v">${o.network_id ?? '–'}</div></div>
                     <div class="obp-fact"><div class="k">Up since</div><div class="v" data-obp-up="${up && o.connected_at ? o.connected_at : ''}">${up && o.connected_at ? formatDuration(Date.now() / 1000 - o.connected_at) : '–'}</div></div>
                     <div class="obp-fact"><div class="k">Last traffic</div><div class="v">${ago(o.last_activity)}</div></div>
-                    <div class="obp-fact"><div class="k">Talkgroups</div><div class="v">${n(tgCount)} <small>${obpTsSplit(t.ts1, t.ts2)}</small></div></div>
+                    <div class="obp-fact"><div class="k">Talkgroups</div><div class="v">${o.all_talkgroups ? `All <small>no filter · TS${o.default_slot || 2}</small>` : `${n(tgCount)} <small>${obpTsSplit(t.ts1, t.ts2)}</small>`}</div></div>
                     <div class="obp-fact"><div class="k">Protocol</div><div class="v" style="font-size:13px">${escapeHtml(obpProto(o))}
                         ${o.enhanced_obp ? `<br><small>keep-alive <span data-obp-ka="${o.last_keepalive || ''}">${o.last_keepalive ? ago(o.last_keepalive) : '<span style="color:var(--amber)">none yet</span>'}</span></small>` : ''}</div></div>
                 </div>
@@ -4640,7 +5437,7 @@
                         <div class="tgs-kpi"><div class="k">⬆️ Sent</div><div class="v">${n(T.tx.calls)}</div><div class="obp-kpi-sub">${tgsFmtDur(txD, true)} · ${n(T.tx.users)} speakers</div></div>
                         <div class="tgs-kpi"><div class="k">⏱️ Airtime</div><div class="v">${tgsFmtDur(all, true)}</div>
                             <div class="obp-tgbar" title="Received / sent">${all ? `<div style="width:${rxD / all * 100}%;background:${OBP_RX}"></div><div style="flex:1;background:${OBP_TX}"></div>` : ''}</div></div>
-                        <div class="tgs-kpi"><div class="k">📡 Active TGs</div><div class="v">${n(S.active_talkgroups)}</div><div class="obp-kpi-sub">of ${n(tgCount)} on the trunk</div></div>
+                        <div class="tgs-kpi"><div class="k">📡 Active TGs</div><div class="v">${n(S.active_talkgroups)}</div><div class="obp-kpi-sub">${o.all_talkgroups ? 'no talkgroup filter' : `of ${n(tgCount)} on the trunk`}</div></div>
                     </div>
                     <div class="tgs-grid">
                         <div class="tgs-panel"><h3><span>Top talkgroups</span><small>${obp.metric === 'calls' ? 'by calls' : 'by airtime'}</small></h3><div class="tgs-chart" id="obpBars"></div></div>
@@ -4667,7 +5464,8 @@
 
             html += `<div class="card obp-card">
                 <h3 class="obp-sub-h" style="margin-top:0">Talkgroups on the trunk <span style="color:var(--accent)" id="obpTgCount"></span></h3>
-                <div class="obp-tools">
+                ${o.all_talkgroups ? `<p class="obp-nofilter">🌐 <b>No filter:</b> every talkgroup runs over this trunk on TS${o.default_slot || 2}, except the local ones (1–79, 4000, 5000, 9990–9999).${tgCount ? ' Talkgroups with their own timeslot:' : ''}</p>` : ''}
+                <div class="obp-tools" ${o.all_talkgroups && !tgCount ? 'hidden' : ''}>
                     <input type="text" id="obpTgSearch" class="tgdir-search" placeholder="🔎 Number or name, e.g. 262 or Bayern" autocomplete="off" value="${escapeHtml(obp.tgQ)}">
                     ${obpSeg('obpTgFilter', [['all', 'All'], ['active', '📡 Active'], ['1', 'TS1'], ['2', 'TS2']], obp.tgF)}
                 </div>
@@ -4698,6 +5496,7 @@
             const hot = new Set(((t.summary || {}).top || []).map(r => r.tg));
             const q = obp.tgQ.trim().toLowerCase();
             let rows = t.talkgroups || [];
+            if (t.all_talkgroups && !rows.length) { document.getElementById('obpTgList').innerHTML = ''; document.getElementById('obpTgMore').style.display = 'none'; document.getElementById('obpTgCount').textContent = ''; return; }
             if (obp.tgF === '1' || obp.tgF === '2') rows = rows.filter(r => String(r[1]) === obp.tgF);
             if (obp.tgF === 'active') rows = rows.filter(r => hot.has(r[0]));
             if (q) rows = rows.filter(r => String(r[0]).startsWith(q) || (r[2] || '').toLowerCase().includes(q));
@@ -5111,8 +5910,9 @@
             const live = obpList()[0] || {};
             const tgsMap = live.talkgroups || demoObpTgs();
             const tgArr = Object.keys(tgsMap).map(Number).sort((a, b) => a - b).map(t => [t, Number(tgsMap[t]), tgName(t)]);
-            return { stats: true, range, trunks: [{ connection_name: 'OBP-Funkerportal', network_id: 2624, remote_address: 'freedmr.funkerportal.de', remote_port: 62046,
-                local_port: 51084, description: live.description, preserve_source_peer: false, status: 'connected', connected_at: live.connected_at, last_activity: live.last_activity,
+            return { stats: true, range, trunks: [{ connection_name: 'OBP-Funkerportal', network_id: 2624,
+                ...(new URLSearchParams(location.search).has('admin') ? { remote_address: 'freedmr.funkerportal.de', remote_port: 62046, local_port: 51084 } : {}),
+                description: live.description, preserve_source_peer: false, status: 'connected', connected_at: live.connected_at, last_activity: live.last_activity,
                 talkgroup_count: tgArr.length, ts1: tgArr.filter(r => r[1] === 1).length, ts2: tgArr.filter(r => r[1] === 2).length,
                 today: demoObpToday()['OBP-Funkerportal'], talkgroups: tgArr,
                 summary: { range, bucket: base.bucket, buckets: base.buckets, data_calls: 3, active_talkgroups: hourly ? 23 : 64,

@@ -323,6 +323,25 @@ for `tg_stats.retention_days` (admin area → Talkgroup statistics). `origins`
 splits calls/airtime into local repeaters, OpenBridge and outbound links;
 `obp_share` per talkgroup is the airtime share that came in over OpenBridge.
 
+### Branding: GET /branding/logo, GET /branding/favicon
+Logo and favicon uploaded in the admin area (**🎨 Appearance**), stored in SQLite
+(`branding` table) and served with a strict Content-Security-Policy. Without an
+upload the N8schicht logo is returned. Admin-only: `POST /api/admin/branding/{logo|favicon}`
+with `{"data": "data:image/png;base64,…"}` (PNG, JPEG, GIF, WebP, SVG without scripts or
+external links, ICO; max. 1 MB) sets the `logo` / `favicon` setting to the new image;
+`DELETE` goes back to the default.
+
+### Appearance and link menu (settings)
+`theme.preset` (n8, ocean, aurora, ember, violet, graphite), `theme.accent`, `theme.background`,
+`theme.glow`, `theme.glass`, `theme.blur`, `logo_size`, `logo_radius`, `page_title` and
+`links.enabled` / `.label` / `.style` (`menu` or `bar`) / `.items` (`label`, `url`, `icon`, `new_tab`)
+are part of the public `GET /api/config` and applied by the page.
+
+### Privacy
+Addresses and ports (`address`, `ip`, `port`, `remote_address`, `remote_port`, `local_address`,
+`local_port`, `target_address`, `target_port`) of repeaters, hotspots, links and trunks are removed
+on the server for everyone who is not an admin – REST and WebSocket alike.
+
 ### GET /api/openbridge?range=today|24h|7d|30d[&trunk=NAME][&brief=1]
 OpenBridge trunks: name, network ID, far end, local port, description, status,
 talkgroup count per timeslot and today's calls per direction. Without `brief`

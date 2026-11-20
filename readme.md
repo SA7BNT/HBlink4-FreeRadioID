@@ -28,11 +28,13 @@ Ein DMR-Server für Repeater und Hotspots (HomeBrew-Protokoll, z. B. MMDVM, Pi-S
 | 🛡️ **FreeRadioID Secure Login** | Stationen melden sich mit ihrem persönlichen Passwort von [FreeRadioID.net](https://freeradioid.net) an und haben volle Rechte. Wer das allgemeine Passwort benutzt, ist **Gast** und darf nur auf die Gast-Talkgroups senden. |
 | 🗂️ **Talkgroup-Verzeichnis** | rund 1.400 Talkgroup-Namen aus der [N8schicht-Liste](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json), mit Suche, Aktivität und eigenen Namen; die Namen stehen auch in Last Heard, auf den Karten und in der Statistik |
 | 📈 **Talkgroup-Statistik** | Eigener Tab: welche Talkgroups wie viel laufen, Sprechzeit und Gespräche heute, über 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
-| ↔️ **OpenBridge-Tab** | Trunks zu anderen Netzen (z. B. FreeDMR) mit Status, Gegenstelle, Verkehr in beide Richtungen, Top-Talkgroups, letzten Gesprächen und durchsuchbarer Talkgroup-Liste. In der Live-Ansicht nur kompakt, in der Statistik mitgezählt. |
+| ↔️ **OpenBridge** | FreeDMR-kompatibel (`DMRE` v5, Keep-alives) und klassisch; im Adminbereich als Formular mit Protokoll-Auswahl, „alle Talkgroups“ oder Auswahl aus der Talkgroup-Liste. Tab im Dashboard mit Status, Gegenstelle, Verkehr in beide Richtungen, Top-Talkgroups, letzten Gesprächen und durchsuchbarer Talkgroup-Liste. In der Live-Ansicht nur kompakt, in der Statistik mitgezählt. |
 | 🛠️ **Configuration-Tab** | Server, Port, FreeRadioID- und Gast-Passwort, Talkgroups und fertige Einstellungen für Pi-Star/WPSD und MMDVMHost, zum Kopieren |
 | 🎙️ **Live-Dashboard** | Wer gerade spricht, steht immer ganz oben (**ON AIR**). Last Heard zeigt Avatare und FreeRadioID-Profile. Die Darstellung ist für Smartphone und Desktop optimiert. |
+| 🎨 **Eigenes Aussehen** | Farbprofile, eigene Akzent- und Hintergrundfarbe, Logo und Favicon hochladen, Titel und Browser-Tab, alles mit Live-Vorschau |
+| 🔗 **Link-Menü** | eigene Links (Webseite, Chat, Kontakt …) als Menü oder Knopfreihe in der Kopfzeile |
 | ⚙️ **Adminbereich statt Config-Dateien** | Alle Einstellungen von Dashboard **und** DMR-Server liegen in SQLite und werden im Browser geändert. Änderungen am DMR-Server wirken sofort, ohne SSH. |
-| 👥 **Benutzer & Rechte** | Superadmin, Admins und Benutzer. **IP-Adressen sehen nur Admins.** Dazu Sitzungen und ein Protokoll aller Änderungen. |
+| 👥 **Benutzer & Rechte** | Superadmin, Admins und Benutzer. **IP-Adressen und Ports sehen nur Admins.** Dazu Sitzungen und ein Protokoll aller Änderungen. |
 | 📘 **FreeRadioID-ID-Listen** | Rufzeichen kommen standardmäßig aus der Liste von FreeRadioID.net (radioid.net plus FreeRadioID-IDs). |
 | 🔒 **HTTPS** | Let's-Encrypt-Zertifikat, automatisch geholt und erneuert |
 | 🧭 **Geführte Installation** | `scripts/setup.sh` fragt alles ab, richtet die Dienste ein und prüft am Ende das Ergebnis. |
@@ -77,8 +79,12 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 <td><img src="docs/images/openbridge-card.png" alt="OpenBridge-Karte"><br><b>Kompakt in der Live-Ansicht</b>: Anzahl der Talkgroups, Gespräche heute, laufende Gespräche.</td>
 </tr>
 <tr>
-<td><img src="docs/images/admin-settings-dmr.png" alt="DMR-Einstellungen"><br><b>DMR-Server im Browser</b>: Passwort, Talkgroups, FreeRadioID, Patterns.</td>
-<td><img src="docs/images/admin-users.png" alt="Benutzer"><br><b>Benutzerverwaltung</b> mit Rollen. IP-Adressen sehen nur Admins.</td>
+<td><img src="docs/images/admin-openbridge.png" alt="OpenBridge-Editor"><br><b>OpenBridge im Formular</b>: Protokoll, Verbindung, Talkgroups und fertiger Abschnitt für die Gegenstelle.</td>
+<td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: Farbprofile, Logo-Upload, Titel, mit Live-Vorschau.</td>
+</tr>
+<tr>
+<td><img src="docs/images/admin-settings-dmr.png" alt="DMR-Einstellungen"><br><b>Einstellungen mit Seitennavigation</b>: Schalter, Auswahllisten, seltene Optionen eingeklappt.</td>
+<td><img src="docs/images/admin-links.png" alt="Link-Menü"><br><b>🔗 Link-Menü</b>: eigene Links für die Kopfzeile.</td>
 </tr>
 </table>
 
@@ -88,7 +94,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 |---|---|
 | 📦 [Installation](docs/de/installation.md) | Voraussetzungen, geführte Installation, HTTPS, Firewall, Aktualisieren |
 | 🎙️ [Dashboard](docs/de/dashboard.md) | Tabs Live/Statistics/OpenBridge/Talkgroups/Configuration, ON AIR, Talkgroup-Statistik, Last Heard, Karten, Detailansicht, Login-Arten |
-| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, alle Einstellungen, Sitzungen, Protokoll, System |
+| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Sitzungen, Protokoll, System |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |
 | 🩺 [Betrieb & Fehlersuche](docs/de/betrieb.md) | Dienste, `check.sh`, typische Fehlermeldungen, Sicherung |

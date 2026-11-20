@@ -148,6 +148,7 @@ def test_calc_targets_obp_ownership_and_reflection():
     p = HBProtocol.__new__(HBProtocol)
     p._repeaters, p._outbounds = {}, {}
     p._openbridges = {"A": _obp_state("A", {t31: 1}), "B": _obp_state("B", {t3120: 2})}
+    p._obp_by_tgid = {t31: "A", t3120: "B"}
 
     # Repeater-sourced TG31 -> only OBP A owns it
     tg = p._calculate_stream_targets(b'\x00\x00\x00\x01', 1, t31, b'\x00\x00\x00\x01', b'\x00\x00\x01')
@@ -171,6 +172,7 @@ def test_ingress_creates_stream_normalizes_slot_and_forwards():
     p._repeaters, p._outbounds = {}, {}
     st = _obp_state("A", {t3120: 2})               # TG3120 -> local TS2
     p._openbridges = {"A": st}
+    p._obp_by_tgid = {t3120: "A"}
     p._events = Mock()                             # dashboard event emitter (stubbed)
     forwarded = []
     p._forward_stream = lambda *a, **k: forwarded.append(a)
@@ -201,3 +203,36 @@ def test_ingress_creates_stream_normalizes_slot_and_forwards():
                               (3112001).to_bytes(4, 'big'))
     p._handle_openbridge_packet("A", bad, ("10.0.0.9", 62035))
     assert not forwarded and bad[16:20] not in st.streams
+
+
+# ---- unfiltered trunk (all_talkgroups) ------------------------------------
+
+def test_all_talkgroups_trunk_routes_everything_except_local_and_owned():
+    from hblink4.models import is_local_tgid
+    t31, t262 = (31).to_bytes(3, 'big'), (262).to_bytes(3, 'big')
+    p = HBProtocol.__new__(HBProtocol)
+    p._repeaters, p._outbounds = {}, {}
+    wild = _obp_state("W", {})
+    wild.config.all_talkgroups = True
+    p._openbridges = {"A": _obp_state("A", {t31: 1}), "W": wild}
+    p._obp_by_tgid = {t31: "A"}
+    src = b'\x00\x00\x00\x01'
+    tg = p._calculate_stream_targets(src, 2, t262, src, b'\x00\x00\x01')
+    assert ('openbridge', 'W') in tg                      # any TG goes out the unfiltered trunk
+    tg = p._calculate_stream_targets(src, 1, t31, src, b'\x00\x00\x01')
+    assert ('openbridge', 'A') in tg and ('openbridge', 'W') not in tg   # owned elsewhere
+    tg = p._calculate_stream_targets(src, 2, (9990).to_bytes(3, 'big'), src, b'\x00\x00\x01')
+    assert ('openbridge', 'W') not in tg                  # parrot stays local
+    assert wild.config.slot_for(t262) == 2 and is_local_tgid(4000) and not is_local_tgid(91)
+
+
+def test_only_one_unfiltered_trunk():
+    import pytest
+    from hblink4.config import parse_openbridge_connections
+    base = dict(enabled=True, network_id=1, local_port=1, target_address="x", target_port=1,
+                passphrase="p", all_talkgroups=True)
+    with pytest.raises(SystemExit):
+        parse_openbridge_connections({"openbridge_connections": [dict(base, name="a"), dict(base, name="b")]})
+    ok = parse_openbridge_connections({"openbridge_connections": [dict(base, name="a"),
+                                                                  dict(base, name="b", enabled=False)]})
+    assert ok[0].all_talkgroups and ok[0].default_slot == 2

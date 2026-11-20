@@ -16,10 +16,11 @@ Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop u
 
 | Element | Bedeutung |
 |---|---|
-| Logo, Titel, Untertitel | einstellbar im Adminbereich (Settings → General) |
+| Logo, Titel, Untertitel, Farben | einstellbar im Adminbereich unter [🎨 Appearance](adminbereich.md#-appearance) |
 | **✓ Live Data** | Der Browser ist mit dem Dashboard verbunden. Ein Klick verbindet neu. |
 | **✓ DMR Server** | HBlink4 ist mit dem Dashboard verbunden. |
 | **🔇 Notifications** | Töne bei Verbindungen und Gesprächen an/aus |
+| **🔗 Links** | eigenes Link-Menü, wenn im [Adminbereich](adminbereich.md#-links) eingerichtet; alternativ als Knopfreihe unter der Kopfzeile |
 | **🔐 Login** bzw. Name | Anmelden; danach das Menü mit Adminbereich, Passwort und Abmelden |
 
 ## Statistik
@@ -71,9 +72,11 @@ Im Tab **↔️ OpenBridge** steht alles zu einem Trunk. Bei mehreren Trunks wä
 
 <p align="center"><img src="../images/openbridge-tab-mobile-2.png" alt="OpenBridge-Diagramme am Smartphone" width="28%"></p>
 
+**Adressen und Ports** der Gegenstelle und unser lokaler Port sind nur für eingeloggte Admins sichtbar; alle anderen sehen **🔒 hidden**. Bei einem Trunk ohne Talkgroup-Filter steht „All TGs“ statt der Liste.
+
 Jedes Gespräch über den Trunk wird mit Richtung, Talkgroup und Dauer in SQLite gespeichert, und zwar in beide Richtungen. Speicherdauer und Sichtbarkeit ohne Login sind dieselben wie bei der [Talkgroup-Statistik](#-talkgroup-statistik). Das Passwort (`passphrase`) des Trunks erscheint nirgends im Dashboard.
 
-Eingerichtet wird ein Trunk im [Adminbereich](adminbereich.md) unter *Patterns, links & trunks* → `openbridge_connections`. Nur Talkgroups aus dessen `talkgroup_slots` laufen über den Trunk; alle anderen verwirft HBlink4 in beide Richtungen.
+Eingerichtet wird ein Trunk im [Adminbereich unter ↔️ OpenBridge](adminbereich.md#️-openbridge): entweder mit allen Talkgroups ohne Filter oder nur mit ausgewählten. Bei ausgewählten Talkgroups verwirft HBlink4 alle anderen in beide Richtungen.
 
 ## 🗂️ Talkgroups – das Verzeichnis
 

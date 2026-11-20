@@ -107,6 +107,12 @@ the main HBlink4 config (JSON). See also
 | `proto_ver` | `1` (default): classic DMRD + HMAC-SHA1. `2`–`5`: FreeDMR `DMRE` frames (BLAKE2b, timestamp, source server/repeater, hop count). We send v5 (v4 to a peer that only announces v4) and upgrade automatically when the peer announces a higher version. Needed for FreeDMR stanzas with `PROTO_VER` > 1, which drop classic DMRD. |
 | `relax_checks` | `false` (default): accept frames only from `target_address:target_port`. `true`: accept authenticated frames from any address and follow the far end's address from its keep-alives (FreeDMR `RELAX_CHECKS`). |
 | `server_id` | Optional, FreeDMR only: "source server" ID in `DMRE` frames (4–7 digits). Defaults to `network_id`. |
+| `all_talkgroups` | `false` (default). `true`: no talkgroup filter – every talkgroup is carried except local ones (1–79, 4000, 5000, 9990–9999); talkgroups owned by another trunk stay with that trunk and are never transited. At most one enabled trunk may do this. Entries in `talkgroup_slots` still apply and set their own timeslot. |
+| `default_slot` | Local timeslot for talkgroups without their own entry when `all_talkgroups` is on. Default `2`. |
+
+The dashboard's admin area has a form for all of this (**↔️ OpenBridge**): protocol drop-down,
+talkgroup filter (all / selected from the talkgroup list), and a ready-made stanza for the far end.
+Addresses and ports of trunks are only sent to logged-in admins.
 
 ### Connecting to FreeDMR (FDMR+, FDMR-Secure-Server, …)
 

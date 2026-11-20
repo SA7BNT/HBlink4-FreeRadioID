@@ -27,15 +27,16 @@ from hblink4.settings_db import (  # noqa: E402
     DMR_FIELDS, DMR_SECTIONS, Field, SettingsDB, SettingsError, get_path, set_path, validate,
 )
 
-__all__ = ["SettingsStore", "SettingsError", "FIELDS", "FIELD_BY_KEY", "SECTIONS", "get_path", "set_path",
+__all__ = ["SettingsStore", "SettingsError", "FIELDS", "FIELD_BY_KEY", "SECTIONS", "SECTION_HELP", "get_path", "set_path",
            "validate", "RADIOID_URL", "FREERADIOID_ALL_URL"]
 
 RADIOID_URL = "https://database.radioid.net/static/user.csv"
 FREERADIOID_ALL_URL = "https://freeradioid.net/api/subscriber_ids.csv"
 
 DASH_SECTIONS: List[Tuple[str, str]] = [
-    ("general", "🏷️ General"),
-    ("announcement", "📢 Announcement & link"),
+    ("appearance", "🎨 Appearance"),
+    ("links", "🔗 Link menu"),
+    ("announcement", "📢 Announcement"),
     ("access", "🔐 Dashboard access"),
     ("freeradioid", "🛡️ FreeRadioID data"),
     ("userdb", "📘 Callsign database"),
@@ -44,21 +45,71 @@ DASH_SECTIONS: List[Tuple[str, str]] = [
     ("https", "🔒 HTTPS & web"),
 ]
 
+# One sentence per section for the admin area (what is this about?)
+SECTION_HELP: Dict[str, str] = {
+    "appearance": "Titles, colours and logos of the dashboard.",
+    "links": "Your own links in the header, e.g. to the network website, a chat group or a wiki.",
+    "announcement": "A banner above the dashboard for news and maintenance notices.",
+    "access": "Who may see the dashboard and how long a login lasts.",
+    "freeradioid": "Avatars, profiles and the FRID tag from FreeRadioID.net.",
+    "userdb": "Where callsigns and names for the DMR IDs come from.",
+    "tgstats": "Talkgroup statistics and talkgroup names.",
+    "connect": "The Configuration tab tells new users how to connect their hotspot.",
+    "https": "Encrypted access with a free Let's Encrypt certificate.",
+    "dmr_server": "Port and timing of the DMR server.",
+    "dmr_access": "Password and talkgroups for repeaters and hotspots.",
+    "dmr_frid": "Personal logins via FreeRadioID.net and the guest access.",
+    "dmr_advanced": "Rules per station, blocked IDs and links to other servers – for experienced sysops.",
+    "dmr_obp": "Trunks to other networks such as FreeDMR.",
+}
+
+THEME_PRESETS = (
+    ("n8", "🌙 N8 Night (default)"),
+    ("ocean", "🌊 Ocean"),
+    ("aurora", "🌌 Aurora (green)"),
+    ("ember", "🔥 Ember (orange)"),
+    ("violet", "🔮 Violet"),
+    ("graphite", "⚫ Graphite"),
+)
+
 DASH_FIELDS: List[Field] = [
-    Field("dashboard_title", "general", "Dashboard title", "text", "DMR Die N8schicht"),
-    Field("server_name", "general", "Server name (subtitle)", "text", "dmr.die-n8schicht.de"),
-    Field("server_description", "general", "Description", "text", "N8schicht DMR Network"),
-    Field("logo", "general", "Logo URL", "text", "", "Empty = N8schicht logo. Files in dashboard/static/ as /static/name.svg"),
-    Field("favicon", "general", "Favicon URL", "text", "", "Empty = same as the logo"),
+    # -- appearance: titles
+    Field("dashboard_title", "appearance", "Title", "text", "DMR Die N8schicht", "Large text next to the logo"),
+    Field("server_name", "appearance", "Subtitle", "text", "dmr.die-n8schicht.de", "Small line under the title"),
+    Field("server_description", "appearance", "Description", "text", "N8schicht DMR Network",
+          "Shown in the Configuration tab"),
+    Field("page_title", "appearance", "Browser tab title", "text", "", "Empty = the title"),
+    # -- appearance: colours
+    Field("theme.preset", "appearance", "Colour profile", "choice", "n8", choices=THEME_PRESETS),
+    Field("theme.accent", "appearance", "Accent colour", "color", "", "Buttons, numbers, active tabs. Empty = from the profile"),
+    Field("theme.background", "appearance", "Background colour", "color", "", "Empty = from the profile"),
+    Field("theme.glow", "appearance", "Background glow", "int", 100, "0 = flat background", min=0, max=150),
+    Field("theme.glass", "appearance", "Card brightness", "int", 50, "How bright the glass cards are", min=0, max=100),
+    Field("theme.blur", "appearance", "Glass blur effect", "bool", True, "Off = faster on old phones"),
+    # -- appearance: logos
+    Field("logo", "appearance", "Logo", "image", "", "Empty = N8schicht logo"),
+    Field("logo_size", "appearance", "Logo size (px)", "int", 44, min=24, max=96),
+    Field("logo_radius", "appearance", "Logo corners (%)", "int", 0, "0 = as drawn, 50 = round", min=0, max=50),
+    Field("favicon", "appearance", "Browser icon (favicon)", "image", "", "Empty = same as the logo"),
+
+    # -- link menu
+    Field("links.enabled", "links", "Show the link menu", "bool", False),
+    Field("links.label", "links", "Menu button text", "text", "🔗 Links", depends="links.enabled"),
+    Field("links.style", "links", "Display", "choice", "menu",
+          choices=(("menu", "Button with drop-down menu"), ("bar", "Row of buttons under the header")),
+          depends="links.enabled"),
+    Field("links.items", "links", "Links", "links", [], depends="links.enabled"),
+    Field("network_info.enabled", "links", "Extra button in the header", "bool", False,
+          "A single button next to the status badges (older option)", advanced=True),
+    Field("network_info.button_text", "links", "Button text", "text", "Network Info",
+          depends="network_info.enabled", advanced=True),
+    Field("network_info.url", "links", "Button link", "url", "", depends="network_info.enabled", advanced=True),
 
     Field("announcement.enabled", "announcement", "Show announcement banner", "bool", False),
-    Field("announcement.text", "announcement", "Announcement text", "longtext", ""),
-    Field("network_info.enabled", "announcement", "Show network info button", "bool", False),
-    Field("network_info.button_text", "announcement", "Button text", "text", "Network Info"),
-    Field("network_info.url", "announcement", "Button link", "url", ""),
+    Field("announcement.text", "announcement", "Announcement text", "longtext", "", depends="announcement.enabled"),
 
     Field("auth.public_dashboard", "access", "Public dashboard", "bool", True,
-          "Off = nothing is visible without login. IP addresses are always admin-only."),
+          "Off = nothing is visible without login. IP addresses and ports are always admin-only."),
     Field("auth.session_hours", "access", "Session length (hours)", "int", 12, min=1, max=720),
     Field("auth.remember_days", "access", "\"Stay logged in\" (days)", "int", 30, min=1, max=365),
 
@@ -79,34 +130,38 @@ DASH_FIELDS: List[Field] = [
     Field("tg_stats.enabled", "tgstats", "Record talkgroup statistics", "bool", True,
           "Every group call (talkgroup, duration, radio ID) is stored in the database for the charts"),
     Field("tg_stats.public", "tgstats", "Visible without login", "bool", True,
-          "Off = only logged-in users see the talkgroup statistics"),
-    Field("tg_stats.retention_days", "tgstats", "Keep calls for (days)", "int", 30, min=1, max=365),
+          "Off = only logged-in users see the talkgroup and OpenBridge statistics", depends="tg_stats.enabled"),
+    Field("tg_stats.retention_days", "tgstats", "Keep calls for (days)", "int", 30, min=1, max=365,
+          depends="tg_stats.enabled"),
     Field("talkgroups.list", "tgstats", "Talkgroup list of the N8schicht", "bool", True,
           "Names of ~1400 talkgroups (github.com/dhartmann1979/n8schicht), updated daily with the callsign database"),
     Field("talkgroups.url", "tgstats", "Talkgroup list URL", "text",
           "https://raw.githubusercontent.com/dhartmann1979/n8schicht/main/talkgroup_ids.json",
-          "JSON in the format of talkgroup_ids.json"),
+          "JSON in the format of talkgroup_ids.json", depends="talkgroups.list", advanced=True),
     Field("tg_stats.names", "tgstats", "Own talkgroup names", "longtext", "",
           "One per line: 26500 = N8schicht Ortsrunde. Override the list or add missing talkgroups"),
 
     Field("connect.enabled", "connect", "Show the Configuration tab", "bool", True,
           "How to connect: server, port, password, talkgroups and ready-made settings"),
     Field("connect.host", "connect", "Server address for hotspots", "text", "",
-          "Empty = the server name (General → Server name)"),
+          "Empty = the subtitle (Appearance → Subtitle)", depends="connect.enabled"),
     Field("connect.show_password", "connect", "Show the default password", "bool", True,
-          "With FreeRadioID login this is the guest password. Off = \"ask the sysop\""),
+          "With FreeRadioID login this is the guest password. Off = \"ask the sysop\"", depends="connect.enabled"),
     Field("connect.note", "connect", "Note for users", "longtext", "",
-          "Shown at the end of the tab: rules, contact, links"),
+          "Shown at the end of the tab: rules, contact, links", depends="connect.enabled"),
 
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
           "Needs certbot, the domain pointing here and ports 80/443 open", restart=True),
-    Field("https.domain", "https", "Domain", "text", "", restart=True),
-    Field("https.email", "https", "E-mail for Let's Encrypt", "text", "", restart=True),
-    Field("https.staging", "https", "Test certificates (staging)", "bool", False, restart=True),
-    Field("https.port", "https", "HTTPS port", "int", 443, restart=True, min=1, max=65535),
-    Field("https.http_port", "https", "HTTP port (challenge + redirect)", "int", 80, restart=True, min=1, max=65535),
+    Field("https.domain", "https", "Domain", "text", "", restart=True, depends="https.enabled"),
+    Field("https.email", "https", "E-mail for Let's Encrypt", "text", "", restart=True, depends="https.enabled"),
+    Field("https.staging", "https", "Test certificates (staging)", "bool", False, restart=True,
+          depends="https.enabled", advanced=True),
+    Field("https.port", "https", "HTTPS port", "int", 443, restart=True, min=1, max=65535,
+          depends="https.enabled", advanced=True),
+    Field("https.http_port", "https", "HTTP port (challenge + redirect)", "int", 80, restart=True, min=1, max=65535,
+          depends="https.enabled", advanced=True),
     Field("web.port", "https", "Plain web port", "int", 8080,
-          "Redirects to HTTPS when HTTPS is on", restart=True, min=1, max=65535),
+          "Redirects to HTTPS when HTTPS is on", restart=True, min=1, max=65535, advanced=True),
 ]
 
 FIELDS: List[Field] = DASH_FIELDS + DMR_FIELDS
@@ -185,9 +240,11 @@ class SettingsStore:
                 ts, by = meta.get(f.key, (None, ""))
                 fields.append({"key": f.key, "label": f.label, "kind": f.kind, "help": f.help,
                                "restart": f.restart, "choices": [list(c) for c in f.choices],
-                               "min": f.min, "max": f.max, "value": value,
+                               "min": f.min, "max": f.max, "value": value, "default": f.default,
+                               "depends": f.depends, "advanced": f.advanced,
                                "updated_at": ts, "updated_by": by})
-            sections.append({"id": sid, "title": title, "dmr": sid.startswith("dmr_"), "fields": fields})
+            sections.append({"id": sid, "title": title, "dmr": sid.startswith("dmr_"),
+                             "help": SECTION_HELP.get(sid, ""), "fields": fields})
         return sections
 
     def update(self, cfg: Dict[str, Any], changes: Dict[str, Any], who: str) -> List[str]:
@@ -212,7 +269,14 @@ class SettingsStore:
         return changed
 
     def _check_dmr_structure(self, clean: Dict[str, Any]) -> None:
-        """Patterns and blacklist must be understood by HBlink4 before they are saved."""
+        """Patterns, blacklist and trunks must be understood by HBlink4 before they are saved."""
+        if "dmr.openbridge_connections" in clean:
+            from hblink4.config import parse_openbridge_connections
+            try:
+                parse_openbridge_connections({"openbridge_connections": clean["dmr.openbridge_connections"]},
+                                             raise_errors=True)
+            except ValueError as e:
+                raise SettingsError(f"OpenBridge: {e}")
         if not any(k.startswith("dmr.repeater_configurations") or k.startswith("dmr.blacklist") for k in clean):
             return
         trial: Dict[str, Any] = {}

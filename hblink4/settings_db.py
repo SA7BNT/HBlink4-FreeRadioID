@@ -45,13 +45,15 @@ class Field:
     section: str
     label: str
     kind: str                # text, longtext, password, bool, int, float, url, time,
-                             # countries, choice, tglist, json
+                             # countries, choice, tglist, json, color, image, links
     default: Any
     help: str = ""
     restart: bool = False    # needs a restart of its program to take effect
     choices: Tuple[Tuple[str, str], ...] = ()
     min: float = 0
     max: float = 0
+    depends: str = ""        # key of a bool field: only shown/used while that one is on
+    advanced: bool = False   # behind "Show advanced options" in the admin area
 
     @property
     def is_dmr(self) -> bool:
@@ -162,6 +164,41 @@ def validate(field: Field, value: Any) -> Any:
         if not isinstance(value, list) or not all(isinstance(x, dict) for x in value):
             raise SettingsError(f"{field.label}: a JSON list of objects [ {{…}}, … ] is expected.")
         return value
+    if k == "color":
+        v = str(value or "").strip()
+        if v and not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+            raise SettingsError(f"{field.label}: colour as #rrggbb or empty.")
+        return v.lower()
+    if k == "image":
+        v = str(value or "").strip()
+        if v and not (v.startswith("/") or re.match(r"^https?://", v, re.I)):
+            raise SettingsError(f"{field.label}: a path like /static/logo.svg or a https:// address.")
+        if any(c in v for c in "\"'<>"):
+            raise SettingsError(f"{field.label}: invalid characters.")
+        return v[:500]
+    if k == "links":
+        if isinstance(value, str):
+            try:
+                value = json.loads(value or "[]")
+            except ValueError as e:
+                raise SettingsError(f"{field.label}: invalid JSON ({e}).")
+        if not isinstance(value, list):
+            raise SettingsError(f"{field.label}: a list of links is expected.")
+        out = []
+        for i, item in enumerate(value[:30], 1):
+            if not isinstance(item, dict):
+                raise SettingsError(f"{field.label}: entry {i} is not a link.")
+            label = str(item.get("label") or "").strip()[:40]
+            url = str(item.get("url") or "").strip()[:500]
+            if not label and not url:
+                continue
+            if not label:
+                raise SettingsError(f"{field.label}: link {i} needs a name.")
+            if not (url.startswith("/") or url.startswith("#") or re.match(r"^(https?://|mailto:)", url, re.I)):
+                raise SettingsError(f"{field.label}: link „{label}“ must start with https://, mailto:, / or #.")
+            out.append({"label": label, "url": url, "icon": str(item.get("icon") or "").strip()[:8],
+                        "new_tab": bool(item.get("new_tab", True))})
+        return out
     if k == "password":
         v = str(value if value is not None else "")
         if not v.strip():
@@ -179,19 +216,21 @@ DMR_SECTIONS: List[Tuple[str, str]] = [
     ("dmr_server", "🛰️ DMR server"),
     ("dmr_access", "🔑 Repeater & hotspot access"),
     ("dmr_frid", "🛡️ FreeRadioID login"),
-    ("dmr_advanced", "🧩 Patterns, links & trunks (JSON)"),
+    ("dmr_advanced", "🧩 Patterns, blacklist & links (JSON)"),
+    ("dmr_obp", "↔️ OpenBridge trunks"),
 ]
 
 DMR_FIELDS: List[Field] = [
     Field("dmr.global.port_ipv4", "dmr_server", "DMR port (UDP)", "int", 62031,
           "Repeaters and hotspots connect here (HomeBrew standard 62031)", restart=True, min=1, max=65535),
-    Field("dmr.global.max_missed", "dmr_server", "Missed pings before drop", "int", 3, min=1, max=20),
-    Field("dmr.global.timeout_duration", "dmr_server", "Ping timeout (s)", "int", 30, min=5, max=600),
-    Field("dmr.global.stream_timeout", "dmr_server", "Stream end without terminator (s)", "float", 2.0, min=0.5, max=30),
+    Field("dmr.global.max_missed", "dmr_server", "Missed pings before drop", "int", 3, min=1, max=20, advanced=True),
+    Field("dmr.global.timeout_duration", "dmr_server", "Ping timeout (s)", "int", 30, min=5, max=600, advanced=True),
+    Field("dmr.global.stream_timeout", "dmr_server", "Stream end without terminator (s)", "float", 2.0, min=0.5, max=30,
+          advanced=True),
     Field("dmr.global.stream_hang_time", "dmr_server", "Talkgroup hang time (s)", "float", 10.0,
           "How long a slot stays reserved for the last talkgroup", min=0, max=120),
     Field("dmr.global.reconnect_report_threshold", "dmr_server", "Log reconnects shorter than (s)", "int", 3600,
-          "0 = log every reconnect", min=0, max=604800),
+          "0 = log every reconnect", min=0, max=604800, advanced=True),
 
     Field("dmr.repeater_configurations.default.passphrase", "dmr_access", "Passphrase (default)", "password", "passw0rd",
           "Shared password for repeaters/hotspots without their own pattern. With FreeRadioID login on, "
@@ -206,8 +245,10 @@ DMR_FIELDS: List[Field] = [
     Field("dmr.freeradioid.enabled", "dmr_frid", "FreeRadioID secure login", "bool", True,
           "Logins are checked against the personal FreeRadioID.net password; the passphrase above becomes the guest login"),
     Field("dmr.freeradioid.guest_talkgroups", "dmr_frid", "Guest TX talkgroups", "tglist", [26501, 26502, 26503],
-          "Guests may only transmit here; all = no restriction, none = guests cannot transmit"),
-    Field("dmr.freeradioid.timeout", "dmr_frid", "API timeout (s)", "float", 3.0, min=1, max=15),
+          "Guests may only transmit here; all = no restriction, none = guests cannot transmit",
+          depends="dmr.freeradioid.enabled"),
+    Field("dmr.freeradioid.timeout", "dmr_frid", "API timeout (s)", "float", 3.0, min=1, max=15,
+          depends="dmr.freeradioid.enabled", advanced=True),
 
     Field("dmr.repeater_configurations.patterns", "dmr_advanced", "Repeater patterns", "json", [],
           "Own rules per ID, ID range or callsign: passphrase, talkgroups, freeradioid on/off. "
@@ -215,7 +256,7 @@ DMR_FIELDS: List[Field] = [
     Field("dmr.blacklist.patterns", "dmr_advanced", "Blacklist", "json", [],
           "Blocked IDs, ID ranges or callsigns, each with a reason"),
     Field("dmr.outbound_connections", "dmr_advanced", "Outbound links to other servers", "json", [], restart=True),
-    Field("dmr.openbridge_connections", "dmr_advanced", "OpenBridge trunks", "json", [], restart=True),
+    Field("dmr.openbridge_connections", "dmr_obp", "OpenBridge trunks", "json", [], restart=True),
 ]
 
 

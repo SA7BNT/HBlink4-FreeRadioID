@@ -115,7 +115,8 @@ def parse_outbound_connections(config: Dict[str, Any], logger: logging.Logger = 
     return outbound_configs
 
 
-def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger = None) -> List:
+def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger = None,
+                                raise_errors: bool = False) -> List:
     """
     Parse OpenBridge (OBP) connections from the configuration dictionary.
 
@@ -146,6 +147,7 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
         return obp_configs
 
     owner_of_tgid = {}  # tgid_bytes -> owning OBP name (enabled OBPs only)
+    wildcard_owner = None  # the one enabled OBP with all_talkgroups
 
     for idx, conn in enumerate(raw_obps):
         label = conn.get('name', f'#{idx}')
@@ -177,7 +179,14 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
                 proto_ver=int(conn.get('proto_ver', 1)),
                 relax_checks=bool(conn.get('relax_checks', False)),
                 server_id=int(conn.get('server_id', 0) or 0),
+                all_talkgroups=bool(conn.get('all_talkgroups', False)),
+                default_slot=int(conn.get('default_slot', 2)),
             )
+            if config_obj.enabled and config_obj.all_talkgroups:
+                if wildcard_owner and wildcard_owner != config_obj.name:
+                    raise ValueError(f"only one enabled OpenBridge may carry all talkgroups "
+                                     f"('{wildcard_owner}' already does)")
+                wildcard_owner = config_obj.name
 
             # one-OBP-per-TGID across enabled OBPs (design §4.5)
             if config_obj.enabled:
@@ -194,12 +203,17 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
                 state = 'enabled' if config_obj.enabled else 'disabled'
                 logger.info(f'✓ Loaded OpenBridge: {config_obj.name} → '
                             f'{config_obj.target_address}:{config_obj.target_port} '
-                            f'({len(config_obj.talkgroup_slots)} talkgroups, {state})')
+                            f'({"all talkgroups" if config_obj.all_talkgroups else len(config_obj.talkgroup_slots)}'
+                            f'{" talkgroups" if not config_obj.all_talkgroups else ""}, {state})')
         except KeyError as e:
+            if raise_errors:
+                raise ValueError(f"trunk {label}: required field {e} is missing")
             msg = f'✗ OpenBridge connection {label} missing required field: {e}'
             logger.error(msg) if logger else print(msg)
             sys.exit(1)
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
+            if raise_errors:
+                raise ValueError(f"trunk {label}: {e}")
             msg = f'✗ OpenBridge connection {label} validation error: {e}'
             logger.error(msg) if logger else print(msg)
             sys.exit(1)

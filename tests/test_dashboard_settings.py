@@ -79,7 +79,7 @@ class TestSettings(unittest.TestCase):
         cfg = copy.deepcopy(FILE_CFG)
         st.seed_and_apply(cfg)
         st.update(cfg, {"dashboard_title": "Admin", "auth.session_hours": 48}, "boss")
-        st.reset_section(cfg, FILE_CFG, "general", "boss")
+        st.reset_section(cfg, FILE_CFG, "appearance", "boss")
         self.assertEqual(cfg["dashboard_title"], "From File")
         self.assertEqual(cfg["auth"]["session_hours"], 48)           # other section untouched
         self.assertEqual(get_path(cfg, "auth.session_hours"), 48)
@@ -125,3 +125,34 @@ class TestSettingsApi(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestNewKinds(unittest.TestCase):
+    def test_color_image_links(self):
+        from dashboard.settings import FIELD_BY_KEY, validate, SettingsError
+        self.assertEqual(validate(FIELD_BY_KEY["theme.accent"], "#AABBCC"), "#aabbcc")
+        self.assertEqual(validate(FIELD_BY_KEY["theme.accent"], ""), "")
+        with self.assertRaises(SettingsError):
+            validate(FIELD_BY_KEY["theme.accent"], "red")
+        self.assertEqual(validate(FIELD_BY_KEY["logo"], "/branding/logo?v=1"), "/branding/logo?v=1")
+        with self.assertRaises(SettingsError):
+            validate(FIELD_BY_KEY["logo"], "javascript:alert(1)")
+        links = validate(FIELD_BY_KEY["links.items"], [{"label": "Wiki", "url": "https://x.de", "icon": "📘"},
+                                                       {"label": "", "url": ""}])
+        self.assertEqual(links, [{"label": "Wiki", "url": "https://x.de", "icon": "📘", "new_tab": True}])
+        with self.assertRaises(SettingsError):
+            validate(FIELD_BY_KEY["links.items"], [{"label": "x", "url": "javascript:alert(1)"}])
+
+    def test_openbridge_is_validated_on_save(self):
+        from dashboard.settings import SettingsError
+        a, st = make(FILE_CFG)
+        cfg = copy.deepcopy(FILE_CFG)
+        st.seed_and_apply(cfg)
+        trunk = {"name": "T", "network_id": 2624, "local_port": 51084, "target_address": "x.example",
+                 "target_port": 62046, "passphrase": "secret", "all_talkgroups": True, "proto_ver": 5,
+                 "enhanced_obp": True}
+        st.update(cfg, {"dmr.openbridge_connections": [trunk]}, "boss")
+        with self.assertRaises(SettingsError):
+            st.update(cfg, {"dmr.openbridge_connections": [dict(trunk, proto_ver=9)]}, "boss")
+        with self.assertRaises(SettingsError):
+            st.update(cfg, {"dmr.openbridge_connections": [{"name": "no-port"}]}, "boss")

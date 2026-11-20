@@ -80,6 +80,13 @@ class OutboundConnectionConfig:
 OBP_PASSPHRASE_MAX = 80
 
 
+def is_local_tgid(tg: int) -> bool:
+    """Talkgroups that never leave the server over an unfiltered trunk (same idea as
+    FreeDMR's global filter): 1–79 (local/reflector control), 4000 (disconnect),
+    5000 (status), 9990–9999 (parrot/echo)."""
+    return tg <= 79 or tg in (4000, 5000) or 9990 <= tg <= 9999
+
+
 @dataclass
 class OpenBridgeConnectionConfig:
     """Configuration for an OpenBridge (OBP) trunk connection.
@@ -119,6 +126,20 @@ class OpenBridgeConnectionConfig:
     proto_ver: int = 1
     relax_checks: bool = False
     server_id: int = 0
+    # No talkgroup filter: carry every talkgroup (except local ones, see
+    # is_local_tgid) on default_slot. Entries in talkgroup_slots still win and
+    # set their own timeslot. At most one enabled trunk may do this.
+    all_talkgroups: bool = False
+    default_slot: int = 2
+
+    def slot_for(self, dst_id: bytes) -> Optional[int]:
+        """Local timeslot for a canonical TGID, or None if the trunk does not carry it."""
+        ts = self.talkgroup_slots.get(dst_id)
+        if ts is not None:
+            return ts
+        if self.all_talkgroups and not is_local_tgid(int.from_bytes(dst_id, 'big')):
+            return self.default_slot
+        return None
 
     @property
     def freedmr(self) -> bool:
@@ -129,6 +150,8 @@ class OpenBridgeConnectionConfig:
         """Validate required fields."""
         if not self.name:
             raise ValueError("OpenBridge connection must have a name")
+        if self.default_slot not in (1, 2):
+            raise ValueError(f"OpenBridge connection '{self.name}' default_slot must be 1 or 2")
         if self.proto_ver not in (1, 2, 3, 4, 5):
             raise ValueError(f"OpenBridge connection '{self.name}' has invalid proto_ver: {self.proto_ver} (1..5)")
         if self.server_id and not (1000 <= self.server_id <= 9999999):
@@ -311,11 +334,11 @@ class OpenBridgeState:
 
     def owns_tgid(self, dst_id: bytes) -> bool:
         """True if this OBP carries (owns) the given canonical TGID."""
-        return dst_id in self.config.talkgroup_slots
+        return self.config.slot_for(dst_id) is not None
 
     def ts_for_tgid(self, dst_id: bytes) -> Optional[int]:
         """Local timeslot for a canonical TGID on ingress, or None if unmapped (dropped)."""
-        return self.config.talkgroup_slots.get(dst_id)
+        return self.config.slot_for(dst_id)
 
 
 @dataclass

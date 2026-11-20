@@ -115,6 +115,7 @@ def make_trunk(**kw):
         **({'enhanced_obp': True, 'proto_ver': 5, 'relax_checks': True} | kw))
     proto = HBProtocol.__new__(HBProtocol)
     proto._openbridges = {}
+    proto._obp_by_tgid = {}
     proto._events = MagicMock()
     proto._forward_stream = MagicMock()
     proto._calculate_stream_targets = MagicMock(return_value=set())

@@ -21,11 +21,11 @@ Im Adminbereich stellst du **Dashboard und DMR-Server** ein, ohne SSH und ohne C
 | Rolle | Darf |
 |---|---|
 | **Superadmin** | alles, auch Admins anlegen. Er steht **nur** in `dashboard/config.json` und kann im Browser weder gelöscht noch herabgestuft werden. So kannst du dich nie aussperren. |
-| **Admin** | sieht **IP-Adressen**, verwaltet Benutzer, alle Einstellungen, Sitzungen, Protokoll, Neustarts |
-| **User** | sieht das Dashboard, auch wenn es nicht öffentlich ist; keine IP-Adressen |
-| nicht angemeldet | sieht das öffentliche Dashboard ohne IP-Adressen |
+| **Admin** | sieht **IP-Adressen und Ports**, verwaltet Benutzer, alle Einstellungen, Sitzungen, Protokoll, Neustarts |
+| **User** | sieht das Dashboard, auch wenn es nicht öffentlich ist; keine IP-Adressen und Ports |
+| nicht angemeldet | sieht das öffentliche Dashboard ohne IP-Adressen und Ports |
 
-IP-Adressen werden **auf dem Server** entfernt, bevor Daten an Nicht-Admins gehen, also nicht nur im Browser ausgeblendet.
+**Nur für Admins:** IP-Adressen und Ports von Repeatern, Hotspots, Outbound-Links und OpenBridge-Trunks, also Gegenstelle, Port der Gegenstelle und unser lokaler Port. Der Server entfernt sie, bevor Daten an Nicht-Admins gehen; sie werden also nicht nur im Browser ausgeblendet. Nicht-Admins sehen an diesen Stellen **🔒 hidden**.
 
 ## 👥 Users
 
@@ -35,53 +35,127 @@ IP-Adressen werden **auf dem Server** entfernt, bevor Daten an Nicht-Admins gehe
 - **Bearbeiten**: Name, DMR-ID, Rolle, neues Passwort, sperren. Wer gesperrt wird oder ein neues Passwort bekommt, wird sofort abgemeldet.
 - **Löschen**: Zur Sicherheit braucht es zwei Klicks.
 
+## Aufbau
+
+Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste.
+
+Für alle Bereiche gilt:
+- **Schalter** für Ja/Nein, **Auswahllisten** statt Texteingaben, wo es feste Möglichkeiten gibt.
+- **Nur was gerade zählt, ist sichtbar:** Ist ein Schalter aus, verschwinden die Felder, die davon abhängen. Ohne Ankündigung kein Textfeld für die Ankündigung, ohne HTTPS keine Domain.
+- **Seltene Einstellungen** stehen unter **▸ Advanced options**.
+- **unsaved** zeigt ungespeicherte Änderungen an; gespeichert wird mit **💾 Save**.
+
 ## ⚙️ Settings
 
-Hier stehen **alle** Einstellungen, oben das Dashboard, darunter der DMR-Server. Jeder Abschnitt hat einen eigenen **Save**-Knopf. Mit **↺ config.json** holst du einen Abschnitt wieder aus der Config-Datei.
-
-### 📊 Dashboard
-
-<p align="center"><img src="../images/admin-settings-dashboard.png" alt="Einstellungen Dashboard" width="72%">
+<p align="center"><img src="../images/admin-settings-dashboard.png" alt="Einstellungen mit Seitennavigation" width="72%">
 &nbsp;
 <img src="../images/admin-settings-mobile.png" alt="Einstellungen am Smartphone" width="22%"></p>
 
+Links steht die Liste der Abschnitte, rechts der gewählte Abschnitt mit einem Satz, worum es geht. Am Smartphone wählst du den Abschnitt aus einer Liste. **↺ Defaults from file** holt einen Abschnitt wieder aus der Config-Datei.
+
+### 📊 Dashboard
+
 | Abschnitt | Einstellungen | Wirkt |
 |---|---|---|
-| 🏷️ General | Titel, Untertitel, Beschreibung, Logo, Favicon | sofort auf allen offenen Seiten |
-| 📢 Announcement & link | Hinweis-Banner, Info-Knopf mit Link | sofort |
+| 📢 Announcement | Hinweis-Banner an/aus und Text | sofort |
 | 🔐 Dashboard access | öffentlich ja/nein, Sitzungsdauer, „angemeldet bleiben“ | sofort |
 | 🛡️ FreeRadioID data | Avatare, Profilabfrage, FreeRadioID-ID-Liste | sofort |
 | 📘 Callsign database | Quelle (**FreeRadioID.net**, Vorgabe, oder nur radioid.net), Länder, Uhrzeit des Updates, **⟳ Refresh now** | sofort; bei neuer Quelle oder neuen Ländern wird die Liste gleich neu geladen |
-| 📈 Talkgroups & statistics | **Talkgroup-Liste der N8schicht** an/aus und ihre URL (Vorgabe: `talkgroup_ids.json` aus [dhartmann1979/n8schicht](https://github.com/dhartmann1979/n8schicht)), Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **eigene Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile; sie überschreiben die Liste) | sofort; eine neue URL wird gleich geladen |
-| 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Servername), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
-| 🔒 HTTPS & web | HTTPS, Domain, E-Mail, Test-Zertifikate, Ports | nach **Neustart** des Dashboards |
+| 📈 Talkgroups & statistics | Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **Talkgroup-Liste der N8schicht** an/aus, **eigene Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile); die URL der Liste unter *Advanced* | sofort |
+| 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Untertitel), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
+| 🔒 HTTPS & web | HTTPS, Domain, E-Mail; Test-Zertifikate und Ports unter *Advanced* | nach **Neustart** des Dashboards |
 
 <p align="center">
-  <img src="../images/admin-settings-tgstats.png" alt="Einstellungen Talkgroup-Statistik" width="45%">
-  &nbsp;
-  <img src="../images/admin-settings-connect.png" alt="Einstellungen Configuration-Tab" width="45%">
+  <img src="../images/admin-settings-tgstats.png" alt="Abschnitt Talkgroups &amp; statistics" width="49%">
+  <img src="../images/admin-settings-https.png" alt="Abschnitt HTTPS mit erweiterten Optionen" width="49%">
 </p>
 
-Die **Talkgroup-Namen** gelten für die Statistik und für den Tab *Configuration*.
+Die **Talkgroup-Namen** gelten für die Statistik, den Tab *Configuration* und den OpenBridge-Editor. Ältere Gespräche als die eingestellte Speicherdauer löscht das Dashboard jede Nacht. Ist die Statistik aus, wird nichts mehr gespeichert und der Tab **📈 Statistics** verschwindet.
 
-Ältere Gespräche als die eingestellte Speicherdauer löscht das Dashboard jede Nacht. Ist die Statistik aus, wird nichts mehr gespeichert und der Tab **📈 Statistics** verschwindet aus dem Dashboard.
+<p align="center"><img src="../images/admin-settings-connect.png" alt="Abschnitt Configuration tab" width="72%"></p>
 
 ### 🛰️ DMR-Server (HBlink4)
 
-<p align="center"><img src="../images/admin-settings-dmr.png" alt="Einstellungen DMR-Server" width="85%"></p>
+<p align="center"><img src="../images/admin-settings-dmr.png" alt="Einstellungen DMR-Server" width="72%"></p>
 
 | Abschnitt | Einstellungen | Wirkt |
 |---|---|---|
-| 🛰️ DMR server | DMR-Port, verpasste Pings, Timeouts, Hang-Time, Reconnect-Logging | sofort; der **Port** erst nach Neustart des DMR-Servers |
+| 🛰️ DMR server | DMR-Port, Hang-Time; verpasste Pings, Timeouts und Reconnect-Logging unter *Advanced* | sofort; der **Port** erst nach Neustart des DMR-Servers |
 | 🔑 Repeater & hotspot access | Standard-Passwort, Talkgroups TS1/TS2 (`all` = alle, `none` = keine), ob die Talkgroup-Liste des Geräts (RPTO) gilt, Einzelrufe | sofort für neue Anmeldungen; Talkgroups auch für verbundene Stationen ohne eigene Liste |
-| 🛡️ FreeRadioID login | Secure Login an/aus, Gast-Talkgroups, API-Timeout | sofort |
-| 🧩 Patterns, links & trunks | eigene Regeln pro ID/Rufzeichen, Blacklist, Verbindungen zu anderen Servern, OpenBridge, jeweils als JSON | Patterns und Blacklist sofort, Verbindungen nach Neustart |
+| 🛡️ FreeRadioID login | Secure Login an/aus, Gast-Talkgroups; API-Timeout unter *Advanced* | sofort |
+| 🧩 Patterns, blacklist & links | eigene Regeln pro ID/Rufzeichen, Blacklist, Verbindungen zu anderen Servern, jeweils als JSON | Patterns und Blacklist sofort, Verbindungen nach Neustart |
+
+OpenBridge-Trunks haben einen eigenen Bereich: [↔️ OpenBridge](#️-openbridge).
 
 **So kommen die Änderungen beim DMR-Server an:** Beim Speichern schickt das Dashboard dem DMR-Server über ihre gemeinsame Verbindung den Befehl *Einstellungen übernehmen*. HBlink4 liest die Datenbank neu und meldet im Log `⚙️ Settings from the admin area applied`.
 - **Neustart nötig:** Bei Port, Links oder Trunks erscheint ein Hinweis mit dem Knopf **Restart DMR server**.
 - **DMR-Server nicht verbunden:** Läuft er gerade nicht, übernimmt er die Werte beim nächsten Start.
 
-**Patterns werden vor dem Speichern geprüft:** HBlink4 muss ein Pattern verstehen, sonst wird es abgelehnt und die alten Regeln bleiben. Beispiele stehen in [Konfiguration → Patterns](konfiguration.md#patterns-eigene-regeln-pro-repeater).
+**Patterns und Trunks werden vor dem Speichern geprüft:** HBlink4 muss sie verstehen, sonst werden sie abgelehnt und die alten Werte bleiben. Beispiele stehen in [Konfiguration → Patterns](konfiguration.md#patterns-eigene-regeln-pro-repeater).
+
+## 🎨 Appearance
+
+<p align="center"><img src="../images/admin-appearance.png" alt="Bereich Appearance" width="72%">
+&nbsp;
+<img src="../images/admin-appearance-mobile.png" alt="Appearance am Smartphone" width="22%"></p>
+
+Rechts zeigt eine **Vorschau** Browser-Tab und Kopfzeile. Gleichzeitig ändert sich das ganze Dashboard hinter dem Fenster sofort mit. Was du nicht speicherst, verschwindet beim Schließen des Fensters wieder.
+
+| Bereich | Einstellungen |
+|---|---|
+| 🏷️ **Titles** | **Title** (groß neben dem Logo), **Subtitle** (Zeile darunter), **Description** (im Tab *Configuration*), **Browser tab title** (leer = Title) |
+| 🎨 **Colours** | **Farbprofil** per Klick: 🌙 N8 Night (Vorgabe), 🌊 Ocean, 🌌 Aurora, 🔥 Ember, 🔮 Violet, ⚫ Graphite. Fein einstellen mit **Accent colour** (Knöpfe, Zahlen, aktive Tabs), **Background colour**, **Background glow** (0 = flach), **Card brightness** und **Glass blur effect** (aus = schneller auf alten Handys). **↺** setzt eine Farbe zurück aufs Profil. |
+| 🖼️ **Logo & browser icon** | **⬆️ Upload image**: PNG, JPEG, WebP, GIF oder SVG, höchstens 1 MB; das Favicon auch als ICO. Alternativ die Adresse eines Bildes. **↺ N8 logo** stellt das N8schicht-Logo wieder her. Dazu **Logo size** (24–96 px) und **Logo corners** (0 = wie gezeichnet, 50 = rund). |
+
+<p align="center">
+  <img src="../images/admin-appearance-logo.png" alt="Logo hochladen" width="60%">
+</p>
+
+<p align="center"><img src="../images/admin-appearance-ember.png" alt="Farbprofil Ember als Vorschau" width="80%"></p>
+
+**↺ N8 standard** stellt Farben und Logo-Größe auf das N8-Design zurück. Hochgeladene Bilder liegen in der Datenbank und sind unter `/branding/logo` und `/branding/favicon` erreichbar. SVG-Dateien mit Skripten oder externen Links werden abgelehnt.
+
+## 🔗 Links
+
+<p align="center"><img src="../images/admin-links.png" alt="Link-Menü bearbeiten" width="72%"></p>
+
+Eigene Links für alle Besucher, auch ohne Login: Webseite, Chat-Gruppe, Wiki, Kontakt.
+
+- **Show the link menu** schaltet das Menü ein.
+- **Menu button text**: Beschriftung des Knopfs, Vorgabe „🔗 Links“.
+- **Display**: *Button with drop-down menu* (ein Knopf oben rechts mit aufklappender Liste) oder *Row of buttons under the header* (alle Links nebeneinander unter der Kopfzeile).
+- **Links**: Emoji, Name, Adresse und ob der Link in einem neuen Tab öffnet. Mit **↑ ↓** sortieren, **🗑** löschen, **➕ Add link** oder die Schnellstart-Knöpfe (Website, Chat, E-Mail, Setup-Tab) zum Anlegen. Erlaubt sind `https://…`, `mailto:…`, Pfade wie `/static/…` und Tabs wie `#config`.
+- Unter *Advanced* bleibt der frühere einzelne **Network-Info-Knopf**.
+
+<p align="center"><img src="../images/links-menu.png" alt="Link-Menü in der Kopfzeile" width="80%"></p>
+
+## ↔️ OpenBridge
+
+<p align="center"><img src="../images/admin-openbridge.png" alt="OpenBridge-Editor" width="72%">
+&nbsp;
+<img src="../images/admin-openbridge-mobile.png" alt="OpenBridge-Editor am Smartphone" width="22%"></p>
+
+Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Links stehen die Trunks (grün = aktiv), rechts der gewählte Trunk in fünf Schritten:
+
+| Schritt | Inhalt |
+|---|---|
+| ① **Basics** | aktiv an/aus, Name, Beschreibung |
+| ② **Protocol** | Auswahl **🟢 FreeDMR v5** (FDMR+, FDMR-Secure-Server; Vorgabe) oder **⚪ Classic OpenBridge** (Brandmeister, HBlink3). Bei FreeDMR erscheinen die Schalter *Keep-alives* und *Accept changing address*, bei Classic der Schalter *Send the real repeater ID*. |
+| ③ **Connection** | Adresse und Port der Gegenstelle, unser Port, Netzwerk-ID, Passwort (bei FreeDMR mit Warnung ab 21 Zeichen); Bind-Adresse und Source-Server-ID unter *Advanced* |
+| ④ **Talkgroups** | **🌐 All talkgroups – no filter** mit Wahl des Zeitschlitzes, oder **☑️ Only selected talkgroups** mit der Liste aller bekannten Talkgroups |
+| ⑤ **For the far end** | fertiger Abschnitt für die `hblink.cfg` der Gegenstelle zum Kopieren; Ports über Kreuz, Protokoll und TG-Liste passend |
+
+<p align="center"><img src="../images/admin-openbridge-protocol.png" alt="Protokoll klassisch: andere Optionen" width="72%"></p>
+
+**Talkgroups auswählen:** Suche nach Nummer oder Name, Filter *All / Selected / Not selected*, Häkchen pro Talkgroup und der Zeitschlitz daneben. **Select all shown** übernimmt alle gerade angezeigten, z. B. alle Treffer für „deutsch“. Talkgroups, die nicht in der Liste stehen, fügst du mit **➕** hinzu. Ausgewählte stehen oben.
+
+<p align="center"><img src="../images/admin-openbridge-tg.png" alt="Talkgroups auswählen" width="80%"></p>
+
+**Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das darf nur **ein** aktiver Trunk.
+
+<p align="center"><img src="../images/admin-openbridge-stanza.png" alt="Abschnitt für die Gegenstelle" width="72%"></p>
+
+Unter **🧑‍💻 Expert: all trunks as JSON** stehen alle Trunks als JSON, zum Ansehen oder Einfügen; **⤴ Take over JSON into the form** übernimmt es ins Formular. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
 
 ## 🔑 Sessions, 📜 Log, 🖥️ System
 

@@ -3715,6 +3715,10 @@ class HBProtocol(asyncio.DatagramProtocol):
                 continue
             if dst_id in obp.config.talkgroup_slots:
                 target_set.add(('openbridge', obp_name))
+            elif (obp.config.all_talkgroups and obp.config.slot_for(dst_id) is not None
+                  and dst_id not in self._obp_by_tgid):
+                # unfiltered trunk: everything not owned by another trunk
+                target_set.add(('openbridge', obp_name))
 
         return target_set
     
@@ -4315,7 +4319,7 @@ class HBProtocol(asyncio.DatagramProtocol):
         for tgid in config.talkgroup_slots:
             self._obp_by_tgid[tgid] = config.name
         LOGGER.info(f'✓ OpenBridge "{config.name}" bound {config.local_address}:{config.local_port} '
-                    f'→ {target_ip}:{target_port} ({len(config.talkgroup_slots)} talkgroups, '
+                    f'→ {target_ip}:{target_port} ({"all" if config.all_talkgroups else len(config.talkgroup_slots)} talkgroups, '
                     f'{self._obp_mode_label(config)})')
         if config.enhanced_obp:
             state.task = loop.create_task(self._obp_bridge_control_loop(state))
@@ -4400,6 +4404,8 @@ class HBProtocol(asyncio.DatagramProtocol):
             'description': cfg.description or '',
             'preserve_source_peer': cfg.preserve_source_peer,
             **self._openbridge_status_data(state),
+            'all_talkgroups': cfg.all_talkgroups,
+            'default_slot': cfg.default_slot,
             'talkgroups': {str(int.from_bytes(t, 'big')): ts
                            for t, ts in cfg.talkgroup_slots.items()},
         }
@@ -4506,7 +4512,10 @@ class HBProtocol(asyncio.DatagramProtocol):
         obp_name = cfg.name
         dst_id = dmrd[8:11]                 # canonical TGID (wire == canonical)
         stream_id = dmrd[16:20]
-        local_ts = cfg.talkgroup_slots.get(dst_id)
+        local_ts = cfg.slot_for(dst_id)
+        owner = self._obp_by_tgid.get(dst_id)
+        if owner is not None and owner != obp_name:
+            local_ts = None                 # another trunk owns this TG: never transit between trunks
         if local_ts is None:
             # unmapped TGID -> dropped (fail-closed filter). Tell a FreeDMR peer to stop
             # sending this stream (BCSQ), once per stream.
