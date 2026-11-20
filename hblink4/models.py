@@ -106,11 +106,33 @@ class OpenBridgeConnectionConfig:
     # strict-spec peers that require network_id in RptrId.
     preserve_source_peer: bool = True
     description: str = ""
+    # FreeDMR compatibility (see hblink4/obp_freedmr.py). Mirrors the FreeDMR
+    # stanza keys ENHANCED_OBP / PROTO_VER / RELAX_CHECKS.
+    #   enhanced_obp: send/accept bridge control (BCKA keep-alive, BCVE version,
+    #                 BCSQ source quench). A FreeDMR peer with ENHANCED_OBP sends
+    #                 nothing until it hears our keep-alives.
+    #   proto_ver:    1 = classic DMRD/HMAC; 2..5 = FreeDMR DMRE frames (v5).
+    #   relax_checks: accept authenticated frames from any source address and
+    #                 follow the peer's address from its keep-alives (NAT).
+    #   server_id:    sent as "source server" in DMRE frames (default network_id).
+    enhanced_obp: bool = False
+    proto_ver: int = 1
+    relax_checks: bool = False
+    server_id: int = 0
+
+    @property
+    def freedmr(self) -> bool:
+        """True when FreeDMR framing/keys are used (enhanced OBP or protocol > 1)."""
+        return self.enhanced_obp or self.proto_ver > 1
 
     def __post_init__(self):
         """Validate required fields."""
         if not self.name:
             raise ValueError("OpenBridge connection must have a name")
+        if self.proto_ver not in (1, 2, 3, 4, 5):
+            raise ValueError(f"OpenBridge connection '{self.name}' has invalid proto_ver: {self.proto_ver} (1..5)")
+        if self.server_id and not (1000 <= self.server_id <= 9999999):
+            raise ValueError(f"OpenBridge connection '{self.name}' server_id must have 4 to 7 digits")
         if not self.target_address:
             raise ValueError(f"OpenBridge connection '{self.name}' must have a target_address")
         if not self.passphrase:
@@ -261,6 +283,14 @@ class OpenBridgeState:
     transport: Optional[asyncio.DatagramTransport] = None
     # Many concurrent streams, keyed by 4-byte stream_id (reaped on timeout).
     streams: Dict[bytes, 'StreamState'] = field(default_factory=dict)
+    # FreeDMR bridge control state
+    last_keepalive: float = 0.0          # last valid BCKA (or authenticated data frame)
+    peer_version: int = 0                # highest version announced by the peer (BCVE / DMRE)
+    alive: bool = False                  # keep-alive seen within KEEPALIVE_TIMEOUT
+    quench: Dict[bytes, bytes] = field(default_factory=dict)   # TGID -> quenched stream_id (BCSQ)
+    quenched_sent: Dict[bytes, float] = field(default_factory=dict)  # stream_id -> time we sent BCSQ
+    warned: Dict[str, float] = field(default_factory=dict)     # rate limit for warnings
+    task: Optional[asyncio.Task] = None
 
     @property
     def sockaddr(self) -> Tuple[str, int]:

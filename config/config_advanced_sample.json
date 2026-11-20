@@ -206,6 +206,26 @@
             "description": "OBP trunk to the HBlink3 core; carries these canonical TGIDs (TGID -> local TS)"
         },
         {
+            "_comment": "Trunk to a FreeDMR server (ENHANCED_OBP: True, PROTO_VER: 5, RELAX_CHECKS: True on the far end).",
+            "enabled": false,
+            "name": "OBP-FreeDMR",
+            "network_id": 2624,
+            "local_address": "0.0.0.0",
+            "local_port": 51084,
+            "target_address": "freedmr.example.org",
+            "target_port": 62046,
+            "passphrase": "shared-obp-secret",
+            "preserve_source_peer": false,
+            "enhanced_obp": true,
+            "proto_ver": 5,
+            "relax_checks": true,
+            "talkgroup_slots": {
+                "262": "2",
+                "2624": "2"
+            },
+            "description": "FreeDMR OpenBridge (DMRE v5, keep-alives)"
+        },
+        {
             "enabled": false,
             "name": "KS-Core-Trunk-Backup",
             "network_id": 3129901,

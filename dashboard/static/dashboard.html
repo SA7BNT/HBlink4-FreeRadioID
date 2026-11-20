@@ -1549,6 +1549,8 @@
         .obp-state i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
         .obp-state.up { color: #8af5ab; background: rgba(48,209,88,0.14); box-shadow: inset 0 0 0 1px rgba(48,209,88,0.4); }
         .obp-state.up i { box-shadow: 0 0 8px #30d158; }
+        .obp-state.wait { color: #ffd60a; background: rgba(255,214,10,0.12); box-shadow: inset 0 0 0 1px rgba(255,214,10,0.4); }
+        .obp-head .obp-state { margin-left: 6px; font-size: 10px; padding: 2px 8px; vertical-align: middle; }
         .obp-state.down { color: #ff8a80; background: rgba(255,69,58,0.12); box-shadow: inset 0 0 0 1px rgba(255,69,58,0.4); }
         .obp-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
         .obp-fact { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 8px 11px; min-width: 0; }
@@ -3410,14 +3412,14 @@
             }
             if (section) section.style.display = 'block';
 
-            const upCount = list.filter(o => o.status === 'connected').length;
+            const upCount = list.filter(o => obpLink(o).up).length;
             if (countElement) countElement.textContent = upCount > 0 ? `${upCount}` : '';
 
             const streams = state.streams || [];
             const n = v => Number(v || 0).toLocaleString('de-DE');
 
             container.innerHTML = list.map(o => {
-                const up = o.status === 'connected';
+                const lk = obpLink(o), up = lk.up;
                 const headerClass = up ? 'outbound-header-connected' : 'outbound-header-disconnected';
                 const upDur = (up && o.connected_at) ? formatDuration(Date.now() / 1000 - o.connected_at) : '—';
 
@@ -3446,11 +3448,12 @@
                         <div class="repeater-info">
                             <div class="obp-head">
                                 <div class="${headerClass}">↔️ ${escapeHtml(o.connection_name)}
-                                    <span class="rid">NetID ${o.network_id}</span></div>
+                                    <span class="rid">NetID ${o.network_id}</span>
+                                    ${lk.cls !== 'up' ? `<span class="obp-state ${lk.cls}" title="${lk.hint}"><i></i>${lk.label}</span>` : ''}</div>
                                 <button type="button" class="obp-more" onclick="obpOpen('${escapeHtml(o.connection_name)}')">Details ›</button>
                             </div>
                             <div class="obp-meta">
-                                ${fmtAddr(o.remote_address, o.remote_port)} · up ${upDur}</div>
+                                ${fmtAddr(o.remote_address, o.remote_port)} · ${up ? 'up ' + upDur : escapeHtml(lk.hint)}${o.protocol ? ' · ' + escapeHtml(obpProto(o)) : ''}</div>
                             <div class="obp-chips">${tgChip}${todayChip}</div>
                             ${streamHtml}
                         </div>
@@ -3479,8 +3482,17 @@
         }
 
         // Live tile + Connections count include the OpenBridge trunks
+        // Link state: classic OBP has no handshake (bound = up); FreeDMR enhanced OBP is up
+        // only while keep-alives arrive from the far end.
+        function obpLink(o) {
+            if (o.status !== 'connected') return { cls: 'down', label: 'DOWN', up: false, hint: 'socket not bound' };
+            if (!o.enhanced_obp) return { cls: 'up', label: 'UP', up: true, hint: '' };
+            if (o.alive) return { cls: 'up', label: 'UP', up: true, hint: '' };
+            if (!o.last_keepalive) return { cls: 'wait', label: 'WAITING', up: false, hint: 'no keep-alive from the far end yet' };
+            return { cls: 'down', label: 'NO KEEP-ALIVE', up: false, hint: 'far end silent for more than 60 s' };
+        }
         function obpList() { return Array.isArray(state.openbridges) ? state.openbridges : Object.values(state.openbridges || {}); }
-        function obpUpCount() { return obpList().filter(o => o.status === 'connected').length; }
+        function obpUpCount() { return obpList().filter(o => obpLink(o).up).length; }
         function obpUpdateTile(list) {
             list = list || obpList();
             const card = document.getElementById('statObpCard');
@@ -3491,7 +3503,7 @@
                 tab.style.display = list.length ? '' : 'none';
                 if (was !== !!list.length && typeof showTab === 'function') showTab(currentTab(), false);
             }
-            const up = list.filter(o => o.status === 'connected').length;
+            const up = list.filter(o => obpLink(o).up).length;
             const tc = document.getElementById('obpTabCount'); if (tc) tc.textContent = list.length ? `${up}/${list.length}` : '';
             const v = document.getElementById('statObp'); if (v) v.textContent = `${up}/${list.length}`;
             const today = Object.values(state.obpToday || {});
@@ -4206,6 +4218,13 @@
                     }
                     break;
 
+                case 'openbridge_status': {
+                    const st = obpList().find(o => o.connection_name === data.connection_name);
+                    if (st) Object.assign(st, data);
+                    updateOpenbridges(state.openbridges);
+                    if (obp.visible) renderObp();
+                    break;
+                }
                 case 'openbridge_disconnected':
                     // Not emitted by the core today (a bound socket has nothing to
                     // drop), but the server already handles it — wire the browser
@@ -4387,7 +4406,8 @@
                   connected_at: now - 8130, last_activity: now - 4,
                   remote_address: 'freedmr.funkerportal.de', remote_port: 62046, local_port: 51084,
                   description: 'N8schicht-Bridge zu freedmr.funkerportal.de (FreeDMR, klassisches OBP)',
-                  preserve_source_peer: false,
+                  preserve_source_peer: false, enhanced_obp: true, alive: true, last_keepalive: now - 4,
+                  peer_version: 5, tx_version: 5, protocol: 'FreeDMR OBP v5 enhanced relaxed',
                   talkgroups: demoObpTgs() },
             ];
 
@@ -4555,6 +4575,12 @@
             } catch (e) { console.warn('OpenBridge:', e); }
         }
 
+        function obpProto(o) {
+            if (!o.enhanced_obp && !(o.tx_version > 1)) return 'Classic OBP · HMAC';
+            const v = o.tx_version > 1 ? `DMRE v${o.tx_version}` : 'DMRD';
+            return `FreeDMR ${v}${o.enhanced_obp ? ' · enhanced' : ''}`;
+        }
+
         function obpSeg(id, items, cur) {
             return `<div class="tgs-seg" id="${id}" role="tablist">` + items.map(([v, l]) =>
                 `<button data-v="${escapeHtml(v)}" class="${v === cur ? 'active' : ''}">${l}</button>`).join('') + `</div>`;
@@ -4575,7 +4601,7 @@
             // live info (status, uptime) comes from the WebSocket state when available
             const live = obpList().find(o => o.connection_name === t.connection_name) || {};
             const o = { ...t, ...live };
-            const up = o.status === 'connected';
+            const lk = obpLink(o), up = lk.up;
             const n = v => Number(v || 0).toLocaleString('de-DE');
             const dt = ts => ts ? new Date(ts * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
             const ago = ts => { if (!ts) return '–'; const s = Date.now() / 1000 - ts; return s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : dt(ts); };
@@ -4585,7 +4611,7 @@
                 && (s.status === 'active' || s.status === 'hang_time'));
 
             let html = `<div class="card obp-hero">
-                <div><h3>↔️ ${escapeHtml(o.connection_name)} <span class="obp-state ${up ? 'up' : 'down'}"><i></i>${up ? 'UP' : 'DOWN'}</span></h3>
+                <div><h3>↔️ ${escapeHtml(o.connection_name)} <span class="obp-state ${lk.cls}" title="${lk.hint}"><i></i>${lk.label}</span></h3>
                     ${o.description ? `<div class="desc">${escapeHtml(o.description)}</div>` : ''}</div>
                 <div></div>
                 <div class="obp-facts">
@@ -4595,7 +4621,8 @@
                     <div class="obp-fact"><div class="k">Up since</div><div class="v" data-obp-up="${up && o.connected_at ? o.connected_at : ''}">${up && o.connected_at ? formatDuration(Date.now() / 1000 - o.connected_at) : '–'}</div></div>
                     <div class="obp-fact"><div class="k">Last traffic</div><div class="v">${ago(o.last_activity)}</div></div>
                     <div class="obp-fact"><div class="k">Talkgroups</div><div class="v">${n(tgCount)} <small>${obpTsSplit(t.ts1, t.ts2)}</small></div></div>
-                    <div class="obp-fact"><div class="k">RptrId</div><div class="v" style="font-size:13px">${o.preserve_source_peer ? 'source peer' : 'network ID'}</div></div>
+                    <div class="obp-fact"><div class="k">Protocol</div><div class="v" style="font-size:13px">${escapeHtml(obpProto(o))}
+                        ${o.enhanced_obp ? `<br><small>keep-alive <span data-obp-ka="${o.last_keepalive || ''}">${o.last_keepalive ? ago(o.last_keepalive) : '<span style="color:var(--amber)">none yet</span>'}</span></small>` : ''}</div></div>
                 </div>
                 <div class="obp-live obp-streams">${active.length ? active.map(obpStreamPill).join('') : '<span class="obp-stream-pill idle">— no call on the trunk right now —</span>'}</div>
             </div>`;
@@ -4761,7 +4788,9 @@
             });
         }
         window.addEventListener('resize', () => { if (obp.visible && obp.data) { clearTimeout(obp.rt); obp.rt = setTimeout(renderObp, 150); } });
-        setInterval(() => { if (!obp.visible) return; const el = document.querySelector('[data-obp-up]'); if (el && el.dataset.obpUp) el.textContent = formatDuration(Date.now() / 1000 - Number(el.dataset.obpUp)); }, 1000);
+        setInterval(() => { if (!obp.visible) return; const el = document.querySelector('[data-obp-up]'); if (el && el.dataset.obpUp) el.textContent = formatDuration(Date.now() / 1000 - Number(el.dataset.obpUp));
+            const ka = document.querySelector('[data-obp-ka]');
+            if (ka && ka.dataset.obpKa) { const s = Math.max(0, Math.round(Date.now() / 1000 - Number(ka.dataset.obpKa))); ka.textContent = s < 60 ? `${s} s ago` : `${Math.floor(s / 60)} min ago`; } }, 1000);
 
         // ================= Talkgroup statistics =================
         // Data: GET /api/stats/talkgroups?range=today|24h|7d|30d (one row per group call in SQLite).

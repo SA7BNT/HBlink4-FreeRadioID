@@ -54,6 +54,10 @@ Zu jedem Problem steht die passende Lösung mit **→** dahinter. Am Ende steht 
 | `hblink4-dash` startet in einer Schleife | fehlende Python-Module | `sudo -u hblink ./venv/bin/pip install -r requirements.txt -r requirements-dashboard.txt` |
 | Station kommt nicht rein (MSTNAK) | falsches Passwort, ID auf der Blacklist oder FreeRadioID.net nicht erreichbar | `journalctl -u hblink4` zeigt den Grund; zum Test das Gast-Passwort nehmen |
 | Keine Avatare | ID nicht bei FreeRadioID.net registriert, Avatare abgeschaltet oder Liste noch nicht geladen | Adminbereich → System zeigt die Zahl der gespeicherten Avatare; **⟳ Refresh now** unter Callsign database |
+| OpenBridge verbunden, aber keine Gespräche | Gegenstelle ist FreeDMR mit `ENHANCED_OBP`/`PROTO_VER` > 1, der Trunk läuft aber klassisch; im Log steht dann „is not classic OBP“ | beim Trunk `"enhanced_obp": true`, `"proto_ver": 5`, `"relax_checks": true` setzen, HBlink4 neu starten ([Konfiguration](konfiguration.md#openbridge-zu-einem-freedmr-server)) |
+| OpenBridge bleibt auf **WAITING** | keine Keep-alives der Gegenstelle: Port zu, Ports vertauscht oder falsche Adresse | `sudo ufw allow 51084/udp`, Router-Weiterleitung prüfen; `PORT`/`TARGET_PORT` der Gegenstelle müssen zu `target_port`/`local_port` passen |
+| `failed authentication – passphrase on both sides identical?` | Passwort verschieden (FreeDMR nutzt höchstens 20 Zeichen) | auf beiden Seiten dasselbe Passwort mit höchstens 20 Zeichen eintragen |
+| `frame is … s off our clock` | Uhrzeit eines Servers falsch | NTP einrichten: `sudo apt install chrony` |
 | Superadmin-Passwort vergessen | – | neuen Hash erzeugen (`./venv/bin/python -m dashboard.auth hash-password`), in `dashboard/config.json` eintragen, Dashboard neu starten; oder `sudo ./scripts/setup.sh` |
 
 ## Sicherung

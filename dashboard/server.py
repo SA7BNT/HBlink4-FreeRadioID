@@ -1061,6 +1061,12 @@ class EventReceiver:
                         f"→ {data.get('remote_address')}:{data.get('remote_port')} "
                         f"({len(data.get('talkgroups', {}))} talkgroups)")
 
+        elif event_type == 'openbridge_status':
+            # FreeDMR bridge control: keep-alive state and negotiated protocol version
+            conn_name = data['connection_name']
+            if conn_name in state.openbridges:
+                state.openbridges[conn_name].update({k: v for k, v in data.items() if k != 'connection_name'})
+
         elif event_type == 'openbridge_disconnected':
             conn_name = data['connection_name']
             if conn_name in state.openbridges:
@@ -1692,7 +1698,8 @@ def _obp_public(o: dict) -> dict:
     ts1 = sum(1 for v in tgs.values() if str(v) == '1')
     return {k: o.get(k) for k in ('connection_name', 'network_id', 'remote_address', 'remote_port', 'local_address',
                                   'local_port', 'description', 'preserve_source_peer', 'status', 'connected_at',
-                                  'disconnected_at', 'last_activity')} | {
+                                  'disconnected_at', 'last_activity', 'alive', 'last_keepalive', 'peer_version',
+                                  'tx_version', 'protocol', 'enhanced_obp')} | {
         'talkgroup_count': len(tgs), 'ts1': ts1, 'ts2': len(tgs) - ts1}
 
 

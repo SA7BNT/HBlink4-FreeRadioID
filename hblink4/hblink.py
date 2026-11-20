@@ -59,6 +59,7 @@ from .utils import (
     cleanup_old_logs, setup_logging, PeerAddress, detect_connection_type,
     fmt_ts_tg, pad_text, pad_num, pad_decimal
 )
+from . import obp_freedmr as fdmr
 from .config import load_config as load_config_func, parse_outbound_connections as parse_outbound_func, parse_openbridge_connections as parse_openbridge_func
 from .protocol import (
     parse_dmr_packet, is_dmr_terminator, validate_packet_length,
@@ -3922,8 +3923,10 @@ class HBProtocol(asyncio.DatagramProtocol):
                 if not obp:
                     continue
                 dmrd53 = build_target_packet(net_slot, net_dst_id, net_rf_src, None)
-                obp.transport.sendto(
-                    self._obp_build_egress(obp, dmrd53, source_peer_id), obp.sockaddr)
+                frame = self._obp_build_egress(obp, dmrd53, source_peer_id, stream_id)
+                if frame is None:
+                    continue               # quenched by the far end (BCSQ)
+                obp.transport.sendto(frame, obp.sockaddr)
 
                 # Track the assumed TX stream so the dashboard draws an outbound
                 # pill and the stream ends cleanly (terminator or reaper backstop).
@@ -4312,8 +4315,77 @@ class HBProtocol(asyncio.DatagramProtocol):
         for tgid in config.talkgroup_slots:
             self._obp_by_tgid[tgid] = config.name
         LOGGER.info(f'✓ OpenBridge "{config.name}" bound {config.local_address}:{config.local_port} '
-                    f'→ {target_ip}:{target_port} ({len(config.talkgroup_slots)} talkgroups)')
+                    f'→ {target_ip}:{target_port} ({len(config.talkgroup_slots)} talkgroups, '
+                    f'{self._obp_mode_label(config)})')
+        if config.enhanced_obp:
+            state.task = loop.create_task(self._obp_bridge_control_loop(state))
         self._events.emit('openbridge_connected', self._openbridge_event_data(state))
+
+    @staticmethod
+    def _obp_mode_label(cfg) -> str:
+        if not cfg.freedmr:
+            return 'classic OBP'
+        return (f'FreeDMR OBP v{cfg.proto_ver}' + (' enhanced' if cfg.enhanced_obp else '')
+                + (' relaxed' if cfg.relax_checks else ''))
+
+    def _obp_warn(self, state, key: str, msg: str, every: float = 60.0) -> None:
+        """Rate-limited warning per trunk and reason (a firehose must not flood the log)."""
+        now = time()
+        if now - state.warned.get(key, 0) >= every:
+            state.warned[key] = now
+            LOGGER.warning(f'[OBP {state.config.name}] {msg}')
+
+    def _obp_send(self, state, packet: bytes) -> None:
+        if state.transport is not None:
+            state.transport.sendto(packet, state.sockaddr)
+
+    def _obp_tx_version(self, state) -> int:
+        """Data frame version we send: configured, upgraded to what the peer speaks (FreeDMR does the same)."""
+        cfg = state.config
+        if not cfg.freedmr:
+            return 1
+        v = max(cfg.proto_ver, state.peer_version or 0)
+        if v <= 1:
+            return 1
+        return 5 if v >= 5 else 4      # DMRE; every DMRE-capable FreeDMR accepts v4/v5
+
+    async def _obp_bridge_control_loop(self, state) -> None:
+        """FreeDMR ENHANCED_OBP: BCKA every 10 s, BCVE every 60 s, watch the peer's keep-alives."""
+        k = fdmr.key(state.config.passphrase)
+        tick = 0
+        try:
+            while True:
+                self._obp_send(state, fdmr.build_bcka(k))
+                if tick % (fdmr.VERSION_INTERVAL // fdmr.KEEPALIVE_INTERVAL) == 0:
+                    self._obp_send(state, fdmr.build_bcve(k, fdmr.OUR_VERSION))
+                tick += 1
+                self._obp_check_alive(state)
+                # forget old quench requests / sent quenches
+                cutoff = time() - 120
+                state.quenched_sent = {k2: t for k2, t in state.quenched_sent.items() if t > cutoff}
+                await asyncio.sleep(fdmr.KEEPALIVE_INTERVAL)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            LOGGER.error(f'[OBP {state.config.name}] bridge control loop failed: {e}')
+
+    def _obp_check_alive(self, state) -> None:
+        alive = bool(state.last_keepalive) and (time() - state.last_keepalive) < fdmr.KEEPALIVE_TIMEOUT
+        if alive != state.alive:
+            state.alive = alive
+            if alive:
+                LOGGER.info(f'[OBP {state.config.name}] ✓ keep-alive from the far end – trunk is up '
+                            f'(peer protocol v{state.peer_version or "?"}, sending v{self._obp_tx_version(state)})')
+            else:
+                LOGGER.warning(f'[OBP {state.config.name}] no keep-alive from the far end for '
+                               f'{fdmr.KEEPALIVE_TIMEOUT} s – trunk is down')
+            self._events.emit('openbridge_status', self._openbridge_status_data(state))
+
+    def _openbridge_status_data(self, state) -> dict:
+        return {'connection_name': state.config.name, 'alive': state.alive,
+                'last_keepalive': state.last_keepalive or None, 'peer_version': state.peer_version or None,
+                'tx_version': self._obp_tx_version(state), 'protocol': self._obp_mode_label(state.config),
+                'enhanced_obp': state.config.enhanced_obp}
 
     def _openbridge_event_data(self, state: 'OpenBridgeState') -> dict:
         """Dashboard payload describing an OBP trunk (name, peer, and TGID→TS map)."""
@@ -4327,6 +4399,7 @@ class HBProtocol(asyncio.DatagramProtocol):
             'local_port': cfg.local_port,
             'description': cfg.description or '',
             'preserve_source_peer': cfg.preserve_source_peer,
+            **self._openbridge_status_data(state),
             'talkgroups': {str(int.from_bytes(t, 'big')): ts
                            for t, ts in cfg.talkgroup_slots.items()},
         }
@@ -4337,31 +4410,113 @@ class HBProtocol(asyncio.DatagramProtocol):
         return passphrase.encode('utf-8') if isinstance(passphrase, str) else passphrase
 
     def _handle_openbridge_packet(self, obp_name: str, packet: bytes, addr: tuple) -> None:
-        """Authenticate, filter, and (TODO: route) an inbound OBP frame."""
+        """Authenticate, filter and route an inbound OBP datagram."""
         state = self._openbridges.get(obp_name)
         if state is None:
             return
         cfg = state.config
+        if not cfg.freedmr:
+            self._handle_obp_classic(state, packet, addr)
+            return
 
-        # OBP carries only DMRD frames (53-byte DMRD + 20-byte HMAC-SHA1).
+        # FreeDMR-compatible trunk: DMRD / DMRE / DMRF data plus bridge control.
+        k = fdmr.key(cfg.passphrase)
+        f = fdmr.parse(k, packet)
+        if f is None:
+            self._obp_warn(state, 'unknown', f'unknown packet {packet[:4]!r} ({len(packet)} bytes) from '
+                                             f'{addr[0]}:{addr[1]} ignored')
+            return
+        if not f.ok:
+            self._obp_warn(state, 'auth-' + f.kind,
+                           f'{packet[:4].decode("ascii", "replace")} from {addr[0]}:{addr[1]} failed authentication '
+                           f'– passphrase on both sides identical? {f.error}'.strip())
+            return
+        from_peer = (addr[0], addr[1]) == (state.ip, state.port)
+        if not from_peer and not cfg.relax_checks:
+            self._obp_warn(state, 'source', f'authenticated packet from {addr[0]}:{addr[1]} but the trunk is '
+                                            f'configured for {state.ip}:{state.port} – dropped. Fix target_port/'
+                                            f'target_address or set "relax_checks": true')
+            return
+
+        now = time()
+        if f.kind == 'bcka':
+            if not from_peer and cfg.relax_checks:
+                LOGGER.info(f'[OBP {obp_name}] far end now at {addr[0]}:{addr[1]} (was {state.ip}:{state.port})')
+                state.ip, state.port = addr[0], addr[1]
+            state.last_keepalive = now
+            self._obp_check_alive(state)
+            return
+        if f.kind == 'bcve':
+            if f.version > (state.peer_version or 0):
+                LOGGER.info(f'[OBP {obp_name}] far end speaks protocol v{f.version}')
+                state.peer_version = f.version
+                self._events.emit('openbridge_status', self._openbridge_status_data(state))
+            return
+        if f.kind == 'bcsq':
+            state.quench[f.tgid] = f.stream_id
+            LOGGER.debug(f'[OBP {obp_name}] source quench TG {int.from_bytes(f.tgid, "big")} '
+                         f'stream {f.stream_id.hex()}')
+            return
+        if f.kind == 'bcst':
+            return
+
+        # ---- data frame ----
+        if f.version > 1 and f.version > (state.peer_version or 0):
+            state.peer_version = f.version
+            self._events.emit('openbridge_status', self._openbridge_status_data(state))
+        if f.version > 1:
+            age = now - f.timestamp_ns / 1e9
+            if age > 10 or age < -10:
+                self._obp_warn(state, 'clock', f'frame is {age:+.1f} s off our clock – dropped. '
+                                               f'Both servers need NTP (e.g. chrony).')
+                return
+            if f.hops + 1 > fdmr.MAX_HOPS:
+                self._obp_warn(state, 'hops', f'frame exceeded {fdmr.MAX_HOPS} hops – dropped (loop?)')
+                return
+        # Traffic counts as keep-alive (FreeDMR does the same)
+        state.last_keepalive = now
+        if cfg.enhanced_obp and not state.alive:
+            self._obp_check_alive(state)
+        remote = f.source_rptr or f.source_server or int.from_bytes(f.dmrd[11:15], 'big')
+        self._obp_ingest(state, f.dmrd, remote)
+
+    def _handle_obp_classic(self, state, packet: bytes, addr: tuple) -> None:
+        """Classic OBP (Brandmeister/HBlink3): 53-byte DMRD + 20-byte HMAC-SHA1, strict source."""
+        cfg = state.config
         if len(packet) != 73 or packet[:4] != DMRD:
+            self._obp_warn(state, 'classic-type',
+                           f'{packet[:4]!r} ({len(packet)} bytes) is not classic OBP – dropped. The far end '
+                           f'probably runs FreeDMR with ENHANCED_OBP/PROTO_VER > 1: set "enhanced_obp": true '
+                           f'and "proto_ver": 5 for this trunk')
             return
         dmrd = packet[:53]
-        rx_hmac = packet[53:]
         calc = hmac_new(self._obp_key(cfg.passphrase), dmrd, sha1).digest()
         # Auth: HMAC must match AND the source socket must be the configured peer.
-        if not compare_digest(rx_hmac, calc) or (addr[0], addr[1]) != (state.ip, state.port):
-            LOGGER.debug(f'[OBP {obp_name}] frame discarded (HMAC or source mismatch)')
+        if not compare_digest(packet[53:], calc):
+            self._obp_warn(state, 'auth', 'HMAC mismatch – passphrase on both sides identical?')
             return
+        if (addr[0], addr[1]) != (state.ip, state.port):
+            self._obp_warn(state, 'source', f'frame from {addr[0]}:{addr[1]}, expected {state.ip}:{state.port} – dropped')
+            return
+        self._obp_ingest(state, dmrd, int.from_bytes(dmrd[11:15], 'big'))
 
+    def _obp_ingest(self, state, dmrd: bytes, remote_id: int) -> None:
+        """Filter on talkgroup_slots, normalise the slot and route an authenticated 53-byte DMRD."""
+        cfg = state.config
+        obp_name = cfg.name
         dst_id = dmrd[8:11]                 # canonical TGID (wire == canonical)
+        stream_id = dmrd[16:20]
         local_ts = cfg.talkgroup_slots.get(dst_id)
         if local_ts is None:
-            return                          # unmapped TGID -> dropped (fail-closed filter)
+            # unmapped TGID -> dropped (fail-closed filter). Tell a FreeDMR peer to stop
+            # sending this stream (BCSQ), once per stream.
+            if cfg.enhanced_obp and stream_id not in state.quenched_sent:
+                state.quenched_sent[stream_id] = time()
+                self._obp_send(state, fdmr.build_bcsq(fdmr.key(cfg.passphrase), dst_id, stream_id))
+            return
 
         rf_src = dmrd[5:8]
         peer_id = dmrd[11:15]
-        stream_id = dmrd[16:20]
 
         # Normalize the DMR frame onto the assigned local timeslot. The OBP wire
         # slot is meaningless (forced to 1 by convention); HBlink4's core is
@@ -4390,8 +4545,7 @@ class HBProtocol(asyncio.DatagramProtocol):
                         f'tgid={int.from_bytes(dst_id, "big")} -> TS{local_ts} '
                         f'stream_id={stream_id.hex()} targets={len(targets)}')
             self._emit_stream_start('openbridge', obp_name, local_ts, rf_src, dst_id,
-                                    stream_id, 'group',
-                                    remote_repeater_id=int.from_bytes(peer_id, 'big'))
+                                    stream_id, 'group', remote_repeater_id=remote_id)
         else:
             stream.last_seen = now
             stream.packet_count += 1
@@ -4408,24 +4562,39 @@ class HBProtocol(asyncio.DatagramProtocol):
             self._emit_stream_end('openbridge', obp_name, local_ts, stream, 'terminator')
 
     def _obp_build_egress(self, state: 'OpenBridgeState', dmrd53: bytes,
-                          source_peer_id: bytes) -> bytes:
-        """Frame a DMRD as a 73-byte OBP packet for this OBP.
+                          source_peer_id: bytes, stream_id: Optional[bytes] = None) -> Optional[bytes]:
+        """Frame a DMRD for this OBP; None when the far end quenched this stream.
 
         - Truncated to a canonical 53-byte DMRD: HBP repeater sources deliver
           55-byte frames (trailing BER/RSSI bytes) which must be dropped so the
           wire frame is exactly 53 DMRD + 20 HMAC = 73; the peer computes its
           HMAC over 53 bytes and rejects anything longer.
         - RptrId (bytes 11:15): the true source peer when preserve_source_peer,
-          else our network_id (Brandmeister-spec behavior).
+          else our network_id (Brandmeister-spec behavior). FreeDMR peers always
+          get network_id (they drop frames whose ID differs from their NETWORK_ID);
+          the true source peer then rides in the DMRE source_rptr field.
         - Wire slot forced to 1 (OBP convention; the far end derives its own
           local TS from its talkgroup_slots table). Bit 0x80 is the slot-2 flag.
-        - HMAC-SHA1(passphrase, DMRD) appended.
+        - Classic: HMAC-SHA1(passphrase, DMRD). FreeDMR: DMRD+HMAC or DMRE+BLAKE2b
+          depending on the negotiated version (see obp_freedmr.py).
         """
         cfg = state.config
-        rptr_id = source_peer_id if cfg.preserve_source_peer else cfg.network_id.to_bytes(4, 'big')
         bits = dmrd53[15] & ~0x80          # force slot 1 on the wire
-        dmrd = b''.join([dmrd53[:11], rptr_id, bytes([bits]), dmrd53[16:53]])
-        return dmrd + hmac_new(self._obp_key(cfg.passphrase), dmrd, sha1).digest()
+        if not cfg.freedmr:
+            rptr_id = source_peer_id if cfg.preserve_source_peer else cfg.network_id.to_bytes(4, 'big')
+            dmrd = b''.join([dmrd53[:11], rptr_id, bytes([bits]), dmrd53[16:53]])
+            return dmrd + hmac_new(self._obp_key(cfg.passphrase), dmrd, sha1).digest()
+
+        if stream_id is not None and state.quench.get(dmrd53[8:11]) == stream_id:
+            return None                    # far end asked us to stop this stream (BCSQ)
+        dmrd = b''.join([DMRD, dmrd53[4:11], cfg.network_id.to_bytes(4, 'big'), bytes([bits]), dmrd53[16:53]])
+        k = fdmr.key(cfg.passphrase)
+        ver = self._obp_tx_version(state)
+        if ver <= 1:
+            return fdmr.build_dmrd(k, dmrd)
+        rptr = int.from_bytes(source_peer_id[:4], 'big') if source_peer_id else 0
+        return fdmr.build_dmre(k, dmrd, ver, source_server=cfg.server_id or cfg.network_id,
+                               source_rptr=rptr if rptr <= 0xFFFFFFFF else 0)
 
     def _send_packet(self, data: bytes, addr: tuple):
         """Send packet to specified address"""

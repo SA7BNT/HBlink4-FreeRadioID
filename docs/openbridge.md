@@ -103,6 +103,32 @@ the main HBlink4 config (JSON). See also
 | `passphrase` | Shared secret; keys the per-packet HMAC-SHA1. Up to 80 characters, used whole. Must match the peer. |
 | `preserve_source_peer` | `true` (default): keep the true source peer/repeater ID in the egress RptrId (transparency; lets a downstream dashboard show the real origin). `false`: overwrite with `network_id` (Brandmeister-spec behavior). Set `false` for strict-spec peers. |
 | `talkgroup_slots` | Canonical **TGID → local TS** map. Does triple duty: ownership, fail-closed filter, and timeslot assignment. |
+| `enhanced_obp` | `false` (default). `true`: FreeDMR bridge control — send `BCKA` keep-alives every 10 s and `BCVE` (version) every 60 s, honour `BCSQ` (source quench) and send `BCSQ` for streams on talkgroups not in `talkgroup_slots`. The trunk counts as *up* only while the far end's keep-alives arrive. Needed for FreeDMR stanzas with `ENHANCED_OBP: True`. |
+| `proto_ver` | `1` (default): classic DMRD + HMAC-SHA1. `2`–`5`: FreeDMR `DMRE` frames (BLAKE2b, timestamp, source server/repeater, hop count). We send v5 (v4 to a peer that only announces v4) and upgrade automatically when the peer announces a higher version. Needed for FreeDMR stanzas with `PROTO_VER` > 1, which drop classic DMRD. |
+| `relax_checks` | `false` (default): accept frames only from `target_address:target_port`. `true`: accept authenticated frames from any address and follow the far end's address from its keep-alives (FreeDMR `RELAX_CHECKS`). |
+| `server_id` | Optional, FreeDMR only: "source server" ID in `DMRE` frames (4–7 digits). Defaults to `network_id`. |
+
+### Connecting to FreeDMR (FDMR+, FDMR-Secure-Server, …)
+
+FreeDMR checks bytes 11–14 of every frame against the `NETWORK_ID` of its stanza
+and fills them with its own `SERVER_ID` when sending. So:
+
+| FreeDMR stanza (far end) | HBlink4 trunk (this side) |
+|---|---|
+| `NETWORK_ID: 2624` | `"network_id": 2624` (stamped into every frame we send; `preserve_source_peer` is ignored, the true source repeater travels in the DMRE `source_rptr` field) |
+| `PASSPHRASE: …` | `"passphrase": "…"` (FreeDMR uses at most 20 characters, NUL-padded – HBlink4 does the same in FreeDMR mode) |
+| `PORT` / `TARGET_PORT` | `"target_port"` / `"local_port"` (crossed) |
+| `ENHANCED_OBP: True` | `"enhanced_obp": true` |
+| `PROTO_VER: 5` | `"proto_ver": 5` |
+| `RELAX_CHECKS: True` | `"relax_checks": true` |
+
+Both servers need a correct clock (NTP): FreeDMR drops DMRE frames older than
+5 s, HBlink4 drops frames more than 10 s off. Without `enhanced_obp`, a FreeDMR
+peer with `ENHANCED_OBP: True` never sends traffic (it waits for keep-alives),
+and with `proto_ver: 1` a peer with `PROTO_VER` > 1 drops everything we send.
+HBlink4 logs a hint when it receives FreeDMR packets on a classic trunk.
+
+Framing details: [`hblink4/obp_freedmr.py`](../hblink4/obp_freedmr.py).
 
 ### `talkgroup_slots` — why both sides are quoted
 

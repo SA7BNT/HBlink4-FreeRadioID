@@ -130,6 +130,61 @@ Patterns geben bestimmten IDs oder Rufzeichen ein eigenes Passwort und eigene Ta
 
 Mehr Beispiele, auch für `outbound_connections` und `openbridge_connections`, stehen in [`config/config_advanced_sample.json`](../../config/config_advanced_sample.json) und in der [Original-Doku](../configuration.md).
 
+## OpenBridge zu einem FreeDMR-Server
+
+OpenBridge-Trunks stehen im Adminbereich unter *Patterns, links & trunks* → `openbridge_connections` (Neustart nötig). HBlink4 spricht zwei Varianten:
+
+- **Klassisches OpenBridge** (Brandmeister, HBlink3): `DMRD` mit HMAC-SHA1. Das ist die Vorgabe.
+- **FreeDMR-OpenBridge** (FreeDMR, FDMR+, FDMR-Secure-Server von FreeRadioID): `DMRE`-Pakete (v5) mit BLAKE2b, Zeitstempel und Hop-Zähler, dazu Keep-alives (`BCKA`), Versionsabgleich (`BCVE`) und Source Quench (`BCSQ`).
+
+Steht beim FreeDMR-Server `ENHANCED_OBP: True` oder `PROTO_VER` größer als 1, braucht der Trunk die FreeDMR-Variante. Mit klassischem OpenBridge **verbindet** sich der Trunk zwar, es läuft aber nichts: FreeDMR wartet auf Keep-alives und verwirft unsere klassischen Pakete; HBlink4 verwirft die `DMRE`-Pakete.
+
+So passen beide Seiten zusammen:
+
+| FreeDMR (Gegenstelle) | HBlink4 (`openbridge_connections`) |
+|---|---|
+| `NETWORK_ID: 2624` | `"network_id": 2624` |
+| `PASSPHRASE: …` | `"passphrase": "…"` (höchstens 20 Zeichen, wie bei FreeDMR) |
+| `PORT: 62046` (lauscht dort) | `"target_port": 62046` |
+| `TARGET_PORT: 51084` | `"local_port": 51084` |
+| `TARGET_IP: dmr.die-n8schicht.de` | `"target_address": "freedmr.funkerportal.de"` |
+| `ENHANCED_OBP: True` | `"enhanced_obp": true` |
+| `PROTO_VER: 5` | `"proto_ver": 5` |
+| `RELAX_CHECKS: True` | `"relax_checks": true` |
+
+Beispiel:
+
+```json
+{
+  "enabled": true,
+  "name": "OBP-Funkerportal",
+  "network_id": 2624,
+  "local_address": "0.0.0.0",
+  "local_port": 51084,
+  "target_address": "freedmr.funkerportal.de",
+  "target_port": 62046,
+  "passphrase": "…",
+  "preserve_source_peer": false,
+  "enhanced_obp": true,
+  "proto_ver": 5,
+  "relax_checks": true,
+  "talkgroup_slots": { "262": "2", "2624": "2" }
+}
+```
+
+| Feld | Bedeutung |
+|---|---|
+| `enhanced_obp` | Keep-alive alle 10 s, Version alle 60 s. Der Trunk gilt erst als verbunden, wenn Keep-alives der Gegenstelle ankommen. Talkgroups, die nicht in `talkgroup_slots` stehen, bestellt HBlink4 per `BCSQ` ab, damit die Gegenstelle sie nicht weiter schickt. |
+| `proto_ver` | `1` = klassisch, `5` = FreeDMR `DMRE`. HBlink4 stellt automatisch auf die Version der Gegenstelle um. |
+| `relax_checks` | Pakete mit gültiger Signatur auch von anderer Adresse oder anderem Port annehmen und der Adresse aus den Keep-alives folgen (hilft hinter NAT). |
+| `server_id` | optional: die „Source Server“-ID in `DMRE`-Paketen, 4 bis 7 Ziffern; Vorgabe ist `network_id` |
+
+In FreeDMR-Paketen steht immer die `network_id` als Absender; `preserve_source_peer` spielt dort keine Rolle. Den echten Repeater überträgt das `DMRE`-Paket in einem eigenen Feld.
+
+**Uhrzeit:** Beide Server brauchen eine richtige Uhr (NTP, z. B. `chrony`). FreeDMR verwirft Pakete, die älter als 5 Sekunden sind.
+
+Im Dashboard zeigt der [Tab OpenBridge](dashboard.md#️-openbridge--die-trunks-im-detail) den Zustand: **UP**, **WAITING** (noch kein Keep-alive der Gegenstelle) oder **NO KEEP-ALIVE**, dazu Protokoll und Zeit des letzten Keep-alives.
+
 ## Sichern und zurücksetzen
 
 - **Sichern:** `dashboard/data/dashboard.db` enthält alle Einstellungen, Benutzer, das Protokoll und die Talkgroup-Statistik (Tabelle `tg_calls`). Diese Datei und die beiden `config.json` reichen als Backup, siehe [Betrieb](betrieb.md#sicherung).

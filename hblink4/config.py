@@ -173,6 +173,10 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
                 talkgroup_slots=tg_slots,
                 preserve_source_peer=conn.get('preserve_source_peer', True),
                 description=conn.get('description', ''),
+                enhanced_obp=bool(conn.get('enhanced_obp', False)),
+                proto_ver=int(conn.get('proto_ver', 1)),
+                relax_checks=bool(conn.get('relax_checks', False)),
+                server_id=int(conn.get('server_id', 0) or 0),
             )
 
             # one-OBP-per-TGID across enabled OBPs (design §4.5)
