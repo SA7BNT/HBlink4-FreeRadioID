@@ -65,7 +65,9 @@ Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#openbridge`, `…/#t
 
 Ein OpenBridge-Trunk führt oft über tausend Talkgroups. In der Live-Ansicht steht deshalb nur eine kompakte Karte: Name, Netzwerk-ID, Gegenstelle, Laufzeit, die **Anzahl** der Talkgroups mit Zeitschlitz, die Gespräche von heute (⬇ empfangen, ⬆ gesendet) und die laufenden Gespräche. **Details ›** öffnet den Tab.
 
-<p align="center"><img src="../images/openbridge-card.png" alt="OpenBridge-Karte in der Live-Ansicht" width="90%"></p>
+<p align="center"><img src="../images/openbridge-card.png" alt="OpenBridge-Karte in der Live-Ansicht" width="45%"></p>
+
+Die Karte ist so schmal wie die Stationskarten und steht mit ihnen im selben Raster; jedes laufende Gespräch ist eine eigene Zeile. Ein Klick auf den Sprecher öffnet seine [Stationsinfo](#stationsinfo-zu-jeder-dmr-id).
 
 Im Tab **↔️ OpenBridge** steht alles zu einem Trunk. Bei mehreren Trunks wählst du oben den Trunk aus.
 
@@ -193,6 +195,26 @@ Auf dem Smartphone liegen die Diagramme untereinander, und die Tabelle zeigt nur
 
 Klappst du **Last Heard** über den Pfeil zu, siehst du nur die laufenden Gespräche.
 
+Ein Klick auf **Radio ID** oder **Callsign** öffnet die [Stationsinfo](#stationsinfo-zu-jeder-dmr-id).
+
+## Stationsinfo zu jeder DMR-ID
+
+<p align="center">
+  <img src="../images/station-popup.png" alt="Stationsinfo" width="66%">
+  &nbsp;
+  <img src="../images/station-popup-mobile.png" alt="Stationsinfo am Smartphone" width="22%">
+</p>
+
+Überall, wo ein Sprecher auftaucht, kannst du ihn anklicken: in **Last Heard**, in den Zeitschlitz-Zeilen der Stationskarten, bei den laufenden Gesprächen auf OpenBridge und in der Gesprächsliste im Tab OpenBridge. Die Infos kommen von **FreeRadioID.net**:
+
+| Bereich | Inhalt |
+|---|---|
+| Kopf | Avatar, Rufzeichen, DMR-ID, Name und Ort, ob die ID bei FreeRadioID.net registriert ist |
+| 🛡️ FreeRadioID.net | Status, Rufzeichen, Name, Ort, Bemerkung und der Link zum Profil. Kennt FreeRadioID die ID nicht, steht das Rufzeichen aus der Rufzeichen-Datenbank da |
+| 🎙️ Heard here | wann die ID zuletzt auf diesem Server gehört wurde (oder **ON AIR**), Talkgroup, Zeitschlitz, über welche Station, Sprache oder Daten |
+
+Ist die ID selbst als Station hier angemeldet (Repeater, Hotspot, App), führt **Station logged in here – details ›** zur [Detailansicht](#detailansicht). Die Abfrage bei FreeRadioID.net wird eine Stunde zwischengespeichert; IP-Adressen stehen in der Stationsinfo nie.
+
 ## Fußzeile
 
 <p align="center"><img src="../images/footer.png" alt="Fußzeile" width="70%"></p>
@@ -201,12 +223,22 @@ Am Ende jeder Seite steht **© Die N8schicht** mit der installierten Version (Ve
 
 ## Repeater, Hotspots, Verbindungen
 
-Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen, die Talkgroups pro Zeitschlitz und rechts den aktuellen Zustand beider Zeitschlitze. Die Login-Art erkennst du am Badge und an der Farbe:
+<p align="center"><img src="../images/dashboard-stations.png" alt="Stationen als Raster" width="90%"></p>
+
+Repeater, Hotspots, Apps, Netzwerke, Outbound-Links und OpenBridge stehen als **schmale Karten nebeneinander**: am breiten Bildschirm drei bis vier pro Reihe, am Tablet zwei, am Smartphone eine. So passen viele Stationen auf einen Blick.
+
+Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen und die Talkgroups pro Zeitschlitz. Darunter stehen die Zeitschlitze als kurze Zeilen:
+- Sind beide frei, ist es eine Zeile: `TS1 IDLE · TS2 IDLE`.
+- Läuft ein Gespräch, zeigt die Zeile **⬇️ RX** (empfangen) oder **⬆️ TX** (gesendet), den Sprecher, die Talkgroup mit Namen und die Dauer.
+- In der Nachlaufzeit (**HANG**) steht nur die Talkgroup.
+- Ein Klick auf den Sprecher öffnet die [Stationsinfo](#stationsinfo-zu-jeder-dmr-id), ein Klick auf Avatar oder Rufzeichen der Karte die [Detailansicht](#detailansicht).
+
+Die Login-Art erkennst du am Badge und an der Farbe:
 
 | Anzeige | Bedeutung |
 |---|---|
-| <img src="../images/dashboard-freeradioid-card.png" width="430"> | **🛡️ FreeRadioID ✓**, grüner Rand: Die Station hat sich mit ihrem FreeRadioID-Passwort angemeldet und hat volle Rechte. |
-| <img src="../images/dashboard-guest-card.png" width="430"> | **👤 Guest**, gelber Rand: Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
+| <img src="../images/dashboard-freeradioid-card.png" width="300"> | **🛡️ FreeRadioID ✓**, grüner Rand: Die Station hat sich mit ihrem FreeRadioID-Passwort angemeldet und hat volle Rechte. |
+| <img src="../images/dashboard-guest-card.png" width="300"> | **👤 Guest**, gelber Rand: Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
 | ohne Badge | angemeldet mit dem Passwort eines eigenen Patterns, bei dem FreeRadioID aus ist |
 
 ### Gerätearten: Repeater, Hotspot, App

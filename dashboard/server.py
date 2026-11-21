@@ -2120,6 +2120,25 @@ async def get_freeradioid_profile(radio_id: int):
     return {"radio_id": radio_id, "profile": await freeradioid_profile(radio_id)}
 
 
+@app.get("/api/station/{radio_id}")
+async def get_station_info(radio_id: int):
+    """Popup for any radio ID (Last Heard, slots, OpenBridge): FreeRadioID profile,
+    callsign database and the last call heard here. Contains no addresses."""
+    if not 1 <= radio_id <= 0xFFFFFFFF:
+        raise _HTTPError(400, "Invalid radio ID")
+    heard = next((dict(u) for u in state.last_heard if u.get("radio_id") == radio_id), None)
+    if heard:
+        heard = {k: heard.get(k) for k in ("callsign", "source_name", "slot", "talkgroup", "call_type",
+                                            "is_data", "last_heard", "active")}
+    return {
+        "radio_id": radio_id,
+        "callsign": state.user_db.get(radio_id, "") or (heard or {}).get("callsign") or "",
+        "profile": await freeradioid_profile(radio_id),
+        "heard": heard,
+        "connected": radio_id in state.repeaters,   # a station logged in here -> station detail view
+    }
+
+
 @app.get("/api/repeater/{repeater_id}")
 async def get_repeater_details(repeater_id: int, request: Request):
     return view_for(current_user(request), await _repeater_details(repeater_id))

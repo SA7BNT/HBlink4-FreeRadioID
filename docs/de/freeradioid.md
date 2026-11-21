@@ -55,10 +55,10 @@ All das zeigt das Dashboard im Tab **🛠️ Configuration**, mit Kopier-Knöpfe
 
 | | |
 |---|---|
-| <img src="../images/dashboard-freeradioid-card.png" width="430"> | 🛡️ **FreeRadioID ✓**: grüner Rand, verifiziert |
-| <img src="../images/dashboard-guest-card.png" width="430"> | 👤 **Guest**: gelber Rand, sendet nur auf Gast-Talkgroups |
+| <img src="../images/dashboard-freeradioid-card.png" width="300"> | 🛡️ **FreeRadioID ✓**: grüner Rand, verifiziert |
+| <img src="../images/dashboard-guest-card.png" width="300"> | 👤 **Guest**: gelber Rand, sendet nur auf Gast-Talkgroups |
 
-Die Statistik-Kachel **🛡️ FreeRadioID** zählt verifizierte Stationen und Gäste. In Last Heard steht 🛡️ an Quellen mit FreeRadioID-Login und **FRID** an Sprechern, deren ID bei FreeRadioID.net registriert ist.
+Die Statistik-Kachel **🛡️ FreeRadioID** zählt verifizierte Stationen und Gäste. In Last Heard steht 🛡️ an Quellen mit FreeRadioID-Login und **FRID** an Sprechern, deren ID bei FreeRadioID.net registriert ist. Ein Klick auf eine ID oder ein Rufzeichen zeigt die [Stationsinfo](dashboard.md#stationsinfo-zu-jeder-dmr-id) mit den Daten von FreeRadioID.net.
 
 ## Avatare und Profile
 

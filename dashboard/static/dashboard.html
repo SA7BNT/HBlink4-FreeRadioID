@@ -1604,6 +1604,57 @@
         .upd-dialog .upd-progress { font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
         .btn-s.upd-now { border-color: rgba(var(--accent-rgb), .6); background: rgba(var(--accent-rgb), .18); color: var(--text); }
         @media (max-width: 600px) { .upd-dialog input[type=password] { font-size: 16px; } }
+
+        /* ---- Station grid: narrow cards side by side instead of one full-width row each ---- */
+        .conn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; }
+        .conn-grid > .repeater-card { margin: 0; display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch;
+                                      justify-content: flex-start; padding: 4px; min-width: 0; }
+        .conn-grid > .repeater-card > .repeater-info { max-width: none; min-width: 0; width: 100%; box-sizing: border-box;
+                                                       padding: 8px 10px 4px; border-bottom: 0 !important; flex: 1 1 auto; }
+        .conn-grid .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .conn-grid .repeater-header, .conn-grid .repeater-header-warning { margin: 0; font-size: 15px; }
+        .conn-grid .auth-badge { margin: 4px 0 4px 0; }
+        .conn-grid .repeater-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; font-size: 11.5px; margin-top: 4px; }
+        .conn-grid .repeater-meta > div:empty { display: none; }
+        .conn-grid .repeater-meta-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .conn-grid .sw-line { margin: 2px 0; }
+        .slots-compact { display: flex; flex-direction: column; gap: 3px; padding: 4px 6px 6px; }
+        .sc-row { display: flex; align-items: center; gap: 7px; font-size: 12px; padding: 5px 9px; border-radius: 9px; min-width: 0;
+                  background: rgba(0,0,0,.2); border-left: 3px solid rgba(255,255,255,.12); }
+        .sc-row.idle { color: var(--text-dim); }
+        .sc-row.receiving { border-left-color: #30d158; background: linear-gradient(90deg, rgba(48,209,88,.14), rgba(0,0,0,.18)); }
+        .sc-row.transmitting { border-left-color: #ff453a; background: linear-gradient(90deg, rgba(255,69,58,.14), rgba(0,0,0,.18)); }
+        .sc-row.hang_time { border-left-color: #818cf8; background: linear-gradient(90deg, rgba(129,140,248,.14), rgba(0,0,0,.18)); }
+        .sc-row.data { border-left-color: #ffd60a; }
+        .sc-row .slot-status-badge { font-size: 9.5px; padding: 2px 7px; flex: 0 0 auto; }
+        .sc-ts { font-size: 10.5px; font-weight: 700; color: var(--text-dim); letter-spacing: .03em; flex: 0 0 auto; }
+        .sc-row.idle .sc-ts + .slot-status-badge { margin-right: 8px; }
+        .sc-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+        .sc-arrow { color: var(--text-dim); flex: 0 0 auto; }
+        .sc-dst { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+        .sc-tg { color: var(--accent); font-weight: 650; }
+        .sc-dur { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+        /* OpenBridge cards in the same grid, a bit tighter */
+        .conn-grid > .repeater-card.obp-card { padding: 4px; }
+        .conn-grid .obp-card .repeater-info { padding: 8px 10px 8px; }
+        .conn-grid .obp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .conn-grid .obp-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conn-grid .obp-streams { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+        .conn-grid .obp-stream-pill { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+        /* Clickable radio IDs */
+        .id-link { cursor: pointer; border-radius: 6px; transition: background .15s ease; }
+        .id-link:hover, .id-link:focus-visible { background: rgba(var(--accent-rgb), .14); outline: none; }
+        td .id-link { display: inline-flex; align-items: center; padding: 1px 4px; margin: -1px -4px; }
+        .lh-id .id-link { color: inherit; text-decoration: underline dotted rgba(255,255,255,.3); text-underline-offset: 3px; }
+        .modal-content.id-small { max-width: 760px; }
+        .id-card { position: relative; }
+        .id-loading { padding: 40px 24px; text-align: center; color: var(--text-dim); }
+        .station-grid.two.id-grid { padding: 14px 18px 18px; }
+        @media (max-width: 600px) {
+            .conn-grid { gap: 8px; }
+            .sc-row { font-size: 11.5px; gap: 5px; padding: 5px 7px; }
+            .station-grid.two.id-grid { padding: 10px 12px 12px; }
+        }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -2226,7 +2277,7 @@
         <div id="openbridgeSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="openbridge" data-collapse-target="openbridgeBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>↔️ OpenBridge <span id="openbridgeCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="openbridgeBody">
-                <div id="openbridgesContainer"></div>
+                <div id="openbridgesContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2234,7 +2285,7 @@
         <div id="repeatersSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="repeaters" data-collapse-target="repeatersBody"><span class="collapse-caret">▾</span>📶 Repeaters <span id="repeaterCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="repeatersBody">
-                <div id="repeatersContainer"></div>
+                <div id="repeatersContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2242,7 +2293,7 @@
         <div id="hotspotsSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="hotspots" data-collapse-target="hotspotsBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>📱 Hotspots <span id="hotspotCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="hotspotsBody">
-                <div id="hotspotsContainer"></div>
+                <div id="hotspotsContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2250,7 +2301,7 @@
         <div id="appsSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="apps" data-collapse-target="appsBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>📲 Apps <span id="appCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="appsBody">
-                <div id="appsContainer"></div>
+                <div id="appsContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2258,7 +2309,7 @@
         <div id="networksSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="networks" data-collapse-target="networksBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Inbound <span id="networkCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="networksBody">
-                <div id="networksContainer"></div>
+                <div id="networksContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2268,7 +2319,7 @@
             <div class="card" id="unknownBody">
                 <p class="type-hint">The software of these stations reports a name HBlink4 does not know yet (shown on the card).
                     Admins can sort it in: <b>Admin area → Settings → 📲 Device detection</b>.</p>
-                <div id="unknownContainer"></div>
+                <div id="unknownContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -2276,7 +2327,7 @@
         <div id="outboundSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="outbound" data-collapse-target="outboundBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Outbound <span id="outboundCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="outboundBody">
-                <div id="outboundsContainer"></div>
+                <div id="outboundsContainer" class="conn-grid"></div>
             </div>
         </div>
 
@@ -4095,6 +4146,84 @@ PROTO_VER: ${fd ? 5 : 1}`;
             };
         }
 
+        // ---------- Any radio ID: popup with FreeRadioID.net data ----------
+        // Clickable ID/callsign wherever a caller shows up (Last Heard, slots, OpenBridge)
+        function idLink(radioId, inner) {
+            const id = parseInt(radioId, 10);
+            if (!id || id < 1) return inner;
+            return `<span class="id-link" role="button" tabindex="0" title="Show station info"
+                onclick="event.stopPropagation(); showIdDetails(${id})"
+                onkeydown="if (event.key === 'Enter') showIdDetails(${id})">${inner}</span>`;
+        }
+
+        function agoText(ts) {
+            const sec = Math.max(0, Math.floor(Date.now() / 1000 - ts));
+            if (sec < 60) return `${sec}s ago`;
+            if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+            const d = new Date(ts * 1000);
+            return d.toDateString() === new Date().toDateString()
+                ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function showIdDetails(radioId) {
+            document.querySelectorAll('.modal-overlay.id-modal').forEach(m => m.remove());
+            const m = openModal(`<div class="id-card"><div class="id-loading">⏳ Loading station info …</div></div>`, 'station id-small');
+            m.classList.add('id-modal');
+            let d;
+            try { d = await api('GET', `/api/station/${encodeURIComponent(radioId)}`); }
+            catch (e) { m.querySelector('.id-card').innerHTML = `<div class="id-loading">⚠️ ${escapeHtml(e.message)}</div>`; return; }
+            const p = d.profile || null;
+            const h = d.heard || (state.last_heard || []).find(u => u.radio_id == d.radio_id) || null;
+            const call = (p && p.callsign) || d.callsign || (h && h.callsign) || '';
+            const where = p ? [p.city, p.state, p.country].filter(Boolean).join(', ') : '';
+            const regPill = p && p.registered
+                ? '<span class="pill pill-green">🛡️ Registered at FreeRadioID.net</span>'
+                : '<span class="pill">Not registered at FreeRadioID.net</span>';
+            const liveRow = h
+                ? (h.active ? '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>' : escapeHtml(agoText(h.last_heard)))
+                : '';
+            const dest = h ? (h.call_type === 'private'
+                ? `👤 ${escapeHtml(h.talkgroup)}`
+                : `👥 TG ${escapeHtml(h.talkgroup)}${tgName(h.talkgroup) ? ' <span class="muted">' + escapeHtml(tgName(h.talkgroup)) + '</span>' : ''}`) : '';
+            m.querySelector('.id-card').innerHTML = `
+                <button class="modal-close" aria-label="Close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                <div class="station-hero ${p && p.registered ? 'auth-freeradioid' : ''}">
+                    ${avatarHtml(d.radio_id, call, 64)}
+                    <div class="station-title">
+                        <div class="station-callsign">${escapeHtml(call || 'Unknown callsign')}</div>
+                        <div class="station-sub"><span class="rid">${escapeHtml(d.radio_id)}</span>
+                            ${h ? `<span class="ts-chip">TS${escapeHtml(h.slot)}</span>` : ''}</div>
+                        ${p && (p.name || where) ? `<div class="station-operator">${[p.name, where].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : ''}
+                        <div class="station-pills">${regPill}</div>
+                    </div>
+                </div>
+                <div class="station-grid two id-grid">
+                    <section class="tile ${p && p.registered ? 'tile-frid' : ''}"><h3>🛡️ FreeRadioID.net</h3>
+                        ${p ? `
+                            ${infoRow('Status', p.registered ? '<span class="auth-ok">Registered</span>' : '<span class="muted">not registered</span>')}
+                            ${infoRow('Callsign', escapeHtml(p.callsign || call || '—'))}
+                            ${infoRow('Name', escapeHtml(p.name || '—'))}
+                            ${infoRow('Location', escapeHtml(where || '—'))}
+                            ${p.remarks ? infoRow('Remarks', escapeHtml(p.remarks)) : ''}`
+                          : `<p class="muted small">FreeRadioID.net knows nothing about this ID.</p>
+                             ${infoRow('Callsign database', escapeHtml(d.callsign || '—'))}`}
+                        ${infoRow('Profile', `<a class="modal-link" target="_blank" rel="noopener" href="https://freeradioid.net/api/dmr/user/?id=${encodeURIComponent(d.radio_id)}">freeradioid.net ↗</a>`)}
+                    </section>
+                    <section class="tile"><h3>🎙️ Heard here</h3>
+                        ${h ? `
+                            ${infoRow('Last heard', liveRow)}
+                            ${infoRow('Talkgroup', dest)}
+                            ${infoRow('Timeslot', 'TS' + escapeHtml(h.slot))}
+                            ${infoRow('Via', escapeHtml(h.source_name || '—'))}
+                            ${infoRow('Type', h.is_data ? '📟 Data' : '🎤 Voice')}`
+                          : '<p class="muted small">Not in the Last Heard list right now.</p>'}
+                        ${d.connected ? `<div class="set-actions" style="justify-content:flex-start;margin-top:8px">
+                            <button class="btn-s" onclick="this.closest('.modal-overlay').remove(); showRepeaterDetails(${d.radio_id})">📶 Station logged in here – details ›</button></div>` : ''}
+                    </section>
+                </div>`;
+        }
+
         async function showRepeaterDetails(repeaterId) {
             let details;
             try {
@@ -4531,15 +4660,47 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             </div>
                         </div>
                         
-                        <div class="slots-container">
-                            ${renderSlot(1, slot1Stream)}
-                            ${renderSlot(2, slot2Stream)}
-                        </div>
+                        ${renderSlotsCompact(slot1Stream, slot2Stream)}
                     </div>
                 `;
             }).join('');
         }
         
+        // Compact slot lines for the station grid: one line per busy slot, one line for "both idle"
+        function slotDuration(stream) {
+            if (!stream) return '';
+            if (stream.status === 'active' && stream.start_time) {
+                const e = Date.now() / 1000 - stream.start_time;
+                return (e >= 0 && e < 3600 ? Math.round(e) : 0) + 's';
+            }
+            return stream.duration !== undefined ? Math.round(stream.duration) + 's' : '';
+        }
+        function renderSlotsCompact(s1, s2) {
+            if (!s1 && !s2) {
+                return `<div class="slots-compact"><div class="sc-row idle">
+                    <span class="sc-ts">TS1</span><span class="slot-status-badge idle">IDLE</span>
+                    <span class="sc-ts">TS2</span><span class="slot-status-badge idle">IDLE</span></div></div>`;
+            }
+            const line = (n, st) => {
+                if (!st) return `<div class="sc-row idle"><span class="sc-ts">TS${n}</span><span class="slot-status-badge idle">IDLE</span></div>`;
+                let cls = st.is_assumed ? 'transmitting' : 'receiving', lbl = st.is_assumed ? '⬆️ TX' : '⬇️ RX';
+                if (st.status === 'hang_time') { cls = 'hang_time'; lbl = 'HANG'; }
+                if (st.is_data) { cls = 'data'; lbl = 'DATA'; }
+                const dst = st.call_type === 'private'
+                    ? `👤 ${escapeHtml(st.dst_id)}`
+                    : `<span class="sc-tg">TG${escapeHtml(st.dst_id)}</span>${tgName(st.dst_id) ? ` <span class="muted">${escapeHtml(tgName(st.dst_id))}</span>` : ''}`;
+                if (cls === 'hang_time') {
+                    return `<div class="sc-row ${cls}"><span class="sc-ts">TS${n}</span><span class="slot-status-badge ${cls}">${lbl}</span>
+                        <span class="sc-dst">${dst}</span></div>`;
+                }
+                const who = idLink(st.src_id, `<b>${escapeHtml(st.callsign || st.src_id || '—')}</b>${st.callsign ? ` <span class="muted">${escapeHtml(st.src_id)}</span>` : ''}`);
+                return `<div class="sc-row ${cls}"><span class="sc-ts">TS${n}</span><span class="slot-status-badge ${cls}">${lbl}</span>
+                    <span class="sc-who">${who}</span><span class="sc-arrow">→</span><span class="sc-dst">${dst}</span>
+                    <span class="sc-dur">${slotDuration(st)}</span></div>`;
+            };
+            return `<div class="slots-compact">${line(1, s1)}${line(2, s2)}</div>`;
+        }
+
         function renderSlot(slotNum, stream) {
             // Determine status and direction
             let status = 'idle';
@@ -4747,7 +4908,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
         }
 
         function obpStreamPill(s) {
-            const who = s.callsign ? `${escapeHtml(s.callsign)} (${s.src_id})` : s.src_id;
+            const who = idLink(s.src_id, s.callsign ? `${escapeHtml(s.callsign)} (${escapeHtml(s.src_id)})` : escapeHtml(s.src_id));
             // TX (forwarded to the peer) vs RX (received from the peer), with a DATA
             // override. OBP is stream-multiplexed with no hang time.
             let badge = s.is_assumed ? 'transmitting' : 'receiving';
@@ -4923,10 +5084,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             </div>
                         </div>
                         
-                        <div class="slots-container">
-                            ${renderSlot(1, slot1Stream)}
-                            ${renderSlot(2, slot2Stream)}
-                        </div>
+                        ${renderSlotsCompact(slot1Stream, slot2Stream)}
                     </div>
                 `;
             }).join('');
@@ -5171,8 +5329,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
                 return `
                     <tr class="${user.active ? 'lh-active' : ''}">
-                        <td class="lh-id">${user.radio_id}</td>
-                        <td class="lh-call ${user.callsign ? '' : 'muted'}"><span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 28)}<span>${escapeHtml(callsign)}${user.frid ? ' <span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}</span></span></td>
+                        <td class="lh-id">${idLink(user.radio_id, escapeHtml(user.radio_id))}</td>
+                        <td class="lh-call ${user.callsign ? '' : 'muted'}">${idLink(user.radio_id, `<span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 28)}<span>${escapeHtml(callsign)}${user.frid ? ' <span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}</span></span>`)}</td>
                         <td>${source}</td>
                         <td class="lh-slot"><span class="ts-chip">TS${user.slot}</span></td>
                         <td>${destination}</td>
@@ -5952,7 +6110,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                         <tbody>${S.recent.length ? S.recent.map(r => `<tr>
                             <td>${new Date(r.ts * 1000).toLocaleString('de-DE', obp.range === 'today' || obp.range === '24h' ? { hour: '2-digit', minute: '2-digit', second: '2-digit' } : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                             <td><span class="obp-dir ${r.dir}">${r.dir === 'rx' ? '⬇ RX' : '⬆ TX'}</span></td>
-                            <td><b>${escapeHtml(r.callsign || String(r.src_id || ''))}</b> <span class="hide-sm" style="color:var(--text-dim)">${r.callsign ? r.src_id || '' : ''}</span></td>
+                            <td>${idLink(r.src_id, `<b>${escapeHtml(r.callsign || String(r.src_id || ''))}</b> <span class="hide-sm" style="color:var(--text-dim)">${r.callsign ? escapeHtml(r.src_id || '') : ''}</span>`)}</td>
                             <td class="obp-tgcell"><b>${r.tg}</b> <span>${escapeHtml(r.name || '')}</span></td>
                             <td class="hide-sm">${r.slot ? 'TS' + r.slot : ''}</td>
                             <td class="num">${tgsFmtDur(r.duration, true)}</td></tr>`).join('')
