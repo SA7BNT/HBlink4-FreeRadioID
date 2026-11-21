@@ -498,3 +498,45 @@ def merge_list(current: List[Dict[str, Any]], new: List[Dict[str, Any]], key: st
         else:
             out[idx] = e
     return out
+
+
+# ------------------------------------------------------------ single OBP stanzas
+def parse_obp_stanzas(text: str, own_hosts: Optional[List[str]] = None) -> Dict[str, Any]:
+    """OpenBridge sections pasted from an hblink.cfg (FreeDMR/HBlink3), without [GLOBAL].
+
+    If TARGET_IP is one of our own host names, the stanza was written for the far end
+    (it points at us): PORT/TARGET_PORT are then swapped and the far end's address is
+    left open (mirrored=True) so the caller can keep the one it already knows."""
+    if not text or not text.strip():
+        raise ConvertError("Nothing pasted.")
+    if len(text) > MAX_INPUT:
+        raise ConvertError("Too much text (max. 512 KB).")
+    ini = _parse_ini(text)
+    systems = {k: v for k, v in ini.items() if str(v.get("MODE", "")).upper() == "OPENBRIDGE"}
+    if not systems:
+        raise ConvertError("No OpenBridge section found (expected [NAME] with MODE: OPENBRIDGE).")
+    fdmr = any(k in v for v in systems.values() for k in ("ENHANCED_OBP", "PROTO_VER", "RELAX_CHECKS"))
+    out = _Out()
+    _convert_systems({}, systems, {}, "freedmr" if fdmr else "hblink3", {}, out)
+    own = {h.strip().lower().rstrip(".") for h in (own_hosts or []) if h and h.strip()}
+    trunks: List[Dict[str, Any]] = []
+    notes: List[str] = []
+    for it in out.items:
+        if it["key"] != "dmr.openbridge_connections":
+            continue
+        for t in it["value"]:
+            src = next((v for k, v in systems.items() if k == t["name"]), {})
+            tip = str(src.get("TARGET_IP") or "").strip().lower().rstrip(".")
+            w = [x for x in it.get("warnings") or [] if "TARGET_IP is empty" not in x]
+            if tip and tip in own:
+                t["local_port"] = _int(src.get("TARGET_PORT"), t["local_port"]) or t["local_port"]
+                t["target_port"] = _int(src.get("PORT"), t["target_port"]) or t["target_port"]
+                t["target_address"] = ""
+                t["mirrored"] = True
+                w = [x for x in w if "TARGET_IP" not in x]
+                w.append("This is the far end's view (TARGET_IP is our server): ports swapped, "
+                         "please check the far end's address.")
+            t["description"] = "Pasted stanza"
+            trunks.append(t)
+            notes += [f"{t['name']}: {x}" for x in w]
+    return {"trunks": trunks, "notes": notes}

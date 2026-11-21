@@ -1,4 +1,5 @@
 """Configuration converter: HBlink3, FreeDMR, ADN and HBlink4 configurations to HBlink4 settings."""
+import unittest
 from pathlib import Path
 
 import pytest
@@ -83,3 +84,43 @@ def test_imported_trunks_and_links_pass_hblink4_validation():
     links = [v for i in items(res, "dmr.outbound_connections") for v in i["value"]]
     assert parse_openbridge_connections({"openbridge_connections": trunks}, raise_errors=True)
     assert parse_outbound_connections({"outbound_connections": links}, raise_errors=True)
+
+
+class TestObpStanzaPaste(unittest.TestCase):
+    STANZA = """[OBP-N8schicht]
+MODE: OPENBRIDGE
+ENABLED: True
+IP:
+PORT: 62046
+NETWORK_ID: 2624
+PASSPHRASE: test-obp-pass
+TARGET_IP: dmr.example.org
+#TARGET_PORT: 62046
+TARGET_PORT: 51084
+USE_ACL: True
+#TGID_ACL: DENY:0-82,92-199
+TGID_ACL: PERMIT:ALL
+RELAX_CHECKS: True
+ENHANCED_OBP: True
+PROTO_VER: 5
+"""
+
+    def test_own_stanza(self):
+        from dashboard.converter import parse_obp_stanzas
+        t = parse_obp_stanzas(self.STANZA, ["our.server"])["trunks"][0]
+        self.assertEqual((t["local_port"], t["target_address"], t["target_port"]), (62046, "dmr.example.org", 51084))
+        self.assertTrue(t["all_talkgroups"]); self.assertEqual(t["proto_ver"], 5); self.assertTrue(t["enhanced_obp"])
+        self.assertNotIn("mirrored", t)
+
+    def test_far_end_view_is_mirrored(self):
+        from dashboard.converter import parse_obp_stanzas
+        r = parse_obp_stanzas(self.STANZA, ["DMR.example.org."])
+        t = r["trunks"][0]
+        self.assertTrue(t["mirrored"])
+        self.assertEqual((t["local_port"], t["target_port"], t["target_address"]), (51084, 62046, ""))
+        self.assertTrue(any("far end's view" in n for n in r["notes"]))
+
+    def test_no_obp_section(self):
+        from dashboard.converter import parse_obp_stanzas, ConvertError
+        with self.assertRaises(ConvertError):
+            parse_obp_stanzas("[MASTER]\nMODE: MASTER\n")

@@ -1493,6 +1493,21 @@ async def import_analyze(request: Request, body: dict = Body(...)):
     return result
 
 
+@app.post("/api/admin/obp/parse")
+async def obp_parse(request: Request, body: dict = Body(...)):
+    """OpenBridge stanza(s) from an hblink.cfg pasted into the trunk editor -> trunks."""
+    _require_admin(request)
+    from .converter import parse_obp_stanzas, ConvertError
+    own = [str(dashboard_config.get("server_name") or ""),
+           str(((dashboard_config.get("connect") or {}).get("host")) or ""),
+           str(((dashboard_config.get("https") or {}).get("domain")) or ""),
+           request.url.hostname or ""]
+    try:
+        return await asyncio.to_thread(parse_obp_stanzas, str(body.get("text") or ""), own)
+    except ConvertError as e:
+        raise _HTTPError(400, str(e))
+
+
 @app.post("/api/admin/import/apply")
 async def import_apply(request: Request, body: dict = Body(...)):
     actor = _require_admin(request)

@@ -167,7 +167,22 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 - **⧉ Copy** kopiert in die Zwischenablage, auch ohne HTTPS und auf dem iPhone. Klappt das in einem Browser nicht, zeigt der Knopf *Select and copy by hand*.
 - **▣ Select all** markiert den ganzen Text, dann geht Kopieren auch per Hand (lange drücken → Kopieren).
 
-Unter **🧑‍💻 Expert: all trunks as JSON** stehen alle Trunks als JSON, zum Ansehen oder Einfügen; **⤴ Take over JSON into the form** übernimmt es ins Formular. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
+Unter **🧑‍💻 Expert: all trunks as JSON – or paste an hblink.cfg stanza** stehen alle Trunks als JSON. **⤴ Take over into the form** übernimmt den Inhalt ins Formular. Das Feld versteht zwei Formate:
+
+- **JSON:** die Liste aller Trunks, wie sie dort steht (oder ein einzelner Trunk).
+- **Abschnitte aus einer `hblink.cfg`** von FreeDMR oder HBlink3, z. B. das, was dir der Sysop der Gegenstelle schickt. Zeilen mit `#` am Anfang werden übersprungen.
+
+<p align="center">
+  <img src="../images/obp-paste-stanza.png" alt="Abschnitt aus hblink.cfg einfügen" width="62%">
+  <img src="../images/obp-paste-notes.png" alt="Hinweise nach dem Übernehmen" width="36%">
+</p>
+
+So wird ein eingefügter Abschnitt einsortiert:
+- **Welcher Trunk:** gleicher Name, sonst gleicher eigener Port, sonst gleiche Network-ID. Dann wird dieser Trunk aktualisiert und behält seinen Namen. Passt nichts, entsteht ein neuer Trunk.
+- **Blickrichtung:** Steht bei `TARGET_IP` **unser eigener Server** (Untertitel, Adresse aus dem Configuration-Tab oder die Domain), ist es der Abschnitt der Gegenstelle. Dann werden `PORT` und `TARGET_PORT` vertauscht, und die Adresse der Gegenstelle bleibt wie bisher. Bei einem neuen Trunk musst du sie unter ③ eintragen.
+- **Übernommen werden:** Network-ID, Passwort, Ports, `TGID_ACL` (`PERMIT:ALL` = alle Talkgroups, `PERMIT:Liste` = diese Talkgroups), `ENHANCED_OBP`, `PROTO_VER`, `RELAX_CHECKS`. `DENY`-Listen kennt HBlink4 nicht; der Trunk führt dann alle Talkgroups außer den lokalen.
+
+Unter dem Feld steht danach, welcher Trunk geändert oder angelegt wurde, und was du noch prüfen solltest. Erst **💾 Save trunks** speichert. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
 
 ## 📥 Import
 

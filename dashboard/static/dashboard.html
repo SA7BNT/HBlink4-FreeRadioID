@@ -1445,6 +1445,7 @@
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
         .toast.ok { border-color: rgba(48, 209, 88, 0.6); }
         .toast.err { border-color: rgba(255, 69, 58, 0.6); color: #ffb4ad; }
+        .toast.warn { border-color: rgba(255, 214, 10, 0.6); color: #ffe27a; }
         @media (max-width: 700px) {
             .hdr-btn.user > span:not(.avatar):not(.role-tag) { display: none; }
             .admin-table th:nth-child(4), .admin-table td:nth-child(4) { display: none; }
@@ -1456,6 +1457,10 @@
         .settings-group small { font-size: 11.5px; font-weight: 500; color: var(--text-dim); }
         .set-row.is-wide { grid-template-columns: 1fr; }
         .json-edit { font-family: ui-monospace, "SF Mono", Menlo, monospace !important; font-size: 12px !important; line-height: 1.45; }
+        textarea.json-edit { display: block; width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; resize: vertical;
+                             background: rgba(0,0,0,0.3); color: var(--text); border: 1px solid var(--glass-border); outline: none; }
+        textarea.json-edit:focus { border-color: rgba(var(--accent-rgb), .6); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
+        @media (max-width: 600px) { textarea.json-edit { font-size: 16px !important; } }
         .pw-wrap { display: flex; gap: 6px; }
         .pw-wrap input { flex: 1; }
         .pw-eye { padding: 4px 8px; }
@@ -1771,6 +1776,8 @@
         .obe-stanza:focus { outline: none; border-color: rgba(var(--accent-rgb), .6); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
         @media (max-width: 600px) { .obe-stanza { font-size: 16px; } }   /* iOS zooms into smaller inputs */
         .obe-json { padding: 10px 14px; } .obe-json textarea { width: 100%; }
+        .obe-json-notes { margin-top: 8px; padding: 8px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.5;
+                          background: rgba(255,214,10,.08); border: 1px solid rgba(255,214,10,.35); color: #ffe27a; }
         .obe-save { position: sticky; bottom: 0; padding: 10px; border-radius: 14px; background: rgba(16,22,40,0.92); border: 1px solid var(--glass-border); align-items: center; }
 
         @media (max-width: 900px) {
@@ -3588,9 +3595,13 @@
                     </aside>
                     <div class="obe-main">${obe.trunks.length ? obeFormHtml(obeCur()) : `<div class="tile"><div class="tgs-empty">
                         OpenBridge connects this server with another network, e.g. a FreeDMR server.<br>Click <b>➕ New trunk</b> to start.</div></div>`}
-                        <details class="tile set-adv obe-json"><summary>🧑‍💻 Expert: all trunks as JSON</summary>
-                            <textarea class="json-edit" id="obeJson" rows="10" spellcheck="false">${escapeHtml(JSON.stringify(obe.trunks, null, 2))}</textarea>
-                            <div class="set-actions"><button type="button" class="btn-s" onclick="obeFromJson()">⤴ Take over JSON into the form</button></div>
+                        <details class="tile set-adv obe-json" ${obe.jsonOpen ? 'open' : ''} ontoggle="obe.jsonOpen = this.open"><summary>🧑‍💻 Expert: all trunks as JSON – or paste an hblink.cfg stanza</summary>
+                            <p class="muted small">Here you see all trunks as JSON. You can also paste OpenBridge sections from a FreeDMR/HBlink3 <code>hblink.cfg</code>
+                                (<code>[OBP-…]</code> with <code>MODE: OPENBRIDGE</code>). Lines starting with <code>#</code> are ignored.
+                                A section updates the trunk with the same name – or the one on the same port or network ID; otherwise it adds a trunk.</p>
+                            <textarea class="json-edit" id="obeJson" rows="10" spellcheck="false" autocapitalize="off" autocorrect="off">${escapeHtml(JSON.stringify(obe.trunks, null, 2))}</textarea>
+                            <div class="set-actions"><button type="button" class="btn-s" onclick="obeFromJson()">⤴ Take over into the form</button></div>
+                            <div class="obe-json-notes" id="obeJsonNotes" hidden></div>
                         </details>
                         <div class="set-actions obe-save">
                             <button type="button" class="btn-s btn-primary" onclick="obeSave()">💾 Save trunks</button>
@@ -3842,12 +3853,55 @@ PROTO_VER: ${fd ? 5 : 1}`;
             if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Really delete?'; return; }
             obe.trunks.splice(obe.idx, 1); obe.idx = 0; obe.stanzaEdits = {}; obeRender(); obeDirty();
         }
-        function obeFromJson() {
-            try {
-                const v = JSON.parse(document.getElementById('obeJson').value || '[]');
-                if (!Array.isArray(v)) throw new Error('a list [ … ] is expected');
-                obe.trunks = v; obe.idx = 0; obe.stanzaEdits = {}; obeRender(); obeDirty(); toast('Taken over – check and save', 'ok');
-            } catch (e) { toast('JSON: ' + e.message, 'err'); }
+        // Expert field: JSON list of all trunks, or OpenBridge stanzas from an hblink.cfg
+        async function obeFromJson() {
+            const text = (document.getElementById('obeJson').value || '').trim();
+            if (!text || text.startsWith('[{') || text.startsWith('{') || text === '[]' || /^\[\s*(\{|\])/.test(text)) {
+                try {
+                    let v = JSON.parse(text || '[]');
+                    if (v && !Array.isArray(v) && typeof v === 'object') v = [v];     // a single trunk is fine too
+                    if (!Array.isArray(v)) throw new Error('a list [ … ] is expected');
+                    obe.trunks = v; obe.idx = 0; obe.stanzaEdits = {}; obeRender(); obeDirty(); toast('Taken over – check and save', 'ok');
+                } catch (e) { toast('JSON: ' + e.message, 'err'); }
+                return;
+            }
+            // hblink.cfg stanza(s): the server reads them with the import converter
+            let r;
+            try { r = await api('POST', '/api/admin/obp/parse', { text }); }
+            catch (e) { toast('Not JSON and no readable hblink.cfg section: ' + e.message, 'err'); return; }
+            let firstIdx = -1, needAddr = [], done = [];
+            for (const t of r.trunks) {
+                const mirrored = !!t.mirrored; delete t.mirrored;
+                // same name first; otherwise the trunk on the same port or with the same network ID
+                let i = obe.trunks.findIndex(x => (x.name || '').toLowerCase() === (t.name || '').toLowerCase());
+                if (i < 0) i = obe.trunks.findIndex(x => +x.local_port === +t.local_port);
+                if (i < 0) i = obe.trunks.findIndex(x => +x.network_id === +t.network_id && +t.network_id > 1);
+                const pastedName = t.name;
+                if (i >= 0 && (obe.trunks[i].name || '') !== t.name) t.name = obe.trunks[i].name;   // keep the existing name
+                done.push(i >= 0 ? `✏️ [${pastedName}] → updated trunk "${t.name}"` : `➕ [${pastedName}] → new trunk`);
+                if (i >= 0) {
+                    const old = obe.trunks[i];
+                    if (mirrored && !t.target_address) t.target_address = old.target_address || '';
+                    if (old.description && t.description === 'Pasted stanza') t.description = old.description;
+                    obe.trunks[i] = Object.assign({}, old, t);
+                    if (firstIdx < 0) firstIdx = i;
+                } else {
+                    obe.trunks.push(t);
+                    if (firstIdx < 0) firstIdx = obe.trunks.length - 1;
+                }
+                if (!t.target_address) needAddr.push(t.name);
+            }
+            obe.idx = Math.max(0, firstIdx); obe.stanzaEdits = {}; obeRender(); obeDirty();
+            const n = r.trunks.length;
+            toast(`${n} ${n === 1 ? 'section' : 'sections'} from hblink.cfg taken over – check and save`
+                  + (needAddr.length ? ` · enter the far end address for ${needAddr.join(', ')}` : ''), needAddr.length ? 'warn' : 'ok');
+            const box = document.getElementById('obeJsonNotes');
+            if (box) {
+                const lines = done.concat(r.notes || []);
+                needAddr.forEach(nm => lines.push(`${nm}: the far end's address is missing – enter it under ③ Connection.`));
+                box.innerHTML = lines.map(m => `<div>${/^[✏️➕]/u.test(m) ? '' : '⚠️ '}${escapeHtml(m)}</div>`).join('');
+                box.hidden = !lines.length;
+            }
         }
         async function obeSave() {
             const clean = obe.trunks.map(t => {
