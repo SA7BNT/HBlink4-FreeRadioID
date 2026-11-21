@@ -8,13 +8,19 @@
 </p>
 
 <p align="center">
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/github/v/release/dhartmann1979/HBlink4-FreeRadioID?label=Version&color=4f8cff"></a>
+  <a href="CHANGELOG.md"><img alt="Änderungen" src="https://img.shields.io/badge/Änderungen-CHANGELOG-7c5cff"></a>
+</p>
+
+<p align="center">
   <a href="#schnellstart">Schnellstart</a> ·
   <a href="docs/de/installation.md">Installation</a> ·
   <a href="docs/de/dashboard.md">Dashboard</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
   <a href="docs/de/konfiguration.md">Konfiguration</a> ·
   <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
-  <a href="docs/de/betrieb.md">Betrieb &amp; Fehlersuche</a>
+  <a href="docs/de/betrieb.md">Betrieb &amp; Fehlersuche</a> ·
+  <a href="CHANGELOG.md">Änderungen</a>
 </p>
 
 ---
@@ -99,7 +105,8 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Import, Sitzungen, Protokoll, System |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |
-| 🩺 [Betrieb & Fehlersuche](docs/de/betrieb.md) | Dienste, `check.sh`, typische Fehlermeldungen, Sicherung |
+| 🩺 [Betrieb & Fehlersuche](docs/de/betrieb.md) | Dienste, `check.sh`, typische Fehlermeldungen, Sicherung, Aktualisieren |
+| 🏷️ [Versionen](docs/de/versionen.md) · [Änderungen](CHANGELOG.md) | Versionsnummer, was sich in welcher Version geändert hat, wie eine neue Version entsteht |
 
 Englisch / technisch: [FreeRadioID login (EN)](docs/freeradioid.md) · [Dashboard (EN)](dashboard/README.md) · [systemd (EN)](SYSTEMD.md) · [Original-README von HBlink4](docs/upstream-readme.md) · [weitere technische Doku des Originals](docs/)
 

@@ -22,13 +22,51 @@ _local: Optional[Dict[str, Any]] = None
 _cache: Dict[str, Any] = {}
 
 
+VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
 def _package_version() -> str:
+    """Version of this edition (file VERSION, SemVer since 1.0.0 on 2026-11-21)."""
+    try:
+        v = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        return v if VERSION_RE.match(v) else ""
+    except OSError:
+        return ""
+
+
+def _base_version() -> str:
+    """Version of the HBlink4 core this edition is based on."""
     try:
         text = (REPO_ROOT / "hblink4" / "__init__.py").read_text(encoding="utf-8")
         m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)", text)
         return m.group(1) if m else ""
     except OSError:
         return ""
+
+
+def vtuple(v: str) -> tuple:
+    """'1.2.3' -> (1, 2, 3); anything else -> (0, 0, 0)."""
+    m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", (v or "").strip())
+    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+
+CHANGELOG_HEAD = re.compile(r"^##\s*\[?v?(\d+\.\d+\.\d+)\]?\s*(?:[-–—]\s*(\S+))?.*$", re.M)
+
+
+def changelog_sections(text: str) -> list:
+    """CHANGELOG.md -> [{'version', 'date', 'body'}], newest first (as in the file)."""
+    out = []
+    heads = list(CHANGELOG_HEAD.finditer(text or ""))
+    for i, h in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        out.append({"version": h.group(1), "date": h.group(2) or "", "body": text[h.end():end].strip()[:6000]})
+    return out
+
+
+def changes_since(text: str, local: str) -> list:
+    """Changelog sections newer than the installed version (max. 10)."""
+    lv = vtuple(local)
+    return [s for s in changelog_sections(text) if vtuple(s["version"]) > lv][:10]
 
 
 def _git(*args: str) -> str:
@@ -45,7 +83,7 @@ def local_version(refresh: bool = False) -> Dict[str, Any]:
     if _local is None or refresh:
         line = _git("log", "-1", "--format=%H|%cI")
         commit, _, date = line.partition("|")
-        _local = {"version": _package_version(), "commit": commit, "short": commit[:7],
+        _local = {"version": _package_version(), "base": _base_version(), "commit": commit, "short": commit[:7],
                   "date": date, "branch": _git("rev-parse", "--abbrev-ref", "HEAD")}
     return dict(_local)
 
@@ -55,6 +93,13 @@ def _fetch_json(url: str, timeout: float = 6) -> Any:
                                                "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read(2_000_000).decode("utf-8", errors="replace"))
+
+
+def _fetch_text(fetch, repo: str, path: str, ref: str) -> str:
+    """A text file from GitHub (contents API, base64)."""
+    import base64
+    j = fetch(f"https://api.github.com/repos/{repo}/contents/{path}?ref={ref}")
+    return base64.b64decode(j.get("content") or "").decode("utf-8", errors="replace")
 
 
 def check(repo: str = DEFAULT_REPO, branch: str = "main", max_age: float = 6 * 3600,
@@ -69,6 +114,7 @@ def check(repo: str = DEFAULT_REPO, branch: str = "main", max_age: float = 6 * 3
     loc = local_version(refresh=force)
     res: Dict[str, Any] = {"repo": repo, "branch": branch, "local": loc, "checked_at": time.time(),
                            "available": False, "behind": 0, "latest": None, "commits": [], "error": "",
+                           "remote_version": "", "release_notes": [],
                            "url": f"https://github.com/{repo}"}
     if not _REPO_RE.match(repo) or not _BRANCH_RE.match(branch):
         res["error"] = "invalid repository or branch name"
@@ -91,6 +137,15 @@ def check(repo: str = DEFAULT_REPO, branch: str = "main", max_age: float = 6 * 3
                 res["url"] = f"https://github.com/{repo}/compare/{loc['short']}...{sha[:7]}"
             elif not loc["commit"]:
                 res["error"] = "no git checkout here – cannot compare"
+            if res["available"] or not loc["commit"]:
+                # Version number and release notes of the new version (VERSION + CHANGELOG.md on GitHub)
+                try:
+                    rv = _fetch_text(fetch, repo, "VERSION", sha or branch).strip()
+                    res["remote_version"] = rv if VERSION_RE.match(rv) else ""
+                    res["release_notes"] = changes_since(_fetch_text(fetch, repo, "CHANGELOG.md", sha or branch),
+                                                         loc.get("version", ""))
+                except Exception:
+                    pass
         except Exception as e:   # network, rate limit, unknown commit (local changes not pushed)
             res["error"] = str(e)[:200]
     _cache[key] = res

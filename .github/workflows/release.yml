@@ -1,0 +1,29 @@
+# Creates a GitHub release with the full description from CHANGELOG.md for every tag vX.Y.Z.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        run: python3 scripts/release.py --notes "${GITHUB_REF_NAME#v}" > notes.md
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DATE="$(python3 scripts/release.py --date "$VERSION")"
+          TITLE="v${VERSION} – ${DATE}"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$TITLE" --notes-file notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$TITLE" --notes-file notes.md --verify-tag
+          fi

@@ -1355,7 +1355,7 @@ async def admin_audit(request: Request):
 async def api_version():
     """Version line for the footer (public: no addresses, only version and commit)."""
     v = _version.local_version()
-    return {"version": v["version"], "commit": v["short"], "date": v["date"]}
+    return {"version": v["version"], "base": v.get("base", ""), "commit": v["short"], "date": v["date"]}
 
 
 def _update_cfg() -> dict:

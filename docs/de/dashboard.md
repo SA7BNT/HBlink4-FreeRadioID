@@ -20,11 +20,12 @@ Die Kopfzeile bleibt beim Scrollen oben stehen. Das **Menü** (Live, Statistics,
 
 - **Ab 1500 Pixel Breite:** Menü mit vollen Namen und den Zählern (z. B. *Statistics 8*).
 - **1100–1500 Pixel:** kurze Namen (Stats, OBP, TGs, Setup); ab 1280 abwärts zeigt der Login-Knopf nur noch den Avatar.
-- **Tablet und Smartphone:** Das Menü steht als eigene Zeile in derselben festen Leiste und nutzt die ganze Breite.
+- **Tablet:** Das Menü steht als eigene Zeile in derselben festen Leiste und nutzt die ganze Breite.
+- **Smartphone:** nur eine Zeile plus Menü. Logo und Titel links, rechts 🔗, zwei **Statuspunkte** (Live und DMR: grün = verbunden, gelb = DMR-Server fehlt, rot = Verbindung weg), 🔇/🔊 und dein Avatar. So bleibt mehr Platz für den Inhalt.
 
 Die Status-Knöpfe sind kurz gehalten: **✓ Live**, **✓ DMR**, 🔇/🔊. Der ausführliche Text steht im Tooltip.
 
-<p align="center"><img src="../images/header-mobile.png" alt="Kopfzeile am Smartphone" width="30%"></p>
+<p align="center"><img src="../images/header-mobile.png" alt="Kopfzeile am Smartphone" width="40%"></p>
 
 | Element | Bedeutung |
 |---|---|
@@ -38,7 +39,7 @@ Die Status-Knöpfe sind kurz gehalten: **✓ Live**, **✓ DMR**, 🔇/🔊. Der
 
 ## Statistik
 
-🔌 Verbindungen (Repeater, Hotspots, Outbound-Links und aktive OpenBridge-Trunks) · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · ↔️ OpenBridge · 🛡️ FreeRadioID. Die Tageswerte werden um Mitternacht zurückgesetzt. Auf breiten Bildschirmen stehen alle Kacheln in einer Reihe, darunter vier pro Reihe. Am Smartphone stehen sie zu dritt nebeneinander, Sprechzeit, OpenBridge und FreeRadioID als schmale Zeilen; „weitergeleitet heute“ entfällt dort.
+🔌 Verbindungen (Repeater, Hotspots, Outbound-Links und aktive OpenBridge-Trunks) · 🎙️ laufende Gespräche · 📞 Gespräche heute · 🔁 weitergeleitet heute · ⏱️ Sprechzeit heute · ↔️ OpenBridge · 🛡️ FreeRadioID. Die Tageswerte werden um Mitternacht zurückgesetzt. Auf breiten Bildschirmen stehen alle Kacheln in einer Reihe, darunter vier pro Reihe. Am Smartphone stehen sechs gleich große Kacheln in zwei Reihen zu je drei; „weitergeleitet heute“ und die Zusatzzahlen von OpenBridge und FreeRadioID entfallen dort.
 
 - **↔️ OpenBridge** zeigt aktive und eingerichtete Trunks (z. B. `1/1`) sowie die Gespräche von heute: ⬇ empfangen und ⬆ gesendet. Die Kachel erscheint nur, wenn ein Trunk eingerichtet ist. Ein Klick öffnet den [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 - **🛡️ FreeRadioID** zeigt verifizierte Stationen und Gäste. Die Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist.
@@ -182,16 +183,24 @@ Auf dem Smartphone liegen die Diagramme untereinander, und die Tabelle zeigt nur
 
 ## Last Heard
 
-<p align="center"><img src="../images/last-heard.png" alt="Last Heard" width="90%"></p>
+<p align="center">
+  <img src="../images/last-heard.png" alt="Last Heard" width="74%">
+  &nbsp;
+  <img src="../images/last-heard-mobile.png" alt="Last Heard am Smartphone" width="22%">
+</p>
+
+Jeder Eintrag ist eine kompakte Zeile. Am Desktop steht alles in einer Zeile, am Smartphone in zwei kurzen Zeilen (oben Rufzeichen, ID und Zeit, unten Talkgroup, Zeitschlitz und woher).
 
 | Spalte | Inhalt |
 |---|---|
 | Radio ID | DMR-ID des Sprechers |
 | Callsign | Avatar von FreeRadioID (sonst Initialen), Rufzeichen und **FRID**, wenn die ID bei FreeRadioID.net registriert ist |
 | Source | über welchen Repeater oder welche Verbindung das Gespräch kam; 🛡️ = per FreeRadioID angemeldet |
-| Slot | Zeitschlitz TS1 oder TS2 |
-| Destination | 👥 Gruppenruf / 👤 Einzelruf, 🎤 Sprache / 📟 Daten, Talkgroup |
-| Last Heard | **ON AIR** oder vor wie vielen Sekunden/Minuten |
+| TS | Zeitschlitz TS1 oder TS2 |
+| Destination | 👥 Gruppenruf / 👤 Einzelruf, 🎤 Sprache / 📟 Daten, Talkgroup mit Namen |
+| Last heard | **ON AIR** oder vor wie vielen Sekunden/Minuten |
+
+Damit die Liste nicht die halbe Seite füllt, stehen am Desktop die ersten **8**, am Smartphone die ersten **5** Einträge da. **Show all** zeigt alle zehn, **Show less** klappt wieder ein. Wer gerade spricht, steht immer oben und wird nie ausgeblendet.
 
 Klappst du **Last Heard** über den Pfeil zu, siehst du nur die laufenden Gespräche.
 
@@ -225,7 +234,7 @@ Am Ende jeder Seite steht **© Die N8schicht** mit der installierten Version (Ve
 
 <p align="center"><img src="../images/dashboard-stations.png" alt="Stationen als Raster" width="90%"></p>
 
-Repeater, Hotspots, Apps, Netzwerke, Outbound-Links und OpenBridge stehen als **schmale Karten nebeneinander**: am breiten Bildschirm drei bis vier pro Reihe, am Tablet zwei, am Smartphone eine. So passen viele Stationen auf einen Blick.
+Repeater, Hotspots, Apps, Netzwerke, Outbound-Links und OpenBridge stehen als **schmale Karten nebeneinander**. Ab 1280 Pixel Breite stehen die Bereiche zusätzlich in **zwei Spalten** (ab 2100 Pixel in drei), mit je zwei Karten pro Reihe; am Tablet zwei Karten, am Smartphone eine. So passen viele Stationen auf einen Blick, ohne lange zu scrollen.
 
 Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen und die Talkgroups pro Zeitschlitz. Darunter stehen die Zeitschlitze als kurze Zeilen:
 - Sind beide frei, ist es eine Zeile: `TS1 IDLE · TS2 IDLE`.

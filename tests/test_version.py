@@ -46,8 +46,9 @@ class TestUpdateCheck(unittest.TestCase):
     def test_cached(self):
         fetch, calls = self.fake("c" * 40)
         v.check("me/repo", "main", fetch=fetch, force=True)
+        n = len(calls)
         v.check("me/repo", "main", fetch=fetch)
-        self.assertEqual(len(calls), 2)          # second call served from cache
+        self.assertEqual(len(calls), n)          # second call served from cache
 
     def test_bad_repo_name_not_fetched(self):
         fetch, calls = self.fake("c" * 40)
@@ -67,3 +68,58 @@ class TestUpdateCheck(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestChangelog(unittest.TestCase):
+    TEXT = """# Änderungen
+
+## [1.2.0] – 2026-12-10
+### Neu
+- drei
+
+## [1.1.0] - 2026-12-01
+- zwei
+
+## [1.0.0] – 2026-11-21
+- eins
+"""
+
+    def test_sections_and_since(self):
+        s = v.changelog_sections(self.TEXT)
+        self.assertEqual([x["version"] for x in s], ["1.2.0", "1.1.0", "1.0.0"])
+        self.assertEqual(s[1]["date"], "2026-12-01")
+        self.assertIn("- drei", s[0]["body"])
+        self.assertEqual([x["version"] for x in v.changes_since(self.TEXT, "1.0.0")], ["1.2.0", "1.1.0"])
+        self.assertEqual(v.changes_since(self.TEXT, "1.2.0"), [])
+
+    def test_vtuple(self):
+        self.assertGreater(v.vtuple("1.10.0"), v.vtuple("1.9.9"))
+        self.assertEqual(v.vtuple("v2.0.1"), (2, 0, 1))
+        self.assertEqual(v.vtuple("junk"), (0, 0, 0))
+
+    def test_repo_changelog_matches_version(self):
+        import subprocess, sys
+        r = subprocess.run([sys.executable, str(v.REPO_ROOT / "scripts" / "release.py"), "--check"],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_check_includes_remote_version_and_notes(self):
+        import base64
+        loc = {"version": "1.0.0", "commit": "a" * 40, "short": "aaaaaaa", "date": "", "branch": "main"}
+        orig = v.local_version
+        v.local_version = lambda refresh=False: dict(loc)
+        v._cache.clear()
+        try:
+            def fetch(url):
+                if "/commits/" in url:
+                    return {"sha": "c" * 40, "commit": {"message": "x", "committer": {"date": "d"}}}
+                if "/compare/" in url:
+                    return {"status": "ahead", "ahead_by": 2, "commits": []}
+                if "VERSION" in url:
+                    return {"content": base64.b64encode(b"1.2.0\n").decode()}
+                return {"content": base64.b64encode(self.TEXT.encode()).decode()}
+            r = v.check("me/repo", "main", fetch=fetch, force=True)
+            self.assertEqual(r["remote_version"], "1.2.0")
+            self.assertEqual([n["version"] for n in r["release_notes"]], ["1.2.0", "1.1.0"])
+        finally:
+            v.local_version = orig

@@ -1665,6 +1665,111 @@
         .flow-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
         .flow-row { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; padding: 5px 8px; border-radius: 8px; background: rgba(255,255,255,.04); }
         .flow-from { font-weight: 650; white-space: nowrap; } .flow-arrow { color: var(--accent); }
+
+        /* ---- Last Heard: compact rows ---- */
+        .lh-card { padding: 4px 6px 6px !important; }
+        .lh-head, .lh-row { display: grid; grid-template-columns: 96px minmax(0, 1.25fr) minmax(0, 1fr) 54px minmax(0, 1.7fr) 104px;
+                            gap: 10px; align-items: center; padding: 0 12px; }
+        .lh-head { height: 30px; font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-dim);
+                   border-bottom: 1px solid rgba(255,255,255,.07); }
+        .lh-head .c, .lh-slot { text-align: center; }
+        .lh-row { min-height: 40px; border-bottom: 1px solid rgba(255,255,255,.05); border-radius: 10px; transition: background .15s ease; position: relative; }
+        .lh-row:last-child { border-bottom: 0; }
+        .lh-row:hover { background: rgba(255,255,255,.045); }
+        .lh-row.lh-active { background: linear-gradient(90deg, rgba(48,209,88,.16), rgba(48,209,88,.03) 70%); }
+        .lh-row.lh-active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 3px; background: var(--on-air, #30d158); }
+        .lh-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+        .lh-id { font-variant-numeric: tabular-nums; color: var(--text-dim); }
+        .lh-call { font-weight: 650; }
+        .lh-call.muted { color: var(--text-dim); font-weight: 400; }
+        .lh-user { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+        .lh-cs { overflow: hidden; text-overflow: ellipsis; }
+        .lh-user .frid-tag { flex: 0 0 auto; }
+        .lh-mid, .lh-via { display: none; }
+        .lh-src { color: var(--text); }
+        .lh-dst .lh-tg { color: var(--accent); font-weight: 650; }
+        .lh-tgname { color: var(--text-dim); font-size: 12.5px; }
+        .lh-time { color: var(--text-dim); font-variant-numeric: tabular-nums; text-align: right; }
+        .lh-call .id-link, .lh-id .id-link { display: inline-flex; max-width: 100%; }
+        .lh-empty { padding: 14px; text-align: center; color: var(--text-dim); font-size: 13px; }
+        .lh-more { display: block; margin: 6px auto 2px; padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 650; cursor: pointer;
+                   color: var(--text); background: rgba(255,255,255,.06); border: 1px solid var(--glass-border); }
+        .lh-more:hover { background: rgba(var(--accent-rgb), .16); }
+        @media (max-width: 1100px) {
+            .lh-head, .lh-row { grid-template-columns: 84px minmax(0, 1.2fr) minmax(0, 1fr) 46px minmax(0, 1.4fr) 84px; gap: 8px; padding: 0 8px; }
+        }
+        @media (max-width: 760px) {
+            .lh-head { display: none; }
+            .lh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "call time" "dst slot"; row-gap: 1px; column-gap: 8px;
+                      padding: 6px 8px; min-height: 0; }
+            .lh-id, .lh-src { display: none; }
+            .lh-call { grid-area: call; font-size: 14px; }
+            .lh-time { grid-area: time; font-size: 12px; }
+            .lh-dst { grid-area: dst; font-size: 12px; color: var(--text-dim); padding-left: 34px; }
+            .lh-slot { grid-area: slot; }
+            .lh-slot .ts-chip { font-size: 10px; padding: 1px 6px; }
+            .lh-mid { display: inline; font-size: 11px; font-weight: 500; color: var(--text-dim); margin-left: 2px; }
+            .lh-via { display: inline; }
+            .lh-via .lh-frid { display: none; }
+            .lh-tgname { font-size: 11.5px; }
+        }
+
+        /* ---- Less scrolling: station sections in columns on wide screens ---- */
+        @media (min-width: 1280px) {
+            .conn-columns { column-count: 2; column-gap: 14px; }
+            .conn-columns > div { break-inside: avoid; -webkit-column-break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; }
+            .conn-columns > div[style*="display: none"] { display: none !important; }
+            .conn-columns .type-hint { white-space: normal; }
+        }
+        @media (min-width: 2100px) { .conn-columns { column-count: 3; } }
+        .conn-columns .section-header { margin-top: 14px !important; }
+
+        /* ---- Phone: one header row + tabs, 3×2 stat tiles ---- */
+        @media (max-width: 600px) {
+            header { flex-wrap: wrap !important; row-gap: 6px !important; padding: 7px 10px 5px !important; align-items: center !important; }
+            header .header-branding { flex: 1 1 0 !important; min-width: 0; gap: 8px !important; }
+            header .header-branding .logo { width: 34px !important; height: 34px !important; }
+            header h1, header #dashboardTitle { font-size: 17px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 !important; }
+            header .header-branding > div { min-width: 0; }
+            header #serverName { display: none !important; }
+            header .status-badges { flex: 0 0 auto !important; margin-left: auto !important; flex-wrap: nowrap !important; gap: 4px !important; order: 2; }
+            header .links-label { display: none; }
+            header .links-btn::before { content: '🔗'; }
+            header { margin-bottom: 8px !important; top: 6px !important; }
+            header .links-btn, header .audio-toggle, header .hdr-btn { padding: 4px 7px !important; font-size: 12px !important; min-height: 28px; }
+            header .connection-status { font-size: 0 !important; padding: 0 !important; width: 12px; height: 12px; min-height: 0; border-radius: 50%;
+                                        display: inline-flex; align-items: center; justify-content: center; border: 0 !important; }
+            header .connection-status::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #ffd60a; box-shadow: 0 0 6px rgba(255,214,10,.7); }
+            header .connection-status.connected::before { background: #30d158; box-shadow: 0 0 6px rgba(48,209,88,.8); }
+            header .connection-status.disconnected::before { background: #ff453a; box-shadow: 0 0 6px rgba(255,69,58,.8); }
+            header .main-tabs { order: 3; flex: 1 1 100% !important; margin: 0 !important; padding: 3px 0 0 !important; }
+            header .main-tabs button { padding: 6px 2px !important; font-size: 11.5px !important; border-radius: 10px; }
+            .stats-bar { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; margin-top: 0; }
+            .stats-bar .stat-frid, .stats-bar .stat-obp, .stats-bar .stat-traffic { grid-column: auto !important; display: block !important; }
+            .stats-bar .stat-card { padding: 7px 9px !important; min-width: 0; }
+            .stats-bar .stat-value, .stats-bar .stat-frid .stat-value, .stats-bar .stat-obp .stat-value, .stats-bar .stat-traffic .stat-value { font-size: 16px !important; }
+            .stats-bar .stat-frid .stat-sub, .stats-bar .stat-obp .stat-sub { display: none !important; }
+            .stats-bar .stat-label { font-size: 9.5px !important; }
+            .section-header { margin: 12px 4px 6px !important; }
+            .conn-grid > .repeater-card > .repeater-info { padding: 6px 9px 2px; }
+            .conn-grid .avatar { --size: 30px !important; }
+        }
+
+        @media (max-width: 600px) {
+            .obp-facts { gap: 6px !important; }
+            .obp-fact { padding: 7px 10px !important; }
+            .obp-fact .k { font-size: 9.5px !important; }
+            .obp-fact .v { font-size: 14.5px !important; }
+            .obp-hero h2, .obp-hero .obp-title { font-size: 19px !important; }
+        }
+
+        .upd-notes { font-size: 12.5px; max-height: 260px; overflow: auto; padding: 8px 11px; border-radius: 10px; background: rgba(0,0,0,.2);
+                     border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 10px; }
+        .upd-notes .rn-head { font-weight: 750; font-size: 13.5px; }
+        .upd-notes h4 { margin: 6px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); }
+        .upd-notes ul { margin: 2px 0 4px 18px; padding: 0; } .upd-notes li { margin: 2px 0; }
+        .upd-notes p { margin: 3px 0; }
+        .update-banner .upd-notes { margin: 4px 0 6px; }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -2202,7 +2307,7 @@
                 <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
             </nav>
             <div class="status-badges">
-                <div class="links-menu" id="linksMenu" hidden><button type="button" class="links-btn" onclick="toggleLinks(event)"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
+                <div class="links-menu" id="linksMenu" hidden><button type="button" class="links-btn" onclick="toggleLinks(event)" title="Links"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
                 <a class="network-info-btn" id="networkInfoBtn" style="display: none;" target="_blank">🌐 Network Info</a>
                 <div class="connection-status clickable warning" id="wsStatus" title="Connecting to dashboard server...">Connecting...</div>
                 <div class="connection-status warning" id="hblinkStatus" title="Waiting for connection status...">Unknown</div>
@@ -2259,30 +2364,15 @@
             <span class="collapse-caret">▾</span><span id="lastHeardTitle">Last Heard</span>
             <span id="userDbStatus" style="font-size: 0.55em; color: #9ca3af; font-weight: 400; margin-left: 10px;"></span>
         </h2>
-        <div class="card" id="lastHeardBody">
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
-                    <thead>
-                        <tr style="background-color: #374151; color: white;">
-                            <th style="padding: 8px; text-align: left;">Radio ID</th>
-                            <th style="padding: 8px; text-align: left;">Callsign/Alias</th>
-                            <th style="padding: 8px; text-align: left;">Source</th>
-                            <th style="padding: 8px; text-align: center;">Slot</th>
-                            <th style="padding: 8px; text-align: left;">Destination</th>
-                            <th style="padding: 8px; text-align: left;">Last Heard</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lastHeardTable">
-                        <tr>
-                            <td colspan="6" style="padding: 8px 20px; text-align: center; color: #9ca3af;">
-                                No users heard yet
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="card lh-card" id="lastHeardBody">
+            <div class="lh-head" aria-hidden="true">
+                <span>Radio ID</span><span>Callsign</span><span>Source</span><span class="c">TS</span><span>Destination</span><span>Last heard</span>
             </div>
+            <div class="lh-list" id="lastHeardTable" role="list"><div class="lh-empty">No users heard yet</div></div>
+            <button type="button" class="lh-more" id="lhMore" hidden onclick="state.lhShowAll = !state.lhShowAll; renderLastHeard()"></button>
         </div>
 
+        <div class="conn-columns">
         <!-- OpenBridge Trunks (positioned above Repeaters) -->
         <div id="openbridgeSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="openbridge" data-collapse-target="openbridgeBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>↔️ OpenBridge <span id="openbridgeCount" style="color: var(--accent); font-weight: 700;"></span></h2>
@@ -2340,6 +2430,8 @@
                 <div id="outboundsContainer" class="conn-grid"></div>
             </div>
         </div>
+
+        </div><!-- /conn-columns -->
 
         <!-- Recent Events -->
         <div id="eventsSection">
@@ -4067,7 +4159,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 : u.available ? `<span class="auth-guest">${u.behind} new ${u.behind === 1 ? 'change' : 'changes'}</span>`
                 : '<span class="auth-ok">up to date</span>';
             el.innerHTML = infoRow('GitHub', state_) +
-                (u.latest ? infoRow('Newest there', escapeHtml(`${u.latest.short} · ${fmtDay(u.latest.date)}`)) : '') +
+                (u.latest ? infoRow('Newest there', escapeHtml(`${u.remote_version ? 'v' + u.remote_version + ' · ' : ''}${u.latest.short} · ${fmtDay(u.latest.date)}`)) : '') +
                 (u.checked_at ? infoRow('Checked', escapeHtml(new Date(u.checked_at * 1000).toLocaleString('en-GB'))) : '') +
                 (u.enabled ? infoRow('Restart after update', u.sudo_restart ? 'systemctl via sudo' : u.systemd ? 'by systemd (Restart=always)' : 'by hand') : '') +
                 (u.enabled ? infoRow('Update now', u.can_install ? '<span class="auth-ok">allowed for you</span>'
@@ -4099,6 +4191,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 </section>
                 <section class="tile" id="sysVersion"><h3>⬆️ Version</h3>
                     ${infoRow('Installed', escapeHtml(`v${(s.build || {}).version || '?'} · ${(s.build || {}).short || 'no git'}`))}
+                    ${infoRow('Based on', escapeHtml(`HBlink4 ${(s.build || {}).base || '?'}`))}
                     ${infoRow('Date', escapeHtml(fmtDay((s.build || {}).date) || '—'))}
                     ${infoRow('Branch', escapeHtml((s.build || {}).branch || '—'))}
                     <div id="sysUpd">${infoRow('GitHub', '<span class="muted">checking…</span>')}</div>
@@ -5266,111 +5359,69 @@ PROTO_VER: ${fd ? 5 : 1}`;
             renderLastHeard();
         }
 
+        // Last Heard: compact rows. Desktop one line per entry, phone two short lines.
+        // Shows the first few (desktop 8, phone 5); whoever is ON AIR is always on top.
+        function lhLimit() { return window.matchMedia('(max-width: 600px)').matches ? 5 : 8; }
+        function lhTime(user) {
+            if (user.active) return '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>';
+            return escapeHtml(agoText(user.last_heard));
+        }
         function renderLastHeard() {
-            const tbody = document.getElementById('lastHeardTable');
-            if (!tbody) return;
+            const list = document.getElementById('lastHeardTable');
+            const more = document.getElementById('lhMore');
+            if (!list) return;
 
             const activeOnly = isSectionCollapsed('lastHeard');
             let users = Array.isArray(state.last_heard) ? state.last_heard : [];
             if (activeOnly) users = users.filter(u => u.active);
-            // Whoever is talking right now is always on top
             users = [...users].sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0) || (b.last_heard || 0) - (a.last_heard || 0));
 
-            if (!users || users.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="padding: 8px 20px; text-align: center; color: #9ca3af;">
-                            ${activeOnly ? 'No active streams' : 'No users heard yet'}
-                        </td>
-                    </tr>
-                `;
+            if (!users.length) {
+                list.innerHTML = `<div class="lh-empty">${activeOnly ? 'No active streams' : 'No users heard yet'}</div>`;
+                if (more) more.hidden = true;
                 return;
             }
+            const limit = Math.max(lhLimit(), users.filter(u => u.active).length);
+            const shown = (state.lhShowAll || activeOnly) ? users : users.slice(0, limit);
+            if (more) {
+                more.hidden = activeOnly || users.length <= limit;
+                more.textContent = state.lhShowAll ? 'Show less ▴' : `Show all ${users.length} ▾`;
+            }
 
-            // Build id-keyed lookup for translation check (state.repeaters is an array).
             const repeaterList = Array.isArray(state.repeaters) ? state.repeaters : Object.values(state.repeaters || {});
             const repeaterById = {};
             repeaterList.forEach(r => { if (r && r.repeater_id != null) repeaterById[r.repeater_id] = r; });
 
-            // Dashboard maintains its own list of last 10 users
-            tbody.innerHTML = users.map(user => {
-                const lastHeardDate = new Date(user.last_heard * 1000);
-                const now = Date.now();
-                const elapsed = Math.floor((now - lastHeardDate) / 1000);
-                
-                let timeDisplay;
-                if (user.active) {
-                    // Stream is currently active - show badge
-                    timeDisplay = '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>';
-                } else if (elapsed < 60) {
-                    timeDisplay = `${elapsed}s ago`;
-                } else if (elapsed < 3600) {
-                    timeDisplay = `${Math.floor(elapsed / 60)}m ago`;
-                } else {
-                    // For times over an hour, check if it's today
-                    const today = new Date();
-                    const isToday = lastHeardDate.toDateString() === today.toDateString();
-                    
-                    if (isToday) {
-                        // Same day - show time only
-                        timeDisplay = lastHeardDate.toLocaleTimeString();
-                    } else {
-                        // Different day - show date and time
-                        const options = { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            hour: 'numeric', 
-                            minute: '2-digit',
-                            hour12: true
-                        };
-                        timeDisplay = lastHeardDate.toLocaleDateString('en-US', options);
-                    }
-                }
-                
-                const callsign = user.callsign || '-';
-                // Use source_name if available, fall back to repeater_id for backward compatibility.
-                // Flag only if THIS specific transmission's (slot, talkgroup) matched a translation rule
-                // on the source repeater — not just "source has any rules".
+            list.innerHTML = shown.map(user => {
                 const srcRepeater = user.source_repeater_id != null ? repeaterById[user.source_repeater_id] : null;
                 const xlate = srcRepeater && Array.isArray(srcRepeater.translations)
-                    ? srcRepeater.translations.find(t => t[0] === user.slot && t[1] === user.talkgroup)
-                    : null;
-                const srcXlateEmoji = xlate
-                    ? ` <span title="Translated: RF TS${xlate[0]}/TG${xlate[1]} ↔ Net TS${xlate[2]}/TG${xlate[3]}">🔀</span>`
-                    : '';
+                    ? srcRepeater.translations.find(t => t[0] === user.slot && t[1] === user.talkgroup) : null;
+                const srcXlate = xlate ? ` <span title="Translated: RF TS${xlate[0]}/TG${xlate[1]} ↔ Net TS${xlate[2]}/TG${xlate[3]}">🔀</span>` : '';
                 const srcFrid = srcRepeater && srcRepeater.auth_method === 'freeradioid'
-                    ? '&nbsp;<span class="lh-frid" title="Source logged in via FreeRadioID">🛡️</span>' : '';
-                const source = (user.source_name || user.repeater_id || '-') + srcXlateEmoji + srcFrid;
-
-                // Destination rendering composes two dimensions so both are
-                // visible at a glance:
-                //   addressing:  👥 group  /  👤 unit (private)
-                //   payload:     🎤 voice  /  📟 data (not forwarded)
-                // 📟 (pager) carries the strongest semantic tie to what DMR
-                // data actually is — short text/GPS bursts over radio.
+                    ? ' <span class="lh-frid" title="Source logged in via FreeRadioID">🛡️</span>' : '';
+                const source = escapeHtml(user.source_name || user.repeater_id || '–') + srcXlate + srcFrid;
                 const isUnit = user.call_type === 'private';
-                const isData = !!user.is_data;
-                const addrEmoji = isUnit
-                    ? '<span title="Unit (private) call">👤</span>'
-                    : '<span title="Group call">👥</span>';
-                const payloadEmoji = isData
-                    ? '<span title="Data call (not forwarded)">📟</span>'
-                    : '<span title="Voice call">🎤</span>';
-                const destination = `${addrEmoji}${payloadEmoji} <span class="lh-dest"><span>${user.talkgroup}</span>${isUnit ? '' : tgNameHtml(user.talkgroup)}</span>`;
-
+                const kind = (isUnit ? '<span title="Unit (private) call">👤</span>' : '<span title="Group call">👥</span>')
+                           + (user.is_data ? '<span title="Data call (not forwarded)">📟</span>' : '<span title="Voice call">🎤</span>');
+                const nm = isUnit ? '' : tgName(user.talkgroup);
+                const dest = `${kind} <b class="lh-tg">${isUnit ? '' : 'TG'}${escapeHtml(user.talkgroup)}</b>${nm ? ` <span class="lh-tgname">${escapeHtml(nm)}</span>` : ''}`;
+                const callsign = user.callsign || '–';
                 return `
-                    <tr class="${user.active ? 'lh-active' : ''}">
-                        <td class="lh-id">${idLink(user.radio_id, escapeHtml(user.radio_id))}</td>
-                        <td class="lh-call ${user.callsign ? '' : 'muted'}">${idLink(user.radio_id, `<span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 28)}<span>${escapeHtml(callsign)}${user.frid ? ' <span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}</span></span>`)}</td>
-                        <td>${source}</td>
-                        <td class="lh-slot"><span class="ts-chip">TS${user.slot}</span></td>
-                        <td>${destination}</td>
-                        <td class="lh-time">${timeDisplay}</td>
-                    </tr>
-                `;
+                    <div class="lh-row ${user.active ? 'lh-active' : ''}" role="listitem">
+                        <div class="lh-c lh-id">${idLink(user.radio_id, escapeHtml(user.radio_id))}</div>
+                        <div class="lh-c lh-call ${user.callsign ? '' : 'muted'}">${idLink(user.radio_id,
+                            `<span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 26)}<span class="lh-cs">${escapeHtml(callsign)}</span>`
+                            + `${user.frid ? '<span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}`
+                            + `<span class="lh-mid">${escapeHtml(user.radio_id)}</span></span>`)}</div>
+                        <div class="lh-c lh-src" title="Source">${source}</div>
+                        <div class="lh-c lh-slot"><span class="ts-chip">TS${escapeHtml(user.slot)}</span></div>
+                        <div class="lh-c lh-dst">${dest}<span class="lh-via"> · via ${source}</span></div>
+                        <div class="lh-c lh-time">${lhTime(user)}</div>
+                    </div>`;
             }).join('');
         }
-        
+        window.matchMedia('(max-width: 600px)').addEventListener?.('change', () => renderLastHeard());
+
         function processEventUpdate(event) {
             // Update last_heard if included in event
             if (event.last_heard) {
@@ -6811,14 +6862,35 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 const v = await fetch('/api/version', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null);
                 if (!v) return;
                 state.build = v;
-                document.getElementById('footerVersion').textContent =
-                    `HBlink4-FreeRadioID v${v.version || '?'}${v.commit ? ' (' + v.commit + ')' : ''}`;
+                const fv = document.getElementById('footerVersion');
+                fv.textContent = `HBlink4-FreeRadioID v${v.version || '?'}${v.commit ? ' (' + v.commit + ')' : ''}`;
+                fv.title = `Installed version${v.base ? ' · based on HBlink4 ' + v.base : ''}`;
                 document.getElementById('footerDate').textContent = fmtDay(v.date);
                 if (v.date) document.getElementById('footerYear').textContent = new Date(v.date).getFullYear();
             } catch (e) {}
         }
 
         // ---------- Update notice for admins ----------
+        // Release notes from CHANGELOG.md (a small, safe Markdown subset: ###, -, **, `)
+        function mdLite(text) {
+            const inline = t => escapeHtml(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+            let html = '', inList = false;
+            for (const raw of String(text || '').split('\n')) {
+                const line = raw.trimEnd();
+                const li = line.match(/^\s*[-*]\s+(.*)$/);
+                if (li) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(li[1])}</li>`; continue; }
+                if (inList) { html += '</ul>'; inList = false; }
+                const h = line.match(/^#{3,4}\s+(.*)$/);
+                if (h) html += `<h4>${inline(h[1])}</h4>`;
+                else if (line.trim()) html += `<p>${inline(line)}</p>`;
+            }
+            return html + (inList ? '</ul>' : '');
+        }
+        function releaseNotesHtml(notes, cls = 'upd-notes') {
+            if (!Array.isArray(notes) || !notes.length) return '';
+            return `<div class="${cls}">` + notes.map(n => `<div class="rn"><div class="rn-head">v${escapeHtml(n.version)}${n.date ? ` <span class="muted">· ${escapeHtml(n.date)}</span>` : ''}</div>${mdLite(n.body)}</div>`).join('') + '</div>';
+        }
+
         function updDismissed(sha) { try { return localStorage.getItem('n8.updateDismissed') === sha; } catch (e) { return false; } }
         async function checkUpdate(force = false) {
             const el = document.getElementById('updateBanner');
@@ -6830,12 +6902,13 @@ PROTO_VER: ${fd ? 5 : 1}`;
             el.hidden = !show;
             if (show) {
                 const list = (u.commits || []).slice(0, 5).map(c => `<li><code>${escapeHtml(c.short)}</code> ${escapeHtml(c.message)}</li>`).join('');
+                const notes = releaseNotesHtml(u.release_notes);
                 el.innerHTML = `
                     <div class="upd-main">
                         <span class="upd-icon">⬆️</span>
-                        <div class="upd-text"><b>Update available</b> –
+                        <div class="upd-text"><b>${u.remote_version && u.remote_version !== u.local.version ? `Version ${escapeHtml(u.remote_version)} available` : 'Update available'}</b> –
                             ${u.behind} new ${u.behind === 1 ? 'change' : 'changes'} on GitHub
-                            <span class="muted">(${escapeHtml(u.local.short || '?')} → ${escapeHtml(u.latest.short)}, ${escapeHtml(fmtDay(u.latest.date))})</span></div>
+                            <span class="muted">(v${escapeHtml(u.local.version || '?')} · ${escapeHtml(u.local.short || '?')} → ${escapeHtml(u.latest.short)}, ${escapeHtml(fmtDay(u.latest.date))})</span></div>
                         <div class="upd-actions">
                             <button type="button" class="btn-s" onclick="this.closest('.update-banner').classList.toggle('open')">What's new</button>
                             <a class="btn-s" href="${escapeHtml(u.url)}" target="_blank" rel="noopener">GitHub ↗</a>
@@ -6844,7 +6917,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                         </div>
                     </div>
                     <div class="upd-more">
-                        <ul>${list}</ul>
+                        ${notes || `<ul>${list}</ul>`}
                         <p class="muted small">Install on the server: <code>cd ${escapeHtml(u.path || '/opt/HBlink4')} &amp;&amp; ${u.owner && u.owner !== 'root' ? 'sudo -u ' + escapeHtml(u.owner) + ' ' : ''}git pull &amp;&amp; sudo systemctl restart hblink4 hblink4-dash</code></p>
                     </div>`;
             }
@@ -6870,9 +6943,9 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const m = openModal(`
                 <form class="upd-dialog" onsubmit="event.preventDefault(); runUpdate(this)">
                     <h2>⬇️ Install update</h2>
-                    <p class="muted">${escapeHtml(u.local.short || '?')} → <b>${escapeHtml(u.latest.short)}</b> · ${escapeHtml(fmtDay(u.latest.date))} ·
+                    <p class="muted">v${escapeHtml(u.local.version || '?')} → <b>${u.remote_version ? 'v' + escapeHtml(u.remote_version) : escapeHtml(u.latest.short)}</b> · ${escapeHtml(fmtDay(u.latest.date))} ·
                         ${u.behind} ${u.behind === 1 ? 'change' : 'changes'}</p>
-                    <ul class="upd-list">${list}</ul>
+                    ${releaseNotesHtml(u.release_notes, 'upd-notes') || `<ul class="upd-list">${list}</ul>`}
                     <div class="upd-facts">
                         <div>📦 From: <code>${escapeHtml(u.origin || 'origin')}</code> (branch <code>${escapeHtml(u.branch)}</code>)</div>
                         <div>${RESTART_INFO[how]}</div>
