@@ -1558,6 +1558,9 @@
         .tab-intro { padding: 2px 4px 10px; }
 
         /* ---- admin fixes ---- */
+        /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
+        .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
+        .admin-tabs { align-items: center; }
         @media (max-width: 600px) { .set-panel-head { flex-wrap: wrap; } .imp-sel { justify-content: flex-start; } }
         .admin-tabs { padding-top: 6px !important; padding-bottom: 8px !important; }
         .admin-tabs button { flex: none; }
