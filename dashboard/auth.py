@@ -254,6 +254,19 @@ class AuthStore:
         self.audit("login", row["username"], "", ip)
         return token, self.public_user(row)
 
+    def confirm_password(self, user: Dict[str, Any], password: str, ip: str = "") -> None:
+        """Re-check the logged-in user's password before a dangerous action (same throttle as login)."""
+        key = f"{ip}|{str(user.get('username', '')).lower()}"
+        if self._throttled(ip) or self._throttled(key):
+            raise AuthError("Too many wrong passwords. Try again in 15 minutes.")
+        rows = self._q("SELECT password_hash, disabled FROM users WHERE id=?", (user.get("id"),))
+        if not rows or rows[0]["disabled"] or not verify_password(password or "", rows[0]["password_hash"]):
+            now = time.time()
+            self._failures.setdefault(ip, []).append(now)
+            self._failures.setdefault(key, []).append(now)
+            self.audit("confirm_failed", str(user.get("username", ""))[:40], "", ip)
+            raise AuthError("Wrong password.")
+
     def session_user(self, token: Optional[str]) -> Optional[Dict[str, Any]]:
         if not token:
             return None

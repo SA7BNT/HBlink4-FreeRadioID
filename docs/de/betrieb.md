@@ -62,15 +62,89 @@ Zu jedem Problem steht die passende Lösung mit **→** dahinter. Am Ende steht 
 
 ## Aktualisieren
 
-Eingeloggte Admins sehen im Dashboard einen Hinweis, sobald auf GitHub eine neue Version liegt (siehe [Adminbereich → Update-Hinweis](adminbereich.md#️-update-hinweis)). Installieren:
+Der Server fragt jede Stunde bei GitHub nach einer neuen Version. Eingeloggte Admins sehen dann einen Hinweis und können mit **⬇️ Update now** direkt im Browser installieren (siehe [Adminbereich → Update now](adminbereich.md#️-update-now)). Auf der Konsole geht es so:
 
 ```bash
 cd /opt/HBlink4
-sudo -u hblink git pull
+sudo -u hblink git pull --ff-only
 sudo systemctl restart hblink4 hblink4-dash
 ```
 
 Vorher eine [Sicherung](#sicherung) zu machen schadet nie. Die Einstellungen aus dem Adminbereich liegen in der Datenbank und bleiben erhalten. Welche Version läuft, steht unten in der Fußzeile jeder Seite und im Adminbereich unter **🖥️ System**.
+
+**Zurück zur vorherigen Version:** Im **📜 Log** steht bei jedem Update `alt → neu`. Mit dem alten Commit:
+
+```bash
+cd /opt/HBlink4
+sudo -u hblink git reset --hard <alter-commit>
+sudo systemctl restart hblink4 hblink4-dash
+```
+
+### Neustart nach dem Update und sudoers
+
+Für **Update now** gibt es zwei Wege, die Dienste neu zu starten. Das Dashboard nimmt automatisch den, der funktioniert; unter **🖥️ System → Restart after update** steht, welcher es ist.
+
+**Weg A – ohne sudo (empfohlen, nichts einzurichten):** Die mitgelieferten Dienste haben `Restart=always`. Nach dem Update beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie nach 10 Sekunden wieder. Dafür braucht das Dashboard keinerlei Root-Rechte, und die Härtung der Dienste (`NoNewPrivileges=true`, `CapabilityBoundingSet=`) bleibt an. Einzige Bedingung: HBlink4 muss in dem Moment mit dem Dashboard verbunden sein (im Kopf steht **✓ DMR**), sonst startet nur das Dashboard neu; der Dialog sagt das dann.
+
+**Weg B – `systemctl` über sudo:** Wer lieber ein echtes `systemctl restart` will (z. B. weil `Restart=always` geändert wurde), erlaubt dem Dienst-Benutzer genau **einen** Befehl ohne Passwort. Im Beispiel heißt der Benutzer `hblink`; nimm den aus `User=` in `/etc/systemd/system/hblink4-dash.service`.
+
+1. Regel anlegen – immer mit `visudo`, das prüft die Syntax vor dem Speichern (ein Tippfehler in sudoers kann sonst sudo komplett sperren):
+
+   ```bash
+   sudo visudo -f /etc/sudoers.d/hblink4-update
+   ```
+
+   Inhalt (genau so, eine Zeile pro Eintrag):
+
+   ```
+   # HBlink4 "Update now": darf genau diese beiden Dienste neu starten – sonst nichts
+   Cmnd_Alias HBLINK4_RESTART = /usr/bin/systemctl --no-block restart hblink4.service hblink4-dash.service
+   hblink ALL=(root) NOPASSWD: HBLINK4_RESTART
+   ```
+
+2. Rechte und Syntax prüfen:
+
+   ```bash
+   sudo chmod 0440 /etc/sudoers.d/hblink4-update
+   sudo visudo -c
+   ```
+
+3. Testen, ob die Regel greift (zeigt den Befehl, startet nichts neu):
+
+   ```bash
+   sudo -u hblink sudo -n -l /usr/bin/systemctl --no-block restart hblink4.service hblink4-dash.service
+   ```
+
+4. Die Härtung des **Dashboard-Dienstes** lässt sudo nicht zu (`NoNewPrivileges` verbietet jedes Hochstufen der Rechte). Für Weg B muss sie für diesen einen Dienst gelockert werden:
+
+   ```bash
+   sudo systemctl edit hblink4-dash
+   ```
+
+   ```ini
+   [Service]
+   NoNewPrivileges=no
+   CapabilityBoundingSet=~
+   AmbientCapabilities=CAP_NET_BIND_SERVICE
+   ```
+
+   Danach `sudo systemctl restart hblink4-dash`. Unter **🖥️ System** steht jetzt *systemctl via sudo*.
+
+Warum das so eng ist:
+- Die Regel erlaubt **nur diesen exakten Befehl** mit genau diesen Argumenten. `systemctl stop`, andere Dienste, `systemctl edit` oder eine Shell bleiben verboten. sudo vergleicht die ganze Befehlszeile, deshalb **keine** Platzhalter wie `*` in die Regel schreiben.
+- Immer den vollen Pfad `/usr/bin/systemctl` angeben. Liegt `systemctl` bei dir woanders (`command -v systemctl`), passt die Regel nicht; dann nimmt das Dashboard automatisch Weg A.
+- Den Dienst-Benutzer **nie** in die Gruppe `sudo` aufnehmen und **kein** `NOPASSWD: ALL` eintragen. Dann könnte jeder, der das Dashboard übernimmt, den ganzen Server übernehmen.
+- Weg B lockert die Härtung des Dashboards. Wer nicht ausdrücklich `systemctl` braucht, bleibt bei Weg A.
+
+**Regel wieder entfernen:** `sudo rm /etc/sudoers.d/hblink4-update` und `sudo systemctl revert hblink4-dash`.
+
+### Schutz gegen Angriffe von außen
+
+- **Wer überhaupt drankommt:** Update now ist nur nach Login und nur für die eingestellte Rolle erreichbar (Standard: Superadmin), und auch dann nur mit erneuter Passworteingabe. Fehlversuche werden wie beim Login gebremst und protokolliert.
+- **Schutz vor fremden Seiten:** Anfragen anderer Seiten (CSRF) blockt das Dashboard, weil jede Änderung einen eigenen Kopf-Eintrag braucht und das Login-Cookie `SameSite=Strict` ist.
+- **Woher der Code kommt:** Installiert wird nur aus dem Git-Remote, das auf dem Server eingerichtet ist, und nur der Commit, den GitHub gemeldet hat. Es geht nur vorwärts; Hooks und lokale Transporte sind aus. Zum Prüfen: `git -C /opt/HBlink4 remote -v`.
+- **Rechte:** Das Dashboard läuft als normaler Benutzer ohne Root. Mit Weg B darf es höchstens die beiden Dienste neu starten.
+- **Abschalten:** Wer Updates nur auf der Konsole will, stellt *Who may press “Update now”* auf **Nobody**. Der Hinweis bleibt, installiert wird dann nur von Hand.
 
 ## Sicherung
 

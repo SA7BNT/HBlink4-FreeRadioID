@@ -66,7 +66,7 @@ Links steht die Liste der Abschnitte, rechts der gewählte Abschnitt mit einem S
 | 📈 Talkgroups & statistics | Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **Talkgroup-Liste der N8schicht** an/aus, **eigene Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile); die URL der Liste unter *Advanced* | sofort |
 | 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Untertitel), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
 | 🔒 HTTPS & web | HTTPS, Domain, E-Mail; Test-Zertifikate und Ports unter *Advanced* | nach **Neustart** des Dashboards |
-| ⬆️ Updates | Update-Hinweis für Admins an/aus, GitHub-Repository; Branch und Prüfabstand unter *Advanced* | sofort |
+| ⬆️ Updates | Update-Hinweis an/aus, GitHub-Repository, wer **Update now** drücken darf; Branch und Prüfabstand (Standard 1 Stunde) unter *Advanced* | sofort |
 
 <p align="center">
   <img src="../images/admin-settings-tgstats.png" alt="Abschnitt Talkgroups &amp; statistics" width="49%">
@@ -223,16 +223,36 @@ Die genaue Umsetzung steht in [Anleitungen → Umziehen](anleitungen.md#2-von-hb
 - **Sessions**: alle Anmeldungen mit IP, Browser und Ablauf; jede lässt sich beenden.
 - **Log**: Anmeldungen, Fehlversuche, Benutzer- und Einstellungsänderungen, Neustarts, jeweils mit Zeit, Person und IP.
 - **System**: HTTPS mit Ablaufdatum des Zertifikats, Zugriff, Verbindung zum DMR-Server, FreeRadioID-IDs und gespeicherte Avatare. Dazu die Knöpfe **Restart dashboard** und **Restart DMR server**; sie erscheinen nur, wenn beides als systemd-Dienst läuft.
-- **⬆️ Version** (im Tab System): installierte Version, Commit, Datum und Branch, dazu der Stand auf GitHub. **🔍 Check now** fragt sofort nach.
+- **⬆️ Version** (im Tab System): installierte Version, Commit, Datum und Branch, der Stand auf GitHub, wie nach einem Update neu gestartet wird und ob du installieren darfst. **🔍 Check now** fragt sofort nach, **⬇️ Update now** installiert.
 
 ### ⬆️ Update-Hinweis
 
 <p align="center"><img src="../images/update-banner.png" alt="Update-Hinweis" width="90%"></p>
+<p align="center"><img src="../images/admin-system-update.png" alt="Version im Tab System" width="50%"></p>
 
-Gibt es auf GitHub eine neuere Version, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen und den Befehl zum Installieren auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
+Der Server fragt **jede Stunde** bei GitHub nach, auch wenn niemand eingeloggt ist; eine neue Version steht dann auch im Log. Gibt es eine, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
 
-- Installiert wird **nicht automatisch**; der Hinweis zeigt nur den passenden Befehl (siehe [Betrieb → Aktualisieren](betrieb.md#aktualisieren)).
-- Einstellen unter **Settings → ⬆️ Updates**: an/aus, Repository (`owner/name`), unter *Advanced* Branch und Prüfabstand (Standard alle 6 Stunden).
+#### ⬇️ Update now
+
+<p align="center">
+  <img src="../images/update-dialog.png" alt="Update installieren" width="40%">
+  <img src="../images/update-dialog-done.png" alt="Update installiert" width="40%">
+</p>
+
+**⬇️ Update now** (im Hinweis und unter **🖥️ System**) installiert die angezeigte Version und startet beide Dienste neu. Die Seite lädt danach von selbst neu, die Fußzeile zeigt die neue Version.
+
+- **Passwort:** Vor dem Installieren fragt das Dashboard dein Passwort noch einmal ab. Fünf Fehlversuche sperren 15 Minuten, genau wie beim Login.
+- **Wer darf:** Standard ist **nur der Superadmin**. Einstellbar unter *Settings → ⬆️ Updates → Who may press “Update now”* (auch „alle Admins“ oder „niemand“).
+- **Neustart:** Wie neu gestartet wird, steht im Dialog. Ohne weitere Einrichtung beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie wieder. Eine sudo-Regel ist **nicht nötig**, siehe [Betrieb → Neustart nach dem Update](betrieb.md#neustart-nach-dem-update-und-sudoers).
+- **Neue Python-Pakete:** Bringt das Update neue Pakete mit (`requirements*.txt` geändert), wird **nicht** neu gestartet. Der Dialog zeigt dann den `pip`-Befehl für die Konsole.
+
+Was Update now **nicht** tut, mit Absicht:
+- Es lädt nur vom Git-Remote `origin`, der **auf dem Server** eingerichtet ist; eine Adresse aus dem Browser wird nie benutzt. Das Repository in den Settings dient nur dem Hinweis.
+- Es installiert nur **genau den Commit**, den du gesehen hast. Ist auf GitHub inzwischen etwas Neues dazugekommen, bricht es ab und bittet um eine neue Prüfung.
+- Es geht nur **vorwärts** (`git merge --ff-only`). Es bricht ab, wenn Dateien von Hand geändert wurden oder die Installation eigene Commits hat; dann bitte auf der Konsole aktualisieren.
+- Es führt keine Git-Hooks aus und benutzt keine Shell. Jeder Versuch steht im **📜 Log** (`update`, `update_failed`, `confirm_failed`).
+
+Einstellungen unter **Settings → ⬆️ Updates**: an/aus, Repository (`owner/name`), wer installieren darf, unter *Advanced* Branch und Prüfabstand (Standard: jede Stunde).
 - Das Dashboard fragt dafür die öffentliche GitHub-API ab; es werden keine Daten des Servers übertragen.
 
 <p align="center"><img src="../images/admin-log.png" alt="Protokoll" width="85%"></p>

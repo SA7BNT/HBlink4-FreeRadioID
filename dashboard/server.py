@@ -1358,22 +1358,114 @@ async def api_version():
     return {"version": v["version"], "commit": v["short"], "date": v["date"]}
 
 
+def _update_cfg() -> dict:
+    return dashboard_config.get("update") or {}
+
+
+def _update_hours() -> int:
+    try:
+        return max(1, min(168, int(_update_cfg().get("interval_hours") or 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+async def _update_check(force: bool = False) -> dict:
+    cfg = _update_cfg()
+    return await asyncio.to_thread(_version.check, cfg.get("repo") or _version.DEFAULT_REPO,
+                                   cfg.get("branch") or "main", _update_hours() * 3600, force)
+
+
+def _may_install(user: dict) -> bool:
+    role = str(_update_cfg().get("install_role") or "superadmin")
+    if role == "nobody":
+        return False
+    if role == "admin":
+        return user.get("role") in ADMIN_ROLES
+    return user.get("role") == "superadmin"
+
+
+async def _update_loop() -> None:
+    """Ask GitHub once per interval (default: every hour), also when nobody is logged in."""
+    await asyncio.sleep(60)
+    while True:
+        try:
+            if _update_cfg().get("enabled", True) is not False:
+                res = await _update_check(force=True)
+                if res.get("available"):
+                    logger.info(f"⬆️ Update available: {res['behind']} new change(s) on GitHub "
+                                f"({res['local'].get('short')} → {(res.get('latest') or {}).get('short')})")
+        except Exception as e:
+            logger.debug(f"update check failed: {e}")
+        await asyncio.sleep(_update_hours() * 3600)
+
+
+_update_lock = asyncio.Lock()
+_update_last_try = 0.0
+
+
 @app.get("/api/admin/update")
 async def api_admin_update(request: Request, force: bool = False):
     """Is a newer version on GitHub? Cached for the configured interval."""
-    _require_admin(request)
-    cfg = dashboard_config.get("update") or {}
+    user = _require_admin(request)
+    cfg = _update_cfg()
     if cfg.get("enabled") is False and not force:
         return {"enabled": False, "available": False, "local": _version.local_version()}
-    hours = max(1, min(168, int(cfg.get("interval_hours") or 6)))
-    res = await asyncio.to_thread(_version.check, cfg.get("repo") or _version.DEFAULT_REPO,
-                                  cfg.get("branch") or "main", hours * 3600, force)
+    res = await _update_check(force)
+    res = {**res, "can_install": _may_install(user) and bool(res["local"].get("commit")),
+           "install_role": str(cfg.get("install_role") or "superadmin"),
+           "systemd": bool(os.environ.get("INVOCATION_ID")),
+           "sudo_restart": await asyncio.to_thread(_version.sudo_restart_allowed),
+           "origin": await asyncio.to_thread(_version.origin_url)}
     try:
         import pwd
         owner = pwd.getpwuid(_version.REPO_ROOT.stat().st_uid).pw_name
     except Exception:
         owner = ""
     return {"enabled": True, **res, "path": str(_version.REPO_ROOT), "owner": owner}
+
+
+@app.post("/api/admin/update/install")
+async def api_admin_update_install(request: Request, body: dict = Body(...)):
+    """Update now: password again, fast-forward to the shown commit, then restart both services."""
+    global _update_last_try
+    user = _require_admin(request)
+    ip = _client_ip(request)
+    if not _may_install(user):
+        raise _HTTPError(403, "You may not install updates (Settings → ⬆️ Updates → Who may press “Update now”).")
+    try:
+        await asyncio.to_thread(state.auth.confirm_password, user, str(body.get("password") or ""), ip)
+    except AuthError as e:
+        raise _HTTPError(403, str(e))
+    if _update_lock.locked() or time.time() - _update_last_try < 30:
+        raise _HTTPError(429, "An update is already running – please wait a moment.")
+    async with _update_lock:
+        _update_last_try = time.time()
+        cfg = _update_cfg()
+        try:
+            res = await asyncio.to_thread(_version.install, str(cfg.get("branch") or "main"),
+                                          str(body.get("expected") or ""))
+        except _version.UpdateError as e:
+            state.auth.audit("update_failed", user["username"], str(e)[:200], ip)
+            raise _HTTPError(409, str(e))
+    state.auth.audit("update", user["username"], f"{res['old'][:7]} → {res['new'][:7]}", ip)
+    logger.info(f"⬆️ Updated by {user['username']}: {res['old'][:7]} → {res['new'][:7]} ({len(res['files'])} files)")
+    restart = bool(body.get("restart", True)) and res["changed"] and not res["requirements_changed"]
+    how = "none"
+    if restart:
+        if await asyncio.to_thread(_version.sudo_restart_allowed):
+            how = "sudo"
+        elif os.environ.get("INVOCATION_ID"):
+            how = "service"
+        else:
+            how = "manual"
+    if how == "sudo":
+        asyncio.get_running_loop().call_later(1.0, _version.sudo_restart)
+    elif how == "service":
+        # Without sudo: HBlink4 and the dashboard end themselves, systemd (Restart=always) starts them again
+        res["dmr_restarted"] = send_hblink_command({"type": "restart"})
+        import signal as _signal
+        asyncio.get_running_loop().call_later(1.5, os.kill, os.getpid(), _signal.SIGTERM)
+    return {"ok": True, **res, "restart": how, "version": _version.local_version()}
 
 
 @app.get("/api/admin/system")
@@ -2208,6 +2300,11 @@ async def dashboard():
 static_path = Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+
+@app.on_event("startup")
+async def _start_update_loop():
+    asyncio.create_task(_update_loop())
 
 
 @app.on_event("startup")

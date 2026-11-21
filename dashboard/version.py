@@ -95,3 +95,108 @@ def check(repo: str = DEFAULT_REPO, branch: str = "main", max_age: float = 6 * 3
             res["error"] = str(e)[:200]
     _cache[key] = res
     return res
+
+
+# ------------------------------------------------------------------ installing
+# "Update now" is deliberately narrow: it only fast-forwards the checkout to the
+# branch of the git remote "origin" that is configured on disk (never a URL from
+# the web UI), only to the exact commit the admin saw, never with local changes,
+# with git hooks and the file/ext transports switched off and no shell involved.
+_GIT_SAFE = ["-c", "core.hooksPath=/dev/null", "-c", "protocol.file.allow=never",
+             "-c", "protocol.ext.allow=never", "-c", "credential.helper="]
+_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+REQUIREMENT_FILES = ("requirements.txt", "requirements-dashboard.txt", "pyproject.toml")
+
+
+class UpdateError(Exception):
+    pass
+
+
+def _git_run(*args: str, timeout: float = 120) -> subprocess.CompletedProcess:
+    env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": str(Path.home()), "LC_ALL": "C",
+           "GIT_TERMINAL_PROMPT": "0", "GIT_ASKPASS": "/bin/true", "SSH_ASKPASS": "/bin/true",
+           "GIT_SSH_COMMAND": "ssh -o BatchMode=yes"}
+    try:
+        return subprocess.run(["git", "-C", str(REPO_ROOT), *_GIT_SAFE, *args], capture_output=True,
+                              text=True, timeout=timeout, env=env)
+    except (OSError, subprocess.SubprocessError) as e:
+        raise UpdateError(f"git could not be run: {e}")
+
+
+def _git_ok(*args: str, timeout: float = 120) -> str:
+    r = _git_run(*args, timeout=timeout)
+    if r.returncode != 0:
+        msg = (r.stderr or r.stdout or "").strip().splitlines()
+        raise UpdateError(f"git {args[0]} failed: {msg[-1] if msg else r.returncode}")
+    return r.stdout.strip()
+
+
+def origin_url() -> str:
+    url = _git("remote", "get-url", "origin")
+    return re.sub(r"//[^/@]+@", "//", url)   # never show credentials
+
+
+def install(branch: str, expected: str) -> Dict[str, Any]:
+    """Fast-forward to origin/<branch> if that is exactly `expected`. Returns what changed."""
+    branch = (branch or "main").strip()
+    expected = (expected or "").strip().lower()
+    if not _BRANCH_RE.match(branch) or branch.startswith("-") or ".." in branch:
+        raise UpdateError("Invalid branch name.")
+    if not _SHA_RE.match(expected):
+        raise UpdateError("Please check for updates first.")
+    if not (REPO_ROOT / ".git").exists():
+        raise UpdateError("This installation is not a git checkout – update by hand.")
+    head_branch = _git_ok("rev-parse", "--abbrev-ref", "HEAD")
+    if head_branch != branch:
+        raise UpdateError(f"The checkout is on branch '{head_branch}', not '{branch}'.")
+    dirty = _git_ok("status", "--porcelain", "--untracked-files=no")
+    if dirty:
+        files = ", ".join(line.split(maxsplit=1)[-1] for line in dirty.splitlines()[:5])
+        raise UpdateError(f"Files were changed by hand ({files}). Update on the console, "
+                          "or undo the changes first (git stash).")
+    old = _git_ok("rev-parse", "HEAD")
+    _git_ok("fetch", "--no-tags", "--quiet", "origin", f"refs/heads/{branch}", timeout=180)
+    new = _git_ok("rev-parse", "FETCH_HEAD")
+    if new != expected:
+        raise UpdateError("The version on the server's git remote is not the one that was shown "
+                          f"({new[:7]} instead of {expected[:7]}). Check again.")
+    if new == old:
+        return {"old": old, "new": new, "files": [], "requirements_changed": False, "changed": False}
+    if _git_run("merge-base", "--is-ancestor", old, new).returncode != 0:
+        raise UpdateError("This installation has its own commits – it cannot simply be moved forward. Update by hand.")
+    files = [f for f in _git_ok("diff", "--name-only", old, new).splitlines() if f]
+    _git_ok("merge", "--ff-only", "--quiet", new)
+    local_version(refresh=True)
+    _cache.clear()
+    return {"old": old, "new": new, "files": files[:200], "changed": True,
+            "requirements_changed": any(f in REQUIREMENT_FILES for f in files)}
+
+
+# ------------------------------------------------------------------- restarting
+SYSTEMCTL = "/usr/bin/systemctl"
+SERVICES = ("hblink4.service", "hblink4-dash.service")
+
+
+def sudo_restart_argv() -> list:
+    """Exactly the command allowed in /etc/sudoers.d/hblink4-update (see docs)."""
+    return ["sudo", "-n", SYSTEMCTL, "--no-block", "restart", *SERVICES]
+
+
+def sudo_restart_allowed() -> bool:
+    """True if sudo lets us run exactly that command without a password (no side effects)."""
+    try:
+        argv = sudo_restart_argv()
+        r = subprocess.run([argv[0], "-n", "-l", *argv[2:]], capture_output=True, text=True, timeout=5,
+                           env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"})
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def sudo_restart() -> bool:
+    try:
+        r = subprocess.run(sudo_restart_argv(), capture_output=True, text=True, timeout=15,
+                           env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"})
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
