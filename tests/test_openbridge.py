@@ -143,15 +143,15 @@ def _obp_state(name, tgslots, ip="10.0.0.9", port=62035, passphrase="secret",
     return OpenBridgeState(config=cfg, ip=ip, port=port)
 
 
-def test_calc_targets_obp_ownership_and_reflection():
+def test_calc_targets_by_filter_and_reflection():
     t31, t3120 = (31).to_bytes(3, 'big'), (3120).to_bytes(3, 'big')
     p = HBProtocol.__new__(HBProtocol)
     p._repeaters, p._outbounds = {}, {}
     p._openbridges = {"A": _obp_state("A", {t31: 1}), "B": _obp_state("B", {t3120: 2})}
-    p._obp_by_tgid = {t31: "A", t3120: "B"}
+    p._obp_by_tgid = {}
     p._obp_egress_ids = {}
 
-    # Repeater-sourced TG31 -> only OBP A owns it
+    # Repeater-sourced TG31 -> only the trunk whose filter has TG31
     tg = p._calculate_stream_targets(b'\x00\x00\x00\x01', 1, t31, b'\x00\x00\x00\x01', b'\x00\x00\x01')
     assert ('openbridge', 'A') in tg and ('openbridge', 'B') not in tg
 
@@ -159,7 +159,7 @@ def test_calc_targets_obp_ownership_and_reflection():
     tg2 = p._calculate_stream_targets(('openbridge', 'A'), 1, t31, b'\x00\x00\x00\x01', b'\x00\x00\x01')
     assert ('openbridge', 'A') not in tg2
 
-    # Unowned TGID -> no OBP target
+    # TGID in no filter -> no OBP target
     tg3 = p._calculate_stream_targets(b'\x00\x00\x00\x01', 1, (999).to_bytes(3, 'big'),
                                       b'\x00\x00\x00\x01', b'\x00\x00\x01')
     assert not any(isinstance(t, tuple) and t[0] == 'openbridge' for t in tg3)
@@ -192,6 +192,7 @@ def test_ingress_creates_stream_normalizes_slot_and_forwards():
     fdata, fsource, fslot = forwarded[0][0], forwarded[0][1], forwarded[0][2]
     assert fsource == ('openbridge', 'A') and fslot == 2
     assert fdata[15] & 0x80, "slot bit not normalized to TS2 before forwarding"
+    assert len(fdata) == 55, "stations (Z3DMR, DroidStar) need 55-byte DMRD"
 
     # Dashboard stream_start event emitted, tagged as an OpenBridge source
     assert p._events.emit.called
@@ -209,7 +210,7 @@ def test_ingress_creates_stream_normalizes_slot_and_forwards():
 
 # ---- unfiltered trunk (all_talkgroups) ------------------------------------
 
-def test_all_talkgroups_trunk_routes_everything_except_local_and_owned():
+def test_all_talkgroups_trunk_routes_everything_except_local():
     from hblink4.models import is_local_tgid
     t31, t262 = (31).to_bytes(3, 'big'), (262).to_bytes(3, 'big')
     p = HBProtocol.__new__(HBProtocol)
@@ -223,7 +224,11 @@ def test_all_talkgroups_trunk_routes_everything_except_local_and_owned():
     tg = p._calculate_stream_targets(src, 2, t262, src, b'\x00\x00\x01')
     assert ('openbridge', 'W') in tg                      # any TG goes out the unfiltered trunk
     tg = p._calculate_stream_targets(src, 1, t31, src, b'\x00\x00\x01')
-    assert ('openbridge', 'A') in tg and ('openbridge', 'W') not in tg   # owned elsewhere
+    assert ('openbridge', 'A') in tg and ('openbridge', 'W') not in tg   # TG31 is local (1–79): only an explicit list carries it
+    tg = p._calculate_stream_targets(src, 2, (3100).to_bytes(3, 'big'), src, b'\x00\x00\x01')
+    p._openbridges["A"].config.talkgroup_slots[(3100).to_bytes(3, 'big')] = 2
+    tg = p._calculate_stream_targets(src, 2, (3100).to_bytes(3, 'big'), src, b'\x00\x00\x01')
+    assert ('openbridge', 'A') in tg and ('openbridge', 'W') in tg       # shared TG: both, in parallel
     tg = p._calculate_stream_targets(src, 2, (9990).to_bytes(3, 'big'), src, b'\x00\x00\x01')
     assert ('openbridge', 'W') not in tg                  # parrot stays local
     assert wild.config.slot_for(t262) == 2 and is_local_tgid(4000) and not is_local_tgid(91)
@@ -240,14 +245,13 @@ def test_several_unfiltered_trunks_allowed():
     assert ok[0].default_slot == 2
 
 
-def test_filtered_trunks_still_own_their_tgs_exclusively():
-    import pytest
+def test_same_talkgroup_on_several_filtered_trunks():
     from hblink4.config import parse_openbridge_connections
     base = dict(enabled=True, network_id=1, local_port=1, target_address="x", target_port=1, passphrase="p")
-    with pytest.raises(SystemExit):
-        parse_openbridge_connections({"openbridge_connections": [
-            dict(base, name="a", talkgroup_slots={"262": "1"}),
-            dict(base, name="b", local_port=2, talkgroup_slots={"262": "2"})]})
+    ok = parse_openbridge_connections({"openbridge_connections": [
+        dict(base, name="a", talkgroup_slots={"262": "1"}),
+        dict(base, name="b", local_port=2, talkgroup_slots={"262": "2"})]})
+    assert len(ok) == 2
 
 
 def _wild(name, slots=None):
@@ -275,19 +279,23 @@ def test_local_call_goes_to_every_unfiltered_trunk():
     assert not any(isinstance(t, tuple) and t[0] == 'openbridge' for t in tg)
 
 
-def test_filtered_owner_wins_over_unfiltered_trunks():
+def test_talkgroup_goes_to_all_trunks_in_parallel():
     t262 = (262).to_bytes(3, 'big')
-    p = _proto_with(A=_wild("A"), B=_wild("B"), C=_obp_state("C", {t262: 2}))
+    p = _proto_with(A=_wild("A"), B=_wild("B"), C=_obp_state("C", {t262: 2}), D=_obp_state("D", {(91).to_bytes(3, 'big'): 1}))
     tg = p._calculate_stream_targets(b'\x00\x00\x00\x01', 1, t262, b'\x00\x00\x00\x01', b'\x00\x00\x01')
     obps = {t for t in tg if isinstance(t, tuple) and t[0] == 'openbridge'}
-    assert obps == {('openbridge', 'C')}
+    assert obps == {('openbridge', 'A'), ('openbridge', 'B'), ('openbridge', 'C')}   # D does not carry TG262
 
 
-def test_no_transit_between_trunks():
+def test_transit_between_trunks_is_on_by_default_and_switchable():
     t262 = (262).to_bytes(3, 'big')
-    p = _proto_with(A=_wild("A"), B=_wild("B"))
+    p = _proto_with(A=_wild("A"), B=_wild("B"), C=_obp_state("C", {t262: 1}))
+    obps = lambda tg: {t for t in tg if isinstance(t, tuple) and t[0] == 'openbridge'}
     tg = p._calculate_stream_targets(('openbridge', 'A'), 2, t262, b'\x00\x00\x00\x01', b'\x00\x00\x01')
-    assert not any(isinstance(t, tuple) and t[0] == 'openbridge' for t in tg)
+    assert obps(tg) == {('openbridge', 'B'), ('openbridge', 'C')}      # never back to A
+    p._config = {"openbridge_transit": False}
+    tg = p._calculate_stream_targets(('openbridge', 'A'), 2, t262, b'\x00\x00\x00\x01', b'\x00\x00\x01')
+    assert obps(tg) == set()
 
 
 def test_echo_of_own_stream_is_dropped():
@@ -315,3 +323,17 @@ def test_each_trunk_needs_its_own_port():
     ok = parse_openbridge_connections({"openbridge_connections": [dict(base, name="a"),
                                                                   dict(base, name="b", enabled=False)]})
     assert len(ok) == 2
+
+
+def test_transit_keeps_origin_and_counts_hops():
+    from hblink4 import obp_freedmr as fdmr
+    o = OpenBridgeConnectionConfig(enabled=True, name="B", network_id=2624, local_address="0.0.0.0",
+                                   local_port=1, target_address="x", target_port=1, passphrase="secret",
+                                   talkgroup_slots={}, enhanced_obp=True, proto_ver=5)
+    st = OpenBridgeState(config=o, ip="10.0.0.9", port=1)
+    p = HBProtocol.__new__(HBProtocol)
+    frame = p._obp_build_egress(st, _dmrd(262), (3112001).to_bytes(4, 'big'), hops=3, origin=310599)
+    f = fdmr.parse(fdmr.key("secret"), frame)
+    assert f.ok and f.hops == 3 and f.source_server == 310599
+    local = fdmr.parse(fdmr.key("secret"), p._obp_build_egress(st, _dmrd(262), (3112001).to_bytes(4, 'big')))
+    assert local.hops == 1 and local.source_server == 2624

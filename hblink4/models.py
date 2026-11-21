@@ -128,8 +128,8 @@ class OpenBridgeConnectionConfig:
     server_id: int = 0
     # No talkgroup filter: carry every talkgroup (except local ones, see
     # is_local_tgid) on default_slot. Entries in talkgroup_slots still win and
-    # set their own timeslot (no ownership). Several enabled trunks may do this;
-    # they all carry every TG that no filtered trunk owns. No transit between trunks.
+    # set their own timeslot. Any number of trunks may do this. A talkgroup is
+    # carried by every trunk whose filter lets it through (no ownership).
     all_talkgroups: bool = False
     default_slot: int = 2
 
@@ -197,6 +197,11 @@ class StreamState:
     # responds (Phase 3).
     is_unit_call: bool = False
     is_broadcast_unit_call: bool = False
+
+    # OpenBridge origin (streams received over a trunk): FreeDMR hop count and the
+    # server the call started on, passed on when the call transits to another trunk.
+    obp_hops: int = 0
+    obp_source_server: int = 0
 
     # DMR Link Control for outbound rewrites under translation.
     #

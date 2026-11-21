@@ -151,7 +151,6 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
             logger.info('No OpenBridge connections configured')
         return obp_configs
 
-    owner_of_tgid = {}  # tgid_bytes -> owning OBP name (enabled OBPs only)
     port_owner = {}     # (local_address, local_port) -> OBP name (enabled OBPs only)
 
     for idx, conn in enumerate(raw_obps):
@@ -196,17 +195,7 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
                                      f"every trunk needs its own port")
                 port_owner[bind] = config_obj.name
 
-            # one-OBP-per-TGID across enabled *filtered* OBPs (design §4.5). Any number of
-            # unfiltered trunks (all_talkgroups) may run side by side: they share every TG no
-            # filtered trunk owns, and their talkgroup_slots are only timeslot overrides.
-            if config_obj.enabled and not config_obj.all_talkgroups:
-                for tgid_bytes in config_obj.talkgroup_slots:
-                    prior = owner_of_tgid.get(tgid_bytes)
-                    if prior is not None and prior != config_obj.name:
-                        raise ValueError(
-                            f"talkgroup {int.from_bytes(tgid_bytes, 'big')} is claimed by both "
-                            f"OpenBridge '{prior}' and '{config_obj.name}' — each TGID may belong to only one OBP")
-                    owner_of_tgid[tgid_bytes] = config_obj.name
+            # No TG ownership: the same talkgroup may run over any number of trunks in parallel.
 
             obp_configs.append(config_obj)
             if logger:

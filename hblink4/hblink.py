@@ -124,7 +124,7 @@ class HBProtocol(asyncio.DatagramProtocol):
         # Outbound connection state management (Phase 2)
         self._outbounds: Dict[str, 'OutboundState'] = {}  # keyed by connection name
         self._openbridges: Dict[str, 'OpenBridgeState'] = {}  # keyed by OBP name
-        self._obp_by_tgid: Dict[bytes, str] = {}  # canonical 3-byte TGID -> owning *filtered* OBP name (enabled only)
+        self._obp_by_tgid: Dict[bytes, str] = {}  # unused since trunks share talkgroups (kept for compatibility)
         self._obp_egress_ids: Dict[bytes, float] = {}  # stream_id -> time we sent it out over a trunk (echo guard)
         self._outbound_by_id: Dict[bytes, str] = {}  # radio_id (4 bytes) -> name for packet routing by ID
         self._outbound_ids: Set[int] = set()  # reserved IDs to prevent DoS
@@ -3721,19 +3721,18 @@ class HBProtocol(asyncio.DatagramProtocol):
         # ownership is by canonical TGID only (no slot/contention gating), and
         # Position B means no target remap. The reflection guard is the same
         # self-skip used above — never send back out the source OBP.
-        # No transit between trunks: a call that came in over OpenBridge only goes to
-        # local stations and links, never out over another (or the same) trunk.
+        # Every trunk whose filter lets the talkgroup through gets the call – all of
+        # them in parallel. Never back out over the trunk it came from. Calls from a
+        # trunk go on to the other trunks only with "openbridge_transit" (default on);
+        # loops are stopped by the echo guard and the FreeDMR hop counter.
         from_obp = isinstance(source, tuple) and source[0] == 'openbridge'
-        owner = self._obp_by_tgid.get(dst_id)
-        for obp_name, obp in self._openbridges.items():
-            if from_obp:
-                break
-            if owner is not None:
-                if owner == obp_name:          # a filtered trunk owns this TG exclusively
+        transit = (getattr(self, '_config', None) or {}).get('openbridge_transit', True) is not False
+        if not from_obp or transit:
+            for obp_name, obp in self._openbridges.items():
+                if source == ('openbridge', obp_name):
+                    continue
+                if obp.config.slot_for(dst_id) is not None:
                     target_set.add(('openbridge', obp_name))
-            elif obp.config.all_talkgroups and obp.config.slot_for(dst_id) is not None:
-                # every unfiltered trunk carries all TGs no filtered trunk owns
-                target_set.add(('openbridge', obp_name))
 
         return target_set
     
@@ -3942,7 +3941,9 @@ class HBProtocol(asyncio.DatagramProtocol):
                 if not obp:
                     continue
                 dmrd53 = build_target_packet(net_slot, net_dst_id, net_rf_src, None)
-                frame = self._obp_build_egress(obp, dmrd53, source_peer_id, stream_id)
+                frame = self._obp_build_egress(obp, dmrd53, source_peer_id, stream_id,
+                                               hops=getattr(source_stream, 'obp_hops', 0) + 1,
+                                               origin=getattr(source_stream, 'obp_source_server', 0))
                 if frame is None:
                     continue               # quenched by the far end (BCSQ)
                 obp.transport.sendto(frame, obp.sockaddr)
@@ -4333,9 +4334,6 @@ class HBProtocol(asyncio.DatagramProtocol):
             return
         state = OpenBridgeState(config=config, ip=target_ip, port=target_port, transport=transport)
         self._openbridges[config.name] = state
-        if not config.all_talkgroups:      # unfiltered trunks own nothing, their list only sets timeslots
-            for tgid in config.talkgroup_slots:
-                self._obp_by_tgid[tgid] = config.name
         LOGGER.info(f'✓ OpenBridge "{config.name}" bound {config.local_address}:{config.local_port} '
                     f'→ {target_ip}:{target_port} ({"all" if config.all_talkgroups else len(config.talkgroup_slots)} talkgroups, '
                     f'{self._obp_mode_label(config)})')
@@ -4502,7 +4500,7 @@ class HBProtocol(asyncio.DatagramProtocol):
         if cfg.enhanced_obp and not state.alive:
             self._obp_check_alive(state)
         remote = f.source_rptr or f.source_server or int.from_bytes(f.dmrd[11:15], 'big')
-        self._obp_ingest(state, f.dmrd, remote)
+        self._obp_ingest(state, f.dmrd, remote, hops=f.hops, source_server=f.source_server)
 
     def _handle_obp_classic(self, state, packet: bytes, addr: tuple) -> None:
         """Classic OBP (Brandmeister/HBlink3): 53-byte DMRD + 20-byte HMAC-SHA1, strict source."""
@@ -4524,16 +4522,13 @@ class HBProtocol(asyncio.DatagramProtocol):
             return
         self._obp_ingest(state, dmrd, int.from_bytes(dmrd[11:15], 'big'))
 
-    def _obp_ingest(self, state, dmrd: bytes, remote_id: int) -> None:
+    def _obp_ingest(self, state, dmrd: bytes, remote_id: int, hops: int = 0, source_server: int = 0) -> None:
         """Filter on talkgroup_slots, normalise the slot and route an authenticated 53-byte DMRD."""
         cfg = state.config
         obp_name = cfg.name
         dst_id = dmrd[8:11]                 # canonical TGID (wire == canonical)
         stream_id = dmrd[16:20]
         local_ts = cfg.slot_for(dst_id)
-        owner = self._obp_by_tgid.get(dst_id)
-        if owner is not None and owner != obp_name:
-            local_ts = None                 # another trunk owns this TG: never transit between trunks
         if local_ts is None:
             # unmapped TGID -> dropped (fail-closed filter). Tell a FreeDMR peer to stop
             # sending this stream (BCSQ), once per stream.
@@ -4552,6 +4547,10 @@ class HBProtocol(asyncio.DatagramProtocol):
         bits = (dmrd[15] | 0x80) if local_ts == 2 else (dmrd[15] & 0x7F)
         if bits != dmrd[15]:
             dmrd = dmrd[:15] + bytes([bits]) + dmrd[16:]
+        # HomeBrew stations expect 55-byte DMRD (53 + BER + RSSI). OBP carries only 53;
+        # apps built on DroidStar (Z3DMR, DroidStar, …) silently drop shorter frames.
+        if len(dmrd) == 53:
+            dmrd = dmrd + b'\x00\x00'
 
         source = ('openbridge', obp_name)
         now = time()
@@ -4575,6 +4574,7 @@ class HBProtocol(asyncio.DatagramProtocol):
                 repeater_id=peer_id, rf_src=rf_src, dst_id=dst_id, slot=local_ts,
                 start_time=now, last_seen=now, stream_id=stream_id, packet_count=1,
                 call_type='group', target_repeaters=targets, routing_cached=True,
+                obp_hops=hops, obp_source_server=source_server,
             )
             state.streams[stream_id] = stream
             LOGGER.info(f'[OBP {obp_name}] RX stream start src={int.from_bytes(rf_src, "big")} '
@@ -4598,7 +4598,8 @@ class HBProtocol(asyncio.DatagramProtocol):
             self._emit_stream_end('openbridge', obp_name, local_ts, stream, 'terminator')
 
     def _obp_build_egress(self, state: 'OpenBridgeState', dmrd53: bytes,
-                          source_peer_id: bytes, stream_id: Optional[bytes] = None) -> Optional[bytes]:
+                          source_peer_id: bytes, stream_id: Optional[bytes] = None,
+                          hops: int = 1, origin: int = 0) -> Optional[bytes]:
         """Frame a DMRD for this OBP; None when the far end quenched this stream.
 
         - Truncated to a canonical 53-byte DMRD: HBP repeater sources deliver
@@ -4629,8 +4630,11 @@ class HBProtocol(asyncio.DatagramProtocol):
         if ver <= 1:
             return fdmr.build_dmrd(k, dmrd)
         rptr = int.from_bytes(source_peer_id[:4], 'big') if source_peer_id else 0
-        return fdmr.build_dmre(k, dmrd, ver, source_server=cfg.server_id or cfg.network_id,
-                               source_rptr=rptr if rptr <= 0xFFFFFFFF else 0)
+        # A call passing through from another trunk keeps the server it started on
+        # and counts one more hop, so FreeDMR's loop detection keeps working.
+        return fdmr.build_dmre(k, dmrd, ver, source_server=origin or cfg.server_id or cfg.network_id,
+                               source_rptr=rptr if rptr <= 0xFFFFFFFF else 0,
+                               hops=max(1, min(hops, 255)))
 
     def _send_packet(self, data: bytes, addr: tuple):
         """Send packet to specified address"""

@@ -1655,6 +1655,16 @@
             .sc-row { font-size: 11.5px; gap: 5px; padding: 5px 7px; }
             .station-grid.two.id-grid { padding: 10px 12px 12px; }
         }
+
+        .obe-transit { margin-top: 10px; padding: 9px 10px; border-radius: 10px; background: rgba(0,0,0,.2); border: 1px solid var(--glass-border);
+                       display: flex; flex-direction: column; gap: 5px; }
+        .obe-transit-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 650; }
+        .obe-transit small { font-size: 11.5px; line-height: 1.4; }
+        .obe-flow { margin-top: 10px; font-size: 11.5px; display: flex; flex-direction: column; gap: 4px; }
+        .obe-flow:empty { display: none; }
+        .flow-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
+        .flow-row { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; padding: 5px 8px; border-radius: 8px; background: rgba(255,255,255,.04); }
+        .flow-from { font-weight: 650; white-space: nowrap; } .flow-arrow { color: var(--accent); }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -3632,6 +3642,8 @@
         async function adminObp() {
             const sys = await loadSettingsData();
             obe.trunks = JSON.parse(JSON.stringify((setField('dmr.openbridge_connections') || {}).value || []));
+            const tr = setField('dmr.openbridge_transit');
+            obe.transit = !tr || tr.value !== false;
             if (obe.idx >= obe.trunks.length) obe.idx = 0;
             try { obe.names = (await (await fetch('/api/talkgroups', { credentials: 'same-origin' })).json()).names || {}; } catch (e) { obe.names = state.tgNames || {}; }
             setTimeout(obeRender);
@@ -3653,6 +3665,13 @@
                         <h3 class="set-panel-title">↔️ Trunks</h3>
                         ${list || '<p class="muted small">No trunk yet.</p>'}
                         <button type="button" class="btn-s" onclick="obe.trunks.push(obeBlank()); obe.idx = obe.trunks.length - 1; obeRender(); obeDirty()">➕ New trunk</button>
+                        ${obe.trunks.length > 1 ? `<div class="obe-transit">
+                            <label class="obe-transit-row"><span>🔀 Pass calls between trunks</span>
+                                <label class="switch"><input type="checkbox" ${obe.transit ? 'checked' : ''} onchange="obe.transit = this.checked; obeRender(); obeDirty()"><span></span></label></label>
+                            <small class="muted">${obe.transit
+                                ? 'A call from one trunk also goes out over the others. Loops are blocked.'
+                                : 'Calls from a trunk only reach the stations here.'}</small></div>` : ''}
+                        <div class="obe-flow">${obeFlowHtml()}</div>
                         <div class="obe-savebox"><span class="dirty-tag" id="obeDirty">unsaved</span>
                             <button type="button" class="btn-s btn-primary" onclick="obeSave()">💾 Save trunks</button></div>
                     </aside>
@@ -3672,6 +3691,17 @@
                     </div>
                 </div>`;
             if (obe.trunks.length) { obeApplyVisibility(); obeTgRender(); }
+        }
+
+        // Small picture of where a call goes – the same rules HBlink4 uses
+        function obeFlowHtml() {
+            const on = obe.trunks.filter(t => t.enabled !== false);
+            if (!on.length) return '';
+            const lines = [`<div class="flow-row"><span class="flow-from">📶 Stations here</span><span class="flow-arrow">→</span>
+                <span class="flow-to">${on.length > 1 ? 'every trunk with the TG' : 'the trunk, if it has the TG'}</span></div>`];
+            if (on.length > 1) lines.push(`<div class="flow-row"><span class="flow-from">↔️ Trunk</span><span class="flow-arrow">→</span>
+                <span class="flow-to">${obe.transit ? 'stations here + other trunks with the TG' : 'stations here only'}</span></div>`);
+            return `<div class="flow-title">Where a call goes</div>${lines.join('')}`;
         }
 
         function obeFormHtml(t) {
@@ -3730,7 +3760,7 @@
                     <div data-show="all">
                         <div class="set-row"><label>Timeslot on our side</label>
                             <select data-k="default_slot"><option value="1" ${t.default_slot == 1 ? 'selected' : ''}>TS1</option><option value="2" ${t.default_slot != 1 ? 'selected' : ''}>TS2</option></select>
-                            <small class="muted">Every talkgroup runs over the trunk. Local ones never leave the server: 1–79, 4000, 5000, 9990–9999. Several trunks may be unfiltered: local calls then go out over all of them; calls from one trunk are never passed on to another. A trunk with its own talkgroup list keeps those talkgroups for itself.</small></div>
+                            <small class="muted">Every talkgroup runs over the trunk. Local ones never leave the server: 1–79, 4000, 5000, 9990–9999. Any number of trunks may be unfiltered, and the same talkgroup may be on several trunks: every trunk whose filter lets a talkgroup through carries it, all at the same time.</small></div>
                     </div>
                     <div data-show="list" class="obe-tg">
                         <div class="obe-tg-tools">
@@ -3975,7 +4005,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 return o;
             });
             try {
-                afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes: { 'dmr.openbridge_connections': clean } }));
+                afterSettingsSaved(await api('PUT', '/api/admin/settings', { changes: {
+                    'dmr.openbridge_connections': clean, 'dmr.openbridge_transit': obe.transit !== false } }));
                 const d = document.getElementById('obeDirty'); if (d) d.classList.remove('on');
             } catch (e) { toast(e.message, 'err'); }
         }

@@ -107,8 +107,25 @@ the main HBlink4 config (JSON). See also
 | `proto_ver` | `1` (default): classic DMRD + HMAC-SHA1. `2`–`5`: FreeDMR `DMRE` frames (BLAKE2b, timestamp, source server/repeater, hop count). We send v5 (v4 to a peer that only announces v4) and upgrade automatically when the peer announces a higher version. Needed for FreeDMR stanzas with `PROTO_VER` > 1, which drop classic DMRD. |
 | `relax_checks` | `false` (default): accept frames only from `target_address:target_port`. `true`: accept authenticated frames from any address and follow the far end's address from its keep-alives (FreeDMR `RELAX_CHECKS`). |
 | `server_id` | Optional, FreeDMR only: "source server" ID in `DMRE` frames (4–7 digits). Defaults to `network_id`. |
-| `all_talkgroups` | `false` (default). `true`: no talkgroup filter – every talkgroup is carried except local ones (1–79, 4000, 5000, 9990–9999); talkgroups owned by a filtered trunk stay with that trunk. Several enabled trunks may do this: local calls go out over all of them, calls arriving over a trunk go to local targets only (no transit between trunks), and a stream we sent out that comes back over another trunk is dropped (echo guard). Entries in `talkgroup_slots` only set the timeslot here and do not claim the talkgroup. |
+| `all_talkgroups` | `false` (default). `true`: no talkgroup filter – every talkgroup is carried except local ones (1–79, 4000, 5000, 9990–9999); any number of trunks may do this. Entries in `talkgroup_slots` set the timeslot of single talkgroups. |
 | `default_slot` | Local timeslot for talkgroups without their own entry when `all_talkgroups` is on. Default `2`. |
+
+### Several trunks, same talkgroups
+
+Talkgroups are not owned by a trunk. Every enabled trunk whose filter (`talkgroup_slots`, or everything with
+`all_talkgroups`) lets a talkgroup through carries it – all of them in parallel, and the same talkgroup may
+appear in the lists of several trunks.
+
+- A call from a local station goes to every such trunk.
+- A call arriving over a trunk goes to the local stations and, with the top-level option
+  `"openbridge_transit": true` (default; admin area → OpenBridge → *Pass calls between trunks*), to every
+  **other** such trunk. It never goes back out over the trunk it came from.
+- Loop protection: a stream we already sent out over a trunk is dropped when it comes back over another one
+  (echo guard, logged as `own stream … came back`). On FreeDMR v5 trunks a transited call keeps its original
+  `source_server` and its hop count is incremented, so FreeDMR's own loop detection keeps working (max. 10 hops).
+- Each enabled trunk needs its own local port.
+- Frames received over OpenBridge are 53 bytes; before they go to HomeBrew stations they are extended to
+  55 bytes (BER = 0, RSSI = 0). Apps based on DroidStar (e.g. Z3DMR) ignore shorter `DMRD` frames.
 
 The dashboard's admin area has a form for all of this (**↔️ OpenBridge**): protocol drop-down,
 talkgroup filter (all / selected from the talkgroup list), and a ready-made stanza for the far end.
@@ -187,3 +204,8 @@ its devices per their subscriptions; device transmissions egress back up the
 trunk under their canonical TGID. Numbering collisions between two upstream
 networks are resolved upstream (or at a governed HBlink3 core), never at
 HBlink4's edge.
+
+**Checking it end to end:** `python3 scripts/e2e_openbridge.py` starts a real HBlink4 on localhost with two
+classic trunks and a HomeBrew client that logs in as Z3DMR, and checks: a call from trunk A reaches the client
+with 55-byte frames and transits to trunk B (not back to A); a call from the client goes out over both trunks;
+our own stream coming back over trunk B is dropped.

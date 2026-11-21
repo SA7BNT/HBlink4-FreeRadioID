@@ -284,6 +284,9 @@ DMR_FIELDS: List[Field] = [
           "Blocked IDs, ID ranges or callsigns, each with a reason"),
     Field("dmr.outbound_connections", "dmr_advanced", "Outbound links to other servers", "json", [], restart=True),
     Field("dmr.openbridge_connections", "dmr_obp", "OpenBridge trunks", "json", [], restart=True),
+    Field("dmr.openbridge_transit", "dmr_obp", "Pass calls between trunks", "bool", True,
+          "On: a call coming in over one trunk also goes out over all other trunks that carry the talkgroup. "
+          "Loops are stopped by the echo guard and the FreeDMR hop counter."),
 ]
 
 

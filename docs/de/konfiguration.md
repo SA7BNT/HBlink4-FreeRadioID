@@ -90,7 +90,7 @@ Kommst du von einem anderen Server, übernimmt der [📥 Import](adminbereich.md
 | 🔑 Access | `repeater_configurations.default.passphrase`, `.slot1_talkgroups`, `.slot2_talkgroups`, `.trust`, `.default_unit_calls` | passw0rd, aus der Datei, aus, aus |
 | 🛡️ FreeRadioID login | `freeradioid.enabled`, `freeradioid.guest_talkgroups`, `freeradioid.timeout` | **an**, 26501–26503, 3,0 s |
 | 🧩 Patterns, blacklist & links | `repeater_configurations.patterns`, `blacklist.patterns`, `outbound_connections` 🔄 | leer |
-| ↔️ OpenBridge | `openbridge_connections` 🔄 (im Adminbereich als Formular) | leer |
+| ↔️ OpenBridge | `openbridge_connections` 🔄 (im Adminbereich als Formular), `openbridge_transit` (Gespräche zwischen Trunks weiterreichen) | leer, `true` |
 
 🔄 = wirkt erst nach einem Neustart (Knopf im Adminbereich).
 

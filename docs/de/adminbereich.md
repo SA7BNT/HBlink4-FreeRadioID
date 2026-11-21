@@ -159,13 +159,28 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 
 <p align="center"><img src="../images/admin-openbridge-tg.png" alt="Talkgroups auswählen" width="80%"></p>
 
-**Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das dürfen **mehrere Trunks gleichzeitig**, z. B. zu zwei FreeDMR-Servern. Dann gilt:
-- **Von hier nach draußen:** Ein Gespräch eines Repeaters oder Hotspots geht über **alle** Trunks ohne Filter hinaus.
-- **Von draußen nach hier:** Ein Gespräch, das über einen Trunk kommt, geht nur an die Stationen hier, **nie** über einen anderen Trunk weiter. Das verhindert Schleifen zwischen den Netzen.
-- **Echo-Schutz:** Kommt ein Gespräch, das wir selbst hinausgeschickt haben, über den anderen Trunk zurück (weil die Netze untereinander verbunden sind), wird es verworfen. Im Log steht dann `own stream … came back`.
-- **Doppelte Gespräche:** Kommt dasselbe Gespräch über beide Trunks, spielt der Server das erste. Das zweite findet den Zeitschlitz belegt.
-- **Trunks mit eigener Talkgroup-Liste** behalten ihre Talkgroups für sich: Steht TG 262 in der Liste eines gefilterten Trunks, geht TG 262 nur über diesen Trunk und nicht über die Trunks ohne Filter. Eine Talkgroup darf nur in der Liste **eines** gefilterten Trunks stehen.
-- Bei Trunks ohne Filter legt die Talkgroup-Liste nur den Zeitschlitz für einzelne Talkgroups fest; sie nimmt den anderen Trunks nichts weg.
+**Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das dürfen beliebig viele Trunks, und dieselbe Talkgroup darf auch in den Listen mehrerer Trunks stehen.
+
+#### Wohin ein Gespräch geht
+
+<p align="center"><img src="../images/admin-openbridge-flow.png" alt="Weiterleiten zwischen Trunks" width="34%"></p>
+
+Jeder Trunk, dessen Filter eine Talkgroup durchlässt, bekommt das Gespräch, **alle gleichzeitig**. Kein Trunk „besitzt“ eine Talkgroup.
+
+| Gespräch kommt von | geht an |
+|---|---|
+| 📶 einer Station hier (Repeater, Hotspot, App) | die Stationen hier **und alle Trunks**, deren Filter die Talkgroup durchlässt |
+| ↔️ einem Trunk | die Stationen hier; mit **🔀 Pass calls between trunks** zusätzlich alle **anderen** Trunks mit dieser Talkgroup. Zurück über den Trunk, von dem es kam, geht es nie |
+
+**🔀 Pass calls between trunks** steht links unter den Trunks, sobald es mehr als einen gibt. Der Schalter ist ab Werk an und wirkt nach dem Speichern sofort, ohne Neustart. Ist er aus, verbindet der Server die Netze nicht untereinander; jedes Netz hört dann nur die Stationen hier. Darunter zeigt **Where a call goes**, was gerade gilt.
+
+Damit beim Weiterleiten keine Schleifen entstehen, sind drei Sicherungen eingebaut:
+- **Nie zurück:** Ein Gespräch geht nie über den Trunk zurück, von dem es kam.
+- **Echo-Schutz:** Kommt ein Gespräch, das wir schon hinausgeschickt haben, über einen anderen Trunk wieder herein (weil die Netze untereinander verbunden sind), wird es verworfen. Im Log steht dann `own stream … came back`.
+- **Hop-Zähler (FreeDMR v5):** Beim Weiterleiten zählt HBlink4 einen Hop mehr und behält den Server, auf dem das Gespräch begann. So erkennen auch die FreeDMR-Server Schleifen; nach 10 Hops ist Schluss.
+- **Doppelte Gespräche:** Kommt dasselbe Gespräch über zwei Trunks, spielt der Server das erste. Das zweite findet den Zeitschlitz belegt.
+
+Bei Trunks ohne Filter legt die Talkgroup-Liste nur den Zeitschlitz für einzelne Talkgroups fest.
 - Jeder aktive Trunk braucht **seinen eigenen Port** auf unserer Seite (*Our port*); doppelte Ports lehnt das Speichern ab.
 
 <p align="center"><img src="../images/obp-stanza-edit.png" alt="Abschnitt für die Gegenstelle, bearbeitet" width="72%"></p>
