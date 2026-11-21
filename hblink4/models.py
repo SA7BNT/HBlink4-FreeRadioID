@@ -128,7 +128,8 @@ class OpenBridgeConnectionConfig:
     server_id: int = 0
     # No talkgroup filter: carry every talkgroup (except local ones, see
     # is_local_tgid) on default_slot. Entries in talkgroup_slots still win and
-    # set their own timeslot. At most one enabled trunk may do this.
+    # set their own timeslot (no ownership). Several enabled trunks may do this;
+    # they all carry every TG that no filtered trunk owns. No transit between trunks.
     all_talkgroups: bool = False
     default_slot: int = 2
 

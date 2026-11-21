@@ -124,7 +124,8 @@ class HBProtocol(asyncio.DatagramProtocol):
         # Outbound connection state management (Phase 2)
         self._outbounds: Dict[str, 'OutboundState'] = {}  # keyed by connection name
         self._openbridges: Dict[str, 'OpenBridgeState'] = {}  # keyed by OBP name
-        self._obp_by_tgid: Dict[bytes, str] = {}  # canonical 3-byte TGID -> owning OBP name (enabled only)
+        self._obp_by_tgid: Dict[bytes, str] = {}  # canonical 3-byte TGID -> owning *filtered* OBP name (enabled only)
+        self._obp_egress_ids: Dict[bytes, float] = {}  # stream_id -> time we sent it out over a trunk (echo guard)
         self._outbound_by_id: Dict[bytes, str] = {}  # radio_id (4 bytes) -> name for packet routing by ID
         self._outbound_ids: Set[int] = set()  # reserved IDs to prevent DoS
         
@@ -3720,14 +3721,18 @@ class HBProtocol(asyncio.DatagramProtocol):
         # ownership is by canonical TGID only (no slot/contention gating), and
         # Position B means no target remap. The reflection guard is the same
         # self-skip used above — never send back out the source OBP.
+        # No transit between trunks: a call that came in over OpenBridge only goes to
+        # local stations and links, never out over another (or the same) trunk.
+        from_obp = isinstance(source, tuple) and source[0] == 'openbridge'
+        owner = self._obp_by_tgid.get(dst_id)
         for obp_name, obp in self._openbridges.items():
-            if source == ('openbridge', obp_name):
-                continue
-            if dst_id in obp.config.talkgroup_slots:
-                target_set.add(('openbridge', obp_name))
-            elif (obp.config.all_talkgroups and obp.config.slot_for(dst_id) is not None
-                  and dst_id not in self._obp_by_tgid):
-                # unfiltered trunk: everything not owned by another trunk
+            if from_obp:
+                break
+            if owner is not None:
+                if owner == obp_name:          # a filtered trunk owns this TG exclusively
+                    target_set.add(('openbridge', obp_name))
+            elif obp.config.all_talkgroups and obp.config.slot_for(dst_id) is not None:
+                # every unfiltered trunk carries all TGs no filtered trunk owns
                 target_set.add(('openbridge', obp_name))
 
         return target_set
@@ -3941,6 +3946,8 @@ class HBProtocol(asyncio.DatagramProtocol):
                 if frame is None:
                     continue               # quenched by the far end (BCSQ)
                 obp.transport.sendto(frame, obp.sockaddr)
+                if stream_id not in self._obp_egress_ids:
+                    self._obp_egress_ids[stream_id] = time()
 
                 # Track the assumed TX stream so the dashboard draws an outbound
                 # pill and the stream ends cleanly (terminator or reaper backstop).
@@ -4326,8 +4333,9 @@ class HBProtocol(asyncio.DatagramProtocol):
             return
         state = OpenBridgeState(config=config, ip=target_ip, port=target_port, transport=transport)
         self._openbridges[config.name] = state
-        for tgid in config.talkgroup_slots:
-            self._obp_by_tgid[tgid] = config.name
+        if not config.all_talkgroups:      # unfiltered trunks own nothing, their list only sets timeslots
+            for tgid in config.talkgroup_slots:
+                self._obp_by_tgid[tgid] = config.name
         LOGGER.info(f'✓ OpenBridge "{config.name}" bound {config.local_address}:{config.local_port} '
                     f'→ {target_ip}:{target_port} ({"all" if config.all_talkgroups else len(config.talkgroup_slots)} talkgroups, '
                     f'{self._obp_mode_label(config)})')
@@ -4552,6 +4560,15 @@ class HBProtocol(asyncio.DatagramProtocol):
 
         stream = state.streams.get(stream_id)
         if stream is None:
+            # Echo guard: a stream we sent out over a trunk comes back in over another
+            # one (two linked networks). Drop it instead of playing it twice.
+            sent = self._obp_egress_ids.get(stream_id)
+            if sent is not None and time() - sent < 300:
+                self._obp_warn(state, 'echo', f'own stream {stream_id.hex()} came back – dropped (networks linked?)')
+                return
+            if len(self._obp_egress_ids) > 2000:
+                cutoff = time() - 300
+                self._obp_egress_ids = {k: t for k, t in self._obp_egress_ids.items() if t > cutoff}
             # New OBP stream: compute + cache targets once on (local_ts, canonical TGID).
             targets = self._calculate_stream_targets(source, local_ts, dst_id, stream_id, rf_src)
             stream = StreamState(

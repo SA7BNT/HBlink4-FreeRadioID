@@ -159,7 +159,14 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 
 <p align="center"><img src="../images/admin-openbridge-tg.png" alt="Talkgroups auswählen" width="80%"></p>
 
-**Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das darf nur **ein** aktiver Trunk.
+**Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das dürfen **mehrere Trunks gleichzeitig**, z. B. zu zwei FreeDMR-Servern. Dann gilt:
+- **Von hier nach draußen:** Ein Gespräch eines Repeaters oder Hotspots geht über **alle** Trunks ohne Filter hinaus.
+- **Von draußen nach hier:** Ein Gespräch, das über einen Trunk kommt, geht nur an die Stationen hier, **nie** über einen anderen Trunk weiter. Das verhindert Schleifen zwischen den Netzen.
+- **Echo-Schutz:** Kommt ein Gespräch, das wir selbst hinausgeschickt haben, über den anderen Trunk zurück (weil die Netze untereinander verbunden sind), wird es verworfen. Im Log steht dann `own stream … came back`.
+- **Doppelte Gespräche:** Kommt dasselbe Gespräch über beide Trunks, spielt der Server das erste. Das zweite findet den Zeitschlitz belegt.
+- **Trunks mit eigener Talkgroup-Liste** behalten ihre Talkgroups für sich: Steht TG 262 in der Liste eines gefilterten Trunks, geht TG 262 nur über diesen Trunk und nicht über die Trunks ohne Filter. Eine Talkgroup darf nur in der Liste **eines** gefilterten Trunks stehen.
+- Bei Trunks ohne Filter legt die Talkgroup-Liste nur den Zeitschlitz für einzelne Talkgroups fest; sie nimmt den anderen Trunks nichts weg.
+- Jeder aktive Trunk braucht **seinen eigenen Port** auf unserer Seite (*Our port*); doppelte Ports lehnt das Speichern ab.
 
 <p align="center"><img src="../images/obp-stanza-edit.png" alt="Abschnitt für die Gegenstelle, bearbeitet" width="72%"></p>
 

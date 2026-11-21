@@ -3730,7 +3730,7 @@
                     <div data-show="all">
                         <div class="set-row"><label>Timeslot on our side</label>
                             <select data-k="default_slot"><option value="1" ${t.default_slot == 1 ? 'selected' : ''}>TS1</option><option value="2" ${t.default_slot != 1 ? 'selected' : ''}>TS2</option></select>
-                            <small class="muted">Every talkgroup runs over the trunk. Local ones never leave the server: 1–79, 4000, 5000, 9990–9999. Only one active trunk may be unfiltered.</small></div>
+                            <small class="muted">Every talkgroup runs over the trunk. Local ones never leave the server: 1–79, 4000, 5000, 9990–9999. Several trunks may be unfiltered: local calls then go out over all of them; calls from one trunk are never passed on to another. A trunk with its own talkgroup list keeps those talkgroups for itself.</small></div>
                     </div>
                     <div data-show="list" class="obe-tg">
                         <div class="obe-tg-tools">

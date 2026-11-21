@@ -305,7 +305,6 @@ def _convert_systems(glob: Dict[str, Any], systems: Dict[str, Dict[str, Any]], o
 
     # -- OpenBridge
     trunks: List[Dict[str, Any]] = []
-    wildcard_taken = False
     for name, o in obps:
         enabled = _bool(o.get("ENABLED"), True)
         proto = _int(o.get("PROTO_VER"), 1) or 1
@@ -350,12 +349,7 @@ def _convert_systems(glob: Dict[str, Any], systems: Dict[str, Dict[str, Any]], o
         else:
             if act == "DENY" and rng:
                 warn.append("DENY lists cannot be taken over; the trunk carries all talkgroups.")
-            if not enabled or not wildcard_taken:
-                t.update({"all_talkgroups": True, "default_slot": 2, "talkgroup_slots": {}})
-                wildcard_taken = wildcard_taken or enabled
-            else:
-                t.update({"all_talkgroups": True, "default_slot": 2, "talkgroup_slots": {}, "enabled": False})
-                warn.append("Only one active trunk may carry all talkgroups – imported switched off.")
+            t.update({"all_talkgroups": True, "default_slot": 2, "talkgroup_slots": {}})
         trunks.append(t)
         out.item("↔️ OpenBridge", f"Trunk {name}", "dmr.openbridge_connections", [t],
                  f"{'FreeDMR v%d' % t.get('proto_ver', 1) if t.get('proto_ver', 1) > 1 or t.get('enhanced_obp') else 'Classic OBP'}"

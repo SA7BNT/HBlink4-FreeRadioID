@@ -152,7 +152,7 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
         return obp_configs
 
     owner_of_tgid = {}  # tgid_bytes -> owning OBP name (enabled OBPs only)
-    wildcard_owner = None  # the one enabled OBP with all_talkgroups
+    port_owner = {}     # (local_address, local_port) -> OBP name (enabled OBPs only)
 
     for idx, conn in enumerate(raw_obps):
         label = conn.get('name', f'#{idx}')
@@ -187,14 +187,19 @@ def parse_openbridge_connections(config: Dict[str, Any], logger: logging.Logger 
                 all_talkgroups=bool(conn.get('all_talkgroups', False)),
                 default_slot=int(conn.get('default_slot', 2)),
             )
-            if config_obj.enabled and config_obj.all_talkgroups:
-                if wildcard_owner and wildcard_owner != config_obj.name:
-                    raise ValueError(f"only one enabled OpenBridge may carry all talkgroups "
-                                     f"('{wildcard_owner}' already does)")
-                wildcard_owner = config_obj.name
-
-            # one-OBP-per-TGID across enabled OBPs (design §4.5)
             if config_obj.enabled:
+                bind = (config_obj.local_address or '0.0.0.0', int(config_obj.local_port))
+                clash = next((n for (addr, port), n in port_owner.items()
+                              if port == bind[1] and (addr == bind[0] or '0.0.0.0' in (addr, bind[0]))), None)
+                if clash and clash != config_obj.name:
+                    raise ValueError(f"our port {bind[1]} is already used by OpenBridge '{clash}' – "
+                                     f"every trunk needs its own port")
+                port_owner[bind] = config_obj.name
+
+            # one-OBP-per-TGID across enabled *filtered* OBPs (design §4.5). Any number of
+            # unfiltered trunks (all_talkgroups) may run side by side: they share every TG no
+            # filtered trunk owns, and their talkgroup_slots are only timeslot overrides.
+            if config_obj.enabled and not config_obj.all_talkgroups:
                 for tgid_bytes in config_obj.talkgroup_slots:
                     prior = owner_of_tgid.get(tgid_bytes)
                     if prior is not None and prior != config_obj.name:
