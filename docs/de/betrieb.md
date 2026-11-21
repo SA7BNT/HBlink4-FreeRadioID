@@ -48,7 +48,7 @@ Zu jedem Problem steht die passende Lösung mit **→** dahinter. Am Ende steht 
 | Meldung / Symptom | Ursache | Lösung |
 |---|---|---|
 | `attempt to write a readonly database` | Dateien gehören root, weil etwas mit `sudo` gestartet wurde | `sudo chown -R hblink:hblink /opt/HBlink4` und Dienste neu starten |
-| Dashboard zeigt **DMR Server** rot | Socket `/tmp/hblink4.sock` gehört dem falschen Benutzer, oder HBlink4 läuft nicht | `sudo rm -f /tmp/hblink4.sock && sudo systemctl restart hblink4-dash hblink4` |
+| Dashboard zeigt **✗ DMR** (gelb) | Socket `/tmp/hblink4.sock` gehört dem falschen Benutzer, oder HBlink4 läuft nicht | `sudo rm -f /tmp/hblink4.sock && sudo systemctl restart hblink4-dash hblink4` |
 | `Address already in use` (Port 62031) | Ein anderer DMR-Server (z. B. ADN/FreeDMR-Proxy) belegt den Port | anderen Port im Adminbereich wählen bzw. den anderen Dienst stoppen |
 | HTTPS startet nicht | Domain zeigt nicht auf den Server, Port 80 zu oder belegt | Fehler im Log lesen; das Dashboard läuft so lange per HTTP weiter |
 | `hblink4-dash` startet in einer Schleife | fehlende Python-Module | `sudo -u hblink ./venv/bin/pip install -r requirements.txt -r requirements-dashboard.txt` |

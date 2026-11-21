@@ -1491,37 +1491,64 @@
 
 
 
-        /* ================= Fixed header with the main menu ================= */
-        header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "brand menu status"; align-items: center; gap: 8px 14px; }
-        header .header-branding { grid-area: brand; min-width: 0; }
-        header .status-badges { grid-area: status; justify-content: flex-end; flex-wrap: nowrap; }
-        header .main-tabs { grid-area: menu; justify-self: center; margin: 0; background: rgba(255,255,255,0.04); box-shadow: none; }
-        header .main-tabs button { padding: 7px 14px; font-size: 13.5px; }
+        /* ================= Fixed header with the main menu =================
+           One bar: logo/title | menu | buttons. When space runs out the labels get shorter
+           step by step; the menu never overlaps (it may scroll sideways as a last resort).
+           Only below 1100 px the menu moves into a second row of the same fixed bar. */
+        header { display: flex !important; flex-wrap: nowrap; align-items: center; gap: 10px 14px; }
+        header .header-branding { flex: 0 1 auto; min-width: 0; }
+        header .header-branding > div { min-width: 0; }
+        header #dashboardTitle, header #serverName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        header .main-tabs { flex: 0 1 auto; min-width: 0; margin: 0 auto; overflow-x: auto; scrollbar-width: none;
+                            background: rgba(255,255,255,0.04); box-shadow: none; }
+        header .main-tabs::-webkit-scrollbar { display: none; }
+        header .main-tabs button { padding: 7px 14px; font-size: 13.5px; flex: none; }
+        header .status-badges { flex: 0 0 auto; margin-left: auto; flex-wrap: nowrap; justify-content: flex-end; }
         .tab-pane { padding-top: 6px; }
         .tab-pane > .section-header:first-child { margin-top: 10px; }
-        @media (max-width: 1640px) {
-            header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand status" "menu menu"; }
-            header .main-tabs { justify-self: stretch; justify-content: center; }
+        /* Stat tiles: all visible tiles in one row; below 1280 px four per row – never 5 + 2 */
+        .stats-bar { display: flex !important; gap: 10px; }
+        .stats-bar > .stat-card { flex: 1 1 0; min-width: 0; }
+        .stat-card .stat-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stat-card.stat-frid .stat-value, .stat-card.stat-obp .stat-value { font-size: 19px; }
+        @media (max-width: 1420px) { .stat-card.stat-frid .stat-sub, .stat-card.stat-obp .stat-sub { display: block; margin: 1px 0 0 !important; font-size: 11.5px; } }
+        @media (max-width: 1279px) { .stats-bar { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
+        /* status buttons always compact: the menu gets the room */
+        .hdr-lbl, header .user-menu .role-tag { display: none; }
+        header .connection-status, header .audio-toggle, header .links-btn, header .hdr-btn { padding: 6px 11px !important; font-size: 12px !important; }
+        @media (max-width: 1500px) {
+            header .main-tabs .t-long, header .main-tabs .tab-count { display: none; }
+            header .main-tabs .t-short { display: inline; }
+            header .main-tabs button { padding: 7px 12px; }
+        }
+        @media (max-width: 1280px) {
+            header .user-menu .hdr-btn.user > span:not(.avatar) { display: none; }
+            header #serverName { display: none; }
+        }
+        @media (max-width: 1100px) {
+            header { flex-wrap: wrap !important; }
+            header .main-tabs { order: 3; flex: 1 1 100%; margin: 0; justify-content: center; background: transparent; border-color: transparent;
+                                -webkit-backdrop-filter: none; backdrop-filter: none; padding: 2px 0 0; border-top: 1px solid rgba(255,255,255,0.07); border-radius: 0; }
+            header #serverName { display: block; }
         }
         @media (max-width: 900px) {
-            header .status-badges { flex-wrap: wrap; gap: 6px; }
-            .hdr-lbl { display: none; }
-            header .user-menu .hdr-btn.user > span:not(.avatar), header .user-menu .role-tag { display: none; }
+            header .status-badges { gap: 6px; }
             .connection-status, .audio-toggle, .links-btn, .hdr-btn { padding: 5px 10px !important; font-size: 11.5px !important; }
         }
         @media (max-width: 600px) {
-            .stats-bar { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; }
-            .stats-bar .stat-retx { display: none; }
+            .stats-bar { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; }
+            .stats-bar .stat-retx { display: none !important; }
             .stats-bar .stat-card { padding: 8px 9px !important; }
             .stats-bar .stat-label { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .stats-bar .stat-value { font-size: 17px !important; }
             .stats-bar .stat-frid, .stats-bar .stat-obp, .stats-bar .stat-traffic { grid-column: span 3; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
             .stats-bar .stat-frid .stat-value, .stats-bar .stat-obp .stat-value, .stats-bar .stat-traffic .stat-value { font-size: 15px !important; }
             .stats-bar .stat-frid .stat-sub, .stats-bar .stat-obp .stat-sub { display: inline !important; margin-left: 6px !important; }
-            header { grid-template-columns: minmax(0, 1fr); grid-template-areas: "brand" "status" "menu"; padding: 8px 10px !important; }
-            header .status-badges { justify-content: flex-start; }
+            header { padding: 8px 10px !important; }
+            header .header-branding { flex: 1 1 100%; }
+            header .status-badges { margin-left: 0; flex-wrap: wrap; justify-content: flex-start; }
             header .main-tabs { width: 100%; }
-            header .main-tabs button { padding: 7px 2px; font-size: 12px; }
+            header .main-tabs button { padding: 7px 2px; font-size: 12px; flex: 1 1 0; }
         }
 
         /* Admin window: always the same size, content scrolls inside */
@@ -1529,6 +1556,30 @@
         .modal-content.admin .admin-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         @media (max-width: 600px) { .modal-content.admin { height: calc(100vh - 20px); max-height: none; } }
         .tab-intro { padding: 2px 4px 10px; }
+
+        /* ---- admin fixes ---- */
+        @media (max-width: 600px) { .set-panel-head { flex-wrap: wrap; } .imp-sel { justify-content: flex-start; } }
+        .admin-tabs { padding-top: 6px !important; padding-bottom: 8px !important; }
+        .admin-tabs button { flex: none; }
+        .obe-savebox { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .obe-savebox .btn-s { flex: 1; }
+        .obe-save { position: static !important; background: none !important; border: 0 !important; padding: 0 !important; }
+        .imp-apply { position: static !important; background: none !important; }
+        .imp-sel { flex-wrap: wrap; justify-content: flex-end; }
+        @media (max-width: 600px) {
+            .presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .preset { height: 54px; font-size: 11.5px; }
+            /* tables: only the columns that matter, nothing cut off */
+            #adminBody[data-tab=users] .admin-table th:nth-child(3), #adminBody[data-tab=users] .admin-table td:nth-child(3),
+            #adminBody[data-tab=users] .admin-table th:nth-child(4), #adminBody[data-tab=users] .admin-table td:nth-child(4),
+            #adminBody[data-tab=sessions] .admin-table th:nth-child(3), #adminBody[data-tab=sessions] .admin-table td:nth-child(3),
+            #adminBody[data-tab=sessions] .admin-table th:nth-child(5), #adminBody[data-tab=sessions] .admin-table td:nth-child(5),
+            #adminBody[data-tab=audit] .admin-table th:nth-child(4), #adminBody[data-tab=audit] .admin-table td:nth-child(4),
+            #adminBody[data-tab=audit] .admin-table th:nth-child(5), #adminBody[data-tab=audit] .admin-table td:nth-child(5) { display: none; }
+            #adminBody .admin-table td { white-space: normal; }
+            #adminBody .admin-table td, #adminBody .admin-table th { padding: 7px 5px; }
+            #adminBody[data-tab=users] .admin-table td:last-child { text-align: right; white-space: nowrap; }
+        }
         /* Import (configuration converter) */
         .imp-layout { display: flex; flex-direction: column; gap: 12px; }
         .imp-src { padding: 16px 18px; }
@@ -2711,6 +2762,7 @@
             if (tab !== 'appearance' && document.getElementById('apForm')) loadConfig();
             const body = document.getElementById('adminBody');
             if (!body) return;
+            body.dataset.tab = tab;
             body.innerHTML = '<div class="muted">Loading…</div>';
             try {
                 const intro = ADMIN_INTRO[tab] ? `<div class="tab-intro"><h3 class="set-panel-title">${ADMIN_INTRO[tab][0]}</h3>
@@ -3390,7 +3442,8 @@
             el.innerHTML = `<div class="tile imp-res">
                 <div class="set-panel-head"><div><h3 class="set-panel-title">② ${escapeHtml(r.format_label)}</h3>
                     <p class="set-panel-help">${r.items.length} setting${r.items.length === 1 ? '' : 's'} found${r.bridges ? `, ${r.bridges} conference bridge${r.bridges === 1 ? '' : 's'} from rules.py` : ''}. Tick what you want to take over.</p></div>
-                    <span class="imp-sel"><button type="button" class="btn-s" onclick="impAll(true)">☑️ All</button><button type="button" class="btn-s" onclick="impAll(false)">☐ None</button></span></div>
+                    <span class="imp-sel"><button type="button" class="btn-s" onclick="impAll(true)">☑️ All</button><button type="button" class="btn-s" onclick="impAll(false)">☐ None</button>
+                        <button type="button" class="btn-s btn-primary" onclick="impApply(this)">③ Apply selected</button></span></div>
                 ${r.notes.map(n => `<div class="imp-note">ℹ️ ${escapeHtml(n)}</div>`).join('')}
                 ${r.skipped.length ? `<details class="set-adv imp-skipped"><summary>Not taken over <span class="muted">(${r.skipped.length})</span></summary>
                     <table class="admin-table"><tbody>${r.skipped.map(s => `<tr><td><code>[${escapeHtml(s.section)}]</code></td><td>${escapeHtml(s.reason)}</td></tr>`).join('')}</tbody></table></details>` : ''}
@@ -3436,8 +3489,8 @@
         // protocol and the talkgroup filter; the raw JSON stays available for experts.
         const obe = { trunks: [], idx: 0, names: {}, q: '', show: 'all', limit: 150, newTs: 2 };
         const OBP_PROTOCOLS = [
-            ['freedmr', '🟢 FreeDMR v5 (FDMR+, FDMR-Secure-Server)'],
-            ['classic', '⚪ Classic OpenBridge (Brandmeister, HBlink3)'],
+            ['freedmr', '🟢 FreeDMR v5'],
+            ['classic', '⚪ Classic OpenBridge'],
         ];
 
         function obeBlank() {
@@ -3472,7 +3525,9 @@
                     <aside class="obe-list tile">
                         <h3 class="set-panel-title">↔️ Trunks</h3>
                         ${list || '<p class="muted small">No trunk yet.</p>'}
-                        <button type="button" class="btn-s btn-primary" onclick="obe.trunks.push(obeBlank()); obe.idx = obe.trunks.length - 1; obeRender(); obeDirty()">➕ New trunk</button>
+                        <button type="button" class="btn-s" onclick="obe.trunks.push(obeBlank()); obe.idx = obe.trunks.length - 1; obeRender(); obeDirty()">➕ New trunk</button>
+                        <div class="obe-savebox"><span class="dirty-tag" id="obeDirty">unsaved</span>
+                            <button type="button" class="btn-s btn-primary" onclick="obeSave()">💾 Save trunks</button></div>
                     </aside>
                     <div class="obe-main">${obe.trunks.length ? obeFormHtml(obeCur()) : `<div class="tile"><div class="tgs-empty">
                         OpenBridge connects this server with another network, e.g. a FreeDMR server.<br>Click <b>➕ New trunk</b> to start.</div></div>`}
@@ -3481,7 +3536,6 @@
                             <div class="set-actions"><button type="button" class="btn-s" onclick="obeFromJson()">⤴ Take over JSON into the form</button></div>
                         </details>
                         <div class="set-actions obe-save">
-                            <span class="dirty-tag" id="obeDirty">unsaved</span>
                             <button type="button" class="btn-s btn-primary" onclick="obeSave()">💾 Save trunks</button>
                         </div>
                     </div>
@@ -3512,8 +3566,8 @@
                 <fieldset><legend>② Protocol</legend>
                     <div class="set-row"><label>Far end runs</label>
                         <select data-k="_proto">${OBP_PROTOCOLS.map(([v, l]) => `<option value="${v}" ${v === proto ? 'selected' : ''}>${l}</option>`).join('')}</select>
-                        <small class="muted" data-show="freedmr">The far end has <code>ENHANCED_OBP: True</code> / <code>PROTO_VER: 5</code>. Keep-alives, version check and source quench are on.</small>
-                        <small class="muted" data-show="classic">Plain DMRD with HMAC, no keep-alives. For Brandmeister and HBlink3.</small></div>
+                        <small class="muted" data-show="freedmr">For FreeDMR, FDMR+ and FDMR-Secure-Server. The far end has <code>ENHANCED_OBP: True</code> / <code>PROTO_VER: 5</code>. Keep-alives, version check and source quench are on.</small>
+                        <small class="muted" data-show="classic">For Brandmeister and HBlink3: plain DMRD with HMAC, no keep-alives.</small></div>
                     ${sw('enhanced_obp', 'Keep-alives (enhanced OBP)', 'Must match <code>ENHANCED_OBP</code> of the far end', 'freedmr')}
                     ${sw('relax_checks', 'Accept changing address (relaxed checks)', 'Helps when the far end sits behind NAT. Matches <code>RELAX_CHECKS: True</code>', 'freedmr')}
                     ${sw('preserve_source_peer', 'Send the real repeater ID', 'Off = our network ID (Brandmeister standard)', 'classic')}
