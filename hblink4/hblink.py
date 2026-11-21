@@ -206,6 +206,16 @@ class HBProtocol(asyncio.DatagramProtocol):
                         self._load_repeater_tg_config(rid, rep)
                     except Exception:
                         pass
+            # Device detection lists may have changed: sort connected stations again
+            for rid, rep in list(self._repeaters.items()):
+                if rep.connection_state != 'connected':
+                    continue
+                new_type = detect_connection_type(rep.software_id, rep.package_id, self._config)
+                if new_type != rep.connection_type:
+                    LOGGER.info(f'📲 {safe_decode_bytes(rep.callsign)} ({int.from_bytes(rid, "big")}) is now '
+                                f'{new_type} (was {rep.connection_type})')
+                    rep.connection_type = new_type
+                    self._events.emit('repeater_connected', self._prepare_repeater_event_data(rid, rep))
             LOGGER.info('⚙️ Settings from the admin area applied '
                         '(port, links and trunks change on the next restart)')
         elif kind == 'restart':

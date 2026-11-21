@@ -85,7 +85,12 @@ Die **Talkgroup-Namen** gelten für die Statistik, den Tab *Configuration* und d
 | 🛰️ DMR server | DMR-Port, Hang-Time; verpasste Pings, Timeouts und Reconnect-Logging unter *Advanced* | sofort; der **Port** erst nach Neustart des DMR-Servers |
 | 🔑 Repeater & hotspot access | Standard-Passwort, Talkgroups TS1/TS2 (`all` = alle, `none` = keine), ob die Talkgroup-Liste des Geräts (RPTO) gilt, Einzelrufe | sofort für neue Anmeldungen; Talkgroups auch für verbundene Stationen ohne eigene Liste |
 | 🛡️ FreeRadioID login | Secure Login an/aus, Gast-Talkgroups; API-Timeout unter *Advanced* | sofort |
+| 📲 Device detection | Listen, an denen Repeater, Hotspots, **Apps** und Netzwerke erkannt werden (Paketname enthält …, kommagetrennt, Groß/klein egal); Software-Listen unter *Advanced* | sofort, auch für bereits verbundene Stationen |
 | 🧩 Patterns, blacklist & links | eigene Regeln pro ID/Rufzeichen, Blacklist, Verbindungen zu anderen Servern, jeweils als JSON | Patterns und Blacklist sofort, Verbindungen nach Neustart |
+
+<p align="center"><img src="../images/admin-device-detection.png" alt="Geräteerkennung" width="72%"></p>
+
+**Geräteerkennung:** Taucht im Dashboard eine Station unter **❔ Unknown device type** auf, steht auf ihrer Karte der gemeldete Paketname (z. B. `📦 OpenGD77-Net`). Trag einen eindeutigen Teil davon (z. B. `opengd77`) in die passende Liste ein und speichere – die Station wandert sofort in den richtigen Bereich. Reihenfolge der Prüfung: Netzwerk → App → Hotspot → Repeater.
 
 OpenBridge-Trunks haben einen eigenen Bereich: [↔️ OpenBridge](#️-openbridge).
 

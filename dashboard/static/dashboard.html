@@ -923,7 +923,7 @@
         /* Section bodies */
         .card { border-radius: var(--radius-lg); padding: 12px; }
         /* Connection lists: the tiles are the glass, not the wrapper */
-        #repeatersBody, #hotspotsBody, #networksBody, #unknownBody, #outboundBody, #openbridgeBody {
+        #repeatersBody, #hotspotsBody, #appsBody, #networksBody, #unknownBody, #outboundBody, #openbridgeBody {
             background: transparent;
             border: none;
             box-shadow: none;
@@ -1557,6 +1557,18 @@
         @media (max-width: 600px) { .modal-content.admin { height: calc(100vh - 20px); max-height: none; } }
         .tab-intro { padding: 2px 4px 10px; }
 
+
+        /* Device types */
+        .type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+                      border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); cursor: help; }
+        .type-badge.type-app { color: #c7b8ff; border-color: rgba(167,139,250,.45); background: rgba(167,139,250,.14); }
+        .type-badge.type-hotspot { color: #9bd8ff; border-color: rgba(90,200,250,.4); background: rgba(90,200,250,.1); }
+        .type-badge.type-repeater { color: #8af5ab; border-color: rgba(48,209,88,.4); background: rgba(48,209,88,.1); }
+        .type-badge.type-unknown { color: var(--text-dim); }
+        .sw-line { font-size: 11.5px; margin: 3px 0 2px; color: var(--text); }
+        .sw-line .muted { font-size: 11.5px; }
+        .type-hint { font-size: 12.5px; color: var(--text-dim); margin: 2px 4px 10px; }
+        .type-hint b { color: var(--text); font-weight: 650; }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -2190,6 +2202,14 @@
             </div>
         </div>
 
+        <!-- Apps Section (phone/PC apps without radio hardware, e.g. Z3DMR) -->
+        <div id="appsSection" style="display: none;">
+            <h2 class="section-header collapsible" data-section="apps" data-collapse-target="appsBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>📲 Apps <span id="appCount" style="color: var(--accent); font-weight: 700;"></span></h2>
+            <div class="card" id="appsBody">
+                <div id="appsContainer"></div>
+            </div>
+        </div>
+
         <!-- Network Inbound Section -->
         <div id="networksSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="networks" data-collapse-target="networksBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>🔗 Network Inbound <span id="networkCount" style="color: var(--accent); font-weight: 700;"></span></h2>
@@ -2200,8 +2220,10 @@
 
         <!-- Unknown Connections Section (fallback for unrecognized software) -->
         <div id="unknownSection" style="display: none;">
-            <h2 class="section-header collapsible" data-section="unknown" data-collapse-target="unknownBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>❓ Other Connections <span id="unknownCount" style="color: var(--accent); font-weight: 700;"></span></h2>
+            <h2 class="section-header collapsible" data-section="unknown" data-collapse-target="unknownBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>❔ Unknown device type <span id="unknownCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="unknownBody">
+                <p class="type-hint">The software of these stations reports a name HBlink4 does not know yet (shown on the card).
+                    Admins can sort it in: <b>Admin area → Settings → 📲 Device detection</b>.</p>
                 <div id="unknownContainer"></div>
             </div>
         </div>
@@ -3889,7 +3911,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                                   slot1_talkgroups: r.slot1_talkgroups, slot2_talkgroups: r.slot2_talkgroups,
                                   talkgroups_source: r.rpto_received ? 'RPTO' : 'Pattern/Config' },
                 metadata: { description: 'Demo station', url: 'https://freeradioid.net',
-                            software_id: '20210520_V1.6.8', package_id: 'MMDVM_DMO' },
+                            software_id: r.software_id || '20210520_V1.6.8', package_id: r.package_id || 'MMDVM_DMO' },
                 freeradioid: r.auth_method === 'freeradioid'
                     ? { registered: true, callsign: r.callsign, name: 'N8schicht Crosslink', city: 'Internet', country: 'Germany',
                         avatar: 'https://freeradioid.net/avatar-0.png' }
@@ -3914,9 +3936,16 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 return;
             }
 
-            const icons = { repeater: '📶', hotspot: '📱', network: '🔗', unknown: '❓' };
-            const typeNames = { repeater: 'Repeater', hotspot: 'Hotspot', network: 'Network', unknown: 'Other' };
-            const ctype = details.connection_type || 'unknown';
+            const icons = { repeater: '📶', hotspot: '📱', network: '🔗', app: '📲', unknown: '❔' };
+            const typeNames = { repeater: 'Repeater', hotspot: 'Hotspot', network: 'Network', app: 'App', unknown: 'Unknown device type' };
+            const typeHelp = {
+                repeater: 'Repeater: radio hardware with its own frequencies',
+                hotspot: 'Hotspot: personal radio modem, e.g. Pi-Star, WPSD, MMDVM_HS',
+                network: 'Network: another server connects here',
+                app: 'App: phone or PC app without radio hardware, e.g. Z3DMR, DroidStar, BlueDV',
+                unknown: 'The software reports a package name that is not in the detection list (admin area → Settings → Device detection)',
+            };
+            const ctype = ['repeater', 'hotspot', 'network', 'app'].includes(details.connection_type) ? details.connection_type : 'unknown';
             const ac = details.access_control || {};
             const conn = details.connection || {};
             const loc = details.location || {};
@@ -3959,12 +3988,13 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             <div class="station-callsign">${escapeHtml(details.callsign || 'Unknown')}</div>
                             <div class="station-sub">
                                 <span class="rid">${escapeHtml(details.repeater_id)}</span>
-                                <span>${icons[ctype] || '📶'} ${typeNames[ctype] || ctype}</span>
+                                <span class="type-badge type-${ctype}" title="${escapeHtml(typeHelp[ctype])}">${icons[ctype]} ${typeNames[ctype]}</span>
                                 <span class="status-dot ${statusOk ? 'ok' : 'warn'}"></span>
                                 <span>${statusOk ? 'Online' : escapeHtml(conn.status || 'unknown')}</span>
                             </div>
                             ${operatorLine ? `<div class="station-operator">${operatorLine}</div>` : ''}
                             <div class="station-pills">${authPill}${regPill}</div>
+                            ${ctype === 'unknown' ? `<div class="type-hint" style="margin:6px 0 0">❔ The software reports <b>${escapeHtml((md.package_id || '').trim() || 'no package name')}</b>${(md.software_id || '').trim() ? ` (software ${escapeHtml(md.software_id.trim())})` : ''} – not in the detection list yet.</div>` : ''}
                         </div>
                     <div class="station-kpis">
                             <div class="kpi"><div class="kpi-value">${formatDuration(conn.uptime_seconds || 0)}</div><div class="kpi-label">Uptime</div></div>
@@ -4138,7 +4168,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 repeater: connected.filter(r => r.connection_type === 'repeater'),
                 hotspot: connected.filter(r => r.connection_type === 'hotspot'),
                 network: connected.filter(r => r.connection_type === 'network'),
-                unknown: connected.filter(r => !r.connection_type || r.connection_type === 'unknown')
+                app: connected.filter(r => r.connection_type === 'app'),
+                unknown: connected.filter(r => !['repeater', 'hotspot', 'network', 'app'].includes(r.connection_type))
             };
             
             // Update total count in stats (inbound + connected outbound)
@@ -4149,8 +4180,9 @@ PROTO_VER: ${fd ? 5 : 1}`;
             // Render each section
             renderConnectionGroup('repeaters', 'repeaterCount', groups.repeater, '📶');
             renderConnectionGroup('hotspots', 'hotspotCount', groups.hotspot, '📱');
+            renderConnectionGroup('apps', 'appCount', groups.app, '📲');
             renderConnectionGroup('networks', 'networkCount', groups.network, '🔗');
-            renderConnectionGroup('unknown', 'unknownCount', groups.unknown, '❓');
+            renderConnectionGroup('unknown', 'unknownCount', groups.unknown, '❔');
         }
         
         // Build per-RF-slot display arrays from net-side subscription + translations.
@@ -4253,6 +4285,9 @@ PROTO_VER: ${fd ? 5 : 1}`;
                                 ${onAir(r) ? '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>' : ''}
                             </div>
                             ${authBadge(r)}
+                            ${['app', 'unknown'].includes(r.connection_type || 'unknown') || !['repeater', 'hotspot', 'network'].includes(r.connection_type) ? `
+                            <div class="sw-line" title="Software and package name the station reports at login">📦 ${escapeHtml((r.package_id || '').trim() || '–')}
+                                ${(r.software_id || '').trim() ? `<span class="muted">· ${escapeHtml(r.software_id.trim())}</span>` : ''}</div>` : ''}
                             <div class="repeater-meta">
                                 <!-- Row 1: Location / TX / TS1 -->
                                 <div class="repeater-meta-item">
@@ -5456,6 +5491,18 @@ PROTO_VER: ${fd ? 5 : 1}`;
                   connected_at: now - 1245, missed_pings: 0,
                   slot1_talkgroups: [3100], slot2_talkgroups: [3120],
                   translations: [], rpto_received: true, auth_method: 'guest' },
+                { repeater_id: 2629001, callsign: 'DL9APP', location: '',
+                  status: 'connected', connection_type: 'app', package_id: 'Z3DMR', software_id: '20261118',
+                  rx_freq: '433550000', tx_freq: '433550000',
+                  connected_at: now - 2060, missed_pings: 0,
+                  slot1_talkgroups: null, slot2_talkgroups: null,
+                  translations: [], rpto_received: true, auth_method: 'freeradioid' },
+                { repeater_id: 2629002, callsign: 'DO7SDR', location: 'Minden',
+                  status: 'connected', connection_type: 'unknown', package_id: 'OpenGD77-Net', software_id: 'v4.2',
+                  rx_freq: '', tx_freq: '',
+                  connected_at: now - 640, missed_pings: 0,
+                  slot1_talkgroups: [262], slot2_talkgroups: [26501],
+                  translations: [], rpto_received: false, auth_method: 'guest' },
                 { repeater_id: 3112003, callsign: 'N0MJS', location: 'Wichita, KS',
                   status: 'connected', connection_type: 'repeater',
                   rx_freq: '449500000', tx_freq: '444500000',

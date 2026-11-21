@@ -45,7 +45,7 @@ class Field:
     section: str
     label: str
     kind: str                # text, longtext, password, bool, int, float, url, time,
-                             # countries, choice, tglist, json, color, image, links
+                             # countries, choice, tglist, json, color, image, links, words
     default: Any
     help: str = ""
     restart: bool = False    # needs a restart of its program to take effect
@@ -199,6 +199,14 @@ def validate(field: Field, value: Any) -> Any:
             out.append({"label": label, "url": url, "icon": str(item.get("icon") or "").strip()[:8],
                         "new_tab": bool(item.get("new_tab", True))})
         return out
+    if k == "words":
+        items = value if isinstance(value, list) else re.split(r"[,;\n]+", str(value or ""))
+        out = []
+        for x in items:
+            w = str(x).strip().lower()[:40]
+            if w and w not in out:
+                out.append(w)
+        return out[:100]
     if k == "password":
         v = str(value if value is not None else "")
         if not v.strip():
@@ -216,6 +224,7 @@ DMR_SECTIONS: List[Tuple[str, str]] = [
     ("dmr_server", "🛰️ DMR server"),
     ("dmr_access", "🔑 Repeater & hotspot access"),
     ("dmr_frid", "🛡️ FreeRadioID login"),
+    ("dmr_types", "📲 Device detection"),
     ("dmr_advanced", "🧩 Patterns, blacklist & links (JSON)"),
     ("dmr_obp", "↔️ OpenBridge trunks"),
 ]
@@ -249,6 +258,24 @@ DMR_FIELDS: List[Field] = [
           depends="dmr.freeradioid.enabled"),
     Field("dmr.freeradioid.timeout", "dmr_frid", "API timeout (s)", "float", 3.0, min=1, max=15,
           depends="dmr.freeradioid.enabled", advanced=True),
+
+    Field("dmr.connection_type_detection.app_packages", "dmr_types", "📲 Apps – package name contains", "words",
+          ["z3dmr", "droidstar", "dudestar", "bluedv", "dvsm", "peanut"],
+          "Phone/PC apps without radio hardware. Comma separated, upper/lower case does not matter. "
+          "Connected stations are sorted again right after saving."),
+    Field("dmr.connection_type_detection.hotspot_packages", "dmr_types", "📱 Hotspots – package name contains", "words",
+          ["mmdvm_hs", "dvmega", "zumspot", "jumbospot", "nanodv", "openspot", "dmo", "simplex"]),
+    Field("dmr.connection_type_detection.repeater_packages", "dmr_types", "📶 Repeaters – package name contains", "words",
+          ["repeater", "duplex", "stm32", "unknown"]),
+    Field("dmr.connection_type_detection.network_packages", "dmr_types", "🔗 Networks – package name contains", "words",
+          ["hblink", "freedmr", "brandmeister", "xlx", "dmr+", "tgif", "ipsc"]),
+    Field("dmr.connection_type_detection.app_software", "dmr_types", "📲 Apps – software contains", "words",
+          ["z3dmr", "droidstar", "dudestar", "bluedv", "dvsm", "peanut"],
+          "Checked when the package name says nothing", advanced=True),
+    Field("dmr.connection_type_detection.hotspot_software", "dmr_types", "📱 Hotspots – software contains", "words",
+          ["pi-star", "pistar", "ps4", "wpsd"], advanced=True),
+    Field("dmr.connection_type_detection.network_software", "dmr_types", "🔗 Networks – software contains", "words",
+          ["hblink", "freedmr", "brandmeister", "xlx"], advanced=True),
 
     Field("dmr.repeater_configurations.patterns", "dmr_advanced", "Repeater patterns", "json", [],
           "Own rules per ID, ID range or callsign: passphrase, talkgroups, freeradioid on/off. "

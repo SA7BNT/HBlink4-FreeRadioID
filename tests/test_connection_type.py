@@ -149,5 +149,22 @@ class TestConnectionTypeDetection(unittest.TestCase):
         self.assertEqual(detect_connection_type(b'', b'MyServer_v1.0', config), 'network')
 
 
+class TestAppDetection(unittest.TestCase):
+    def test_z3dmr_is_app(self):
+        self.assertEqual(detect_connection_type(b'20261118', b'Z3DMR'), 'app')
+
+    def test_app_by_software(self):
+        self.assertEqual(detect_connection_type(b'DroidStar 2026', b''), 'app')
+
+    def test_droidstar_default_looks_like_hotspot(self):
+        # DroidStar reports MMDVM_MMDVM_HS_Hat by default – indistinguishable from a real hotspot
+        self.assertEqual(detect_connection_type(b'20200922', b'MMDVM_MMDVM_HS_Hat'), 'hotspot')
+
+    def test_own_app_list_from_settings(self):
+        cfg = {'connection_type_detection': {'app_packages': ['myapp']}}
+        self.assertEqual(detect_connection_type(b'', b'MyApp v1', cfg), 'app')
+        self.assertEqual(detect_connection_type(b'', b'Z3DMR', cfg), 'unknown')
+
+
 if __name__ == '__main__':
     unittest.main()

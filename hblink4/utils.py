@@ -139,6 +139,15 @@ DEFAULT_REPEATER_PACKAGES = [
     'repeater', 'duplex', 'stm32', 'unknown'
 ]
 
+# Phone/PC apps that connect directly via HomeBrew, without radio hardware
+DEFAULT_APP_PACKAGES = [
+    'z3dmr', 'droidstar', 'dudestar', 'bluedv', 'dvsm', 'peanut'
+]
+
+DEFAULT_APP_SOFTWARE = [
+    'z3dmr', 'droidstar', 'dudestar', 'bluedv', 'dvsm', 'peanut'
+]
+
 DEFAULT_HOTSPOT_SOFTWARE = [
     'pi-star', 'pistar', 'ps4', 'wpsd'
 ]
@@ -156,7 +165,8 @@ def detect_connection_type(software_id: bytes, package_id: bytes = None, config:
     - 'repeater': Full repeaters, club sites
     - 'hotspot': Personal hotspots (Pi-Star, WPSD, MMDVM_HS boards, simplex/DMO)
     - 'network': Network inbound connections (HBlink, FreeDMR, BrandMeister)
-    - 'unknown': Unrecognized - defaults shown in "Other" section
+    - 'app': Phone/PC apps without radio hardware (Z3DMR, DroidStar, BlueDV, …)
+    - 'unknown': Unrecognized - shown as "Unknown device type" with the reported names
     
     Args:
         software_id: Raw bytes from RPTC packet (40 bytes, null-padded)
@@ -164,7 +174,7 @@ def detect_connection_type(software_id: bytes, package_id: bytes = None, config:
         config: Optional config dict with connection_type_detection settings
         
     Returns:
-        Connection type string: 'repeater', 'hotspot', 'network', or 'unknown'
+        Connection type string: 'repeater', 'hotspot', 'network', 'app' or 'unknown'
     """
     # Load patterns from config or use defaults
     detection_config = (config or {}).get('connection_type_detection', {})
@@ -174,6 +184,8 @@ def detect_connection_type(software_id: bytes, package_id: bytes = None, config:
     repeater_packages = detection_config.get('repeater_packages', DEFAULT_REPEATER_PACKAGES)
     hotspot_software = detection_config.get('hotspot_software', DEFAULT_HOTSPOT_SOFTWARE)
     network_software = detection_config.get('network_software', DEFAULT_NETWORK_SOFTWARE)
+    app_packages = detection_config.get('app_packages', DEFAULT_APP_PACKAGES)
+    app_software = detection_config.get('app_software', DEFAULT_APP_SOFTWARE)
     
     # Try package_id first (more reliable)
     if package_id:
@@ -185,6 +197,11 @@ def detect_connection_type(software_id: bytes, package_id: bytes = None, config:
                 if network_pkg in pkg_str:
                     return 'network'
             
+            # Apps before hotspots: an app may mention a modem type in its package name
+            for app_pkg in app_packages:
+                if app_pkg and app_pkg in pkg_str:
+                    return 'app'
+
             # Check hotspot patterns
             for hotspot_pkg in hotspot_packages:
                 if hotspot_pkg in pkg_str:
@@ -208,6 +225,9 @@ def detect_connection_type(software_id: bytes, package_id: bytes = None, config:
             if any(x in sw_str for x in network_software):
                 return 'network'
             
+            if any(x and x in sw_str for x in app_software):
+                return 'app'
+
             # Pi-Star/WPSD variants are typically hotspots
             if any(x in sw_str for x in hotspot_software):
                 return 'hotspot'

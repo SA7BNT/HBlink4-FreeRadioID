@@ -59,6 +59,7 @@ SECTION_HELP: Dict[str, str] = {
     "dmr_server": "Port and timing of the DMR server.",
     "dmr_access": "Password and talkgroups for repeaters and hotspots.",
     "dmr_frid": "Personal logins via FreeRadioID.net and the guest access.",
+    "dmr_types": "How stations are sorted into repeaters, hotspots, apps and networks: by the package name their software reports at login.",
     "dmr_advanced": "Rules per station, blocked IDs and links to other servers – for experienced sysops.",
     "dmr_obp": "Trunks to other networks such as FreeDMR.",
 }

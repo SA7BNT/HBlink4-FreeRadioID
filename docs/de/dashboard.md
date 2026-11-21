@@ -203,6 +203,31 @@ Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen, die Talkgroup
 | <img src="../images/dashboard-guest-card.png" width="430"> | **👤 Guest**, gelber Rand: Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
 | ohne Badge | angemeldet mit dem Passwort eines eigenen Patterns, bei dem FreeRadioID aus ist |
 
+### Gerätearten: Repeater, Hotspot, App
+
+HBlink4 sortiert jede Station anhand des **Paketnamens**, den ihre Software beim Login meldet (steht in der Detailansicht unter *Connection → Package*):
+
+| Symbol | Bereich | Was ist das? | Beispiele für den Paketnamen |
+|---|---|---|---|
+| 📶 | **Repeaters** | Relaisstation mit eigener Hardware | `MMDVM`, `…Repeater`, `STM32…` |
+| 📱 | **Hotspots** | persönliches Funkmodem, meist mit Pi-Star oder WPSD | `MMDVM_HS_Hat`, `ZUMspot`, `DVMega`, `MMDVM_DMO` |
+| 📲 | **Apps** | Handy- oder PC-App **ohne Funkgerät** | `Z3DMR`, `DroidStar`, `BlueDV`, `DVSM`, `Peanut` |
+| 🔗 | **Network Inbound** | ein anderer Server verbindet sich hierher | `HBlink`, `FreeDMR`, `BrandMeister` |
+| ❔ | **Unknown device type** | Paketname steht in keiner Liste | – |
+
+<p align="center">
+  <img src="../images/device-type-app.png" alt="Bereich Apps" width="49%">
+  <img src="../images/station-detail-app.png" alt="Detailansicht einer App-Station" width="49%">
+</p>
+
+Bei Apps und unbekannten Geräten steht unter dem Rufzeichen die gemeldete Software (📦 Paketname · Version). Früher stand hier ein rotes **❓ Other** – das hieß nur „Paketname unbekannt“, nicht „Fehler“. Jetzt heißt der Bereich **❔ Unknown device type**, ist grau statt rot und nennt den gemeldeten Namen:
+
+<p align="center"><img src="../images/device-type-unknown.png" alt="Unbekannte Geräteart" width="90%"></p>
+
+Ein Admin sortiert solche Geräte unter **Adminbereich → Settings → 📲 Device detection** ein (siehe [Adminbereich](adminbereich.md#️-dmr-server-hblink4)). Verbundene Stationen wandern nach dem Speichern sofort in den richtigen Bereich.
+
+> **Hinweis DroidStar:** DroidStar meldet ab Werk den Paketnamen `MMDVM_MMDVM_HS_Hat` und sieht damit für den Server genau wie ein Hotspot aus. Als App erscheint es nur, wenn in DroidStar ein eigener Paketname eingetragen ist (z. B. `DroidStar`). Z3DMR meldet sich korrekt als `Z3DMR`.
+
 Gold markierte Talkgroups werden für diese Station übersetzt (🔀). **OpenBridge** und **Network Outbound** zeigen Verbindungen zu anderen Servern. Bei OpenBridge steht statt der langen Talkgroup-Liste nur die Anzahl; alles Weitere zeigt der [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 
 ## Detailansicht
