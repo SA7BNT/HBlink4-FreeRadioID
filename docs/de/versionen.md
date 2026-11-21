@@ -44,14 +44,15 @@ Für alle, die am Repository arbeiten:
    - …
    ```
 
-3. Version setzen, committen und Tag anlegen:
+3. Version setzen und committen:
 
    ```bash
    python3 scripts/release.py 1.1.0
-   git push && git push origin v1.1.0
+   git push
    ```
 
-   Das Skript prüft vorher, ob der Abschnitt da ist, ob er der neueste ist und ob die Nummer größer ist als die alte.
-4. Nach dem Push des Tags erstellt die GitHub-Action **Release** (`.github/workflows/release.yml`) das Release mit dem Text aus CHANGELOG.md.
+   Das Skript prüft vorher, ob der Abschnitt da ist, ob er der neueste ist, ob er ausführlich genug ist und ob die Nummer größer ist als die alte.
+4. Sobald `VERSION` oder `CHANGELOG.md` auf `main` ankommen, legt die GitHub-Action **Release** (`.github/workflows/release.yml`) den Tag `v1.1.0` an und erstellt das Release mit dem Text aus CHANGELOG.md. Wird der Text später verbessert, aktualisiert sie das Release. Ein Tag muss also nicht selbst gepusht werden (wer möchte, kann es mit `--tag` trotzdem).
+5. Läuft die Action nicht an (z. B. weil Actions im Repository abgeschaltet sind): auf GitHub unter **Actions → Release → Run workflow** von Hand starten, oder unter *Settings → Actions → General* Actions erlauben und bei *Workflow permissions* „Read and write permissions“ wählen.
 
 `python3 scripts/release.py --check` prüft, ob `VERSION` und der neueste Eintrag in CHANGELOG.md zusammenpassen.

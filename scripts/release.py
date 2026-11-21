@@ -2,12 +2,14 @@
 """
 Versions of HBlink4-FreeRadioID (see docs/de/versionen.md).
 
-  python3 scripts/release.py 1.1.0          check CHANGELOG.md, write VERSION, commit and create the tag v1.1.0
+  python3 scripts/release.py 1.1.0          check CHANGELOG.md, write VERSION and commit
+                                            (after git push, GitHub creates tag v1.1.0 and the release)
+  python3 scripts/release.py 1.1.0 --tag    additionally create the annotated tag v1.1.0 here
   python3 scripts/release.py --check        VERSION and the newest CHANGELOG entry match?
   python3 scripts/release.py --notes 1.1.0  print the description of one version (used by the GitHub release)
   python3 scripts/release.py --date 1.1.0   print the date of one version
 
-Nothing is pushed: afterwards  git push && git push origin v1.1.0
+Nothing is pushed: afterwards  git push
 """
 import re
 import subprocess
@@ -62,8 +64,11 @@ def main(argv):
     subprocess.run(["git", "-C", str(ROOT), "add", "VERSION", "CHANGELOG.md"], check=True)
     if subprocess.run(["git", "-C", str(ROOT), "diff", "--cached", "--quiet"]).returncode != 0:
         subprocess.run(["git", "-C", str(ROOT), "commit", "-q", "-m", f"Release v{new}\n\n{s['body']}"], check=True)
-    subprocess.run(["git", "-C", str(ROOT), "tag", "-a", f"v{new}", "-m", f"v{new} – {s['date']}\n\n{s['body']}"], check=True)
-    print(f"✓ v{new} tagged. Publish with:  git push && git push origin v{new}")
+    if "--tag" in argv:
+        subprocess.run(["git", "-C", str(ROOT), "tag", "-a", f"v{new}", "-m", f"v{new} – {s['date']}\n\n{s['body']}"], check=True)
+        print(f"✓ v{new} tagged. Publish with:  git push && git push origin v{new}")
+    else:
+        print(f"✓ v{new} ready. Publish with:  git push   (GitHub then creates tag v{new} and the release)")
 
 
 if __name__ == "__main__":
