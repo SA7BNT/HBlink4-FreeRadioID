@@ -60,6 +60,18 @@ Zu jedem Problem steht die passende Lösung mit **→** dahinter. Am Ende steht 
 | `frame is … s off our clock` | Uhrzeit eines Servers falsch | NTP einrichten: `sudo apt install chrony` |
 | Superadmin-Passwort vergessen | – | neuen Hash erzeugen (`./venv/bin/python -m dashboard.auth hash-password`), in `dashboard/config.json` eintragen, Dashboard neu starten; oder `sudo ./scripts/setup.sh` |
 
+## Aktualisieren
+
+Eingeloggte Admins sehen im Dashboard einen Hinweis, sobald auf GitHub eine neue Version liegt (siehe [Adminbereich → Update-Hinweis](adminbereich.md#️-update-hinweis)). Installieren:
+
+```bash
+cd /opt/HBlink4
+sudo -u hblink git pull
+sudo systemctl restart hblink4 hblink4-dash
+```
+
+Vorher eine [Sicherung](#sicherung) zu machen schadet nie. Die Einstellungen aus dem Adminbereich liegen in der Datenbank und bleiben erhalten. Welche Version läuft, steht unten in der Fußzeile jeder Seite und im Adminbereich unter **🖥️ System**.
+
 ## Sicherung
 
 Alles Wichtige steckt in drei Dateien:

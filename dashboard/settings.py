@@ -43,6 +43,7 @@ DASH_SECTIONS: List[Tuple[str, str]] = [
     ("tgstats", "📈 Talkgroups & statistics"),
     ("connect", "🛠️ Configuration tab"),
     ("https", "🔒 HTTPS & web"),
+    ("update", "⬆️ Updates"),
 ]
 
 # One sentence per section for the admin area (what is this about?)
@@ -56,6 +57,7 @@ SECTION_HELP: Dict[str, str] = {
     "tgstats": "Talkgroup statistics and talkgroup names.",
     "connect": "The Configuration tab tells new users how to connect their hotspot.",
     "https": "Encrypted access with a free Let's Encrypt certificate.",
+    "update": "Logged-in admins get a notice when GitHub has a newer version.",
     "dmr_server": "Port and timing of the DMR server.",
     "dmr_access": "Password and talkgroups for repeaters and hotspots.",
     "dmr_frid": "Personal logins via FreeRadioID.net and the guest access.",
@@ -151,6 +153,13 @@ DASH_FIELDS: List[Field] = [
     Field("connect.note", "connect", "Note for users", "longtext", "",
           "Shown at the end of the tab: rules, contact, links", depends="connect.enabled"),
 
+    Field("update.enabled", "update", "Notify admins about updates", "bool", True,
+          "Asks GitHub a few times a day whether a newer version exists. Nothing is installed automatically."),
+    Field("update.repo", "update", "GitHub repository", "text", "dhartmann1979/HBlink4-FreeRadioID",
+          "owner/name", depends="update.enabled"),
+    Field("update.branch", "update", "Branch", "text", "main", depends="update.enabled", advanced=True),
+    Field("update.interval_hours", "update", "Check every (hours)", "int", 6, min=1, max=168,
+          depends="update.enabled", advanced=True),
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
           "Needs certbot, the domain pointing here and ports 80/443 open", restart=True),
     Field("https.domain", "https", "Domain", "text", "", restart=True, depends="https.enabled"),

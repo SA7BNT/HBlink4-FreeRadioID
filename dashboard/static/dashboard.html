@@ -1569,6 +1569,24 @@
         .sw-line .muted { font-size: 11.5px; }
         .type-hint { font-size: 12.5px; color: var(--text-dim); margin: 2px 4px 10px; }
         .type-hint b { color: var(--text); font-weight: 650; }
+
+        /* Update notice and footer */
+        .update-banner { margin: 10px 0 0; padding: 10px 14px; border-radius: 14px; background: rgba(var(--accent-rgb), .12);
+                         border: 1px solid rgba(var(--accent-rgb), .45); backdrop-filter: blur(var(--glass-blur)); }
+        .update-banner .upd-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .update-banner .upd-icon { font-size: 20px; }
+        .update-banner .upd-text { flex: 1 1 260px; font-size: 13.5px; }
+        .update-banner .upd-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .update-banner .upd-actions a.btn-s { text-decoration: none; }
+        .update-banner .upd-more { display: none; margin-top: 8px; font-size: 12.5px; }
+        .update-banner.open .upd-more { display: block; }
+        .update-banner ul { margin: 4px 0 6px 18px; padding: 0; } .update-banner li { margin: 2px 0; }
+        .update-banner code { word-break: break-all; }
+        .site-footer { max-width: 1600px; margin: 26px auto 14px; padding: 10px 18px; display: flex; justify-content: center; align-items: center;
+                       gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-dim); border-radius: 14px;
+                       background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--glass-blur)); }
+        .site-footer .ft-sep { opacity: .5; }
+        @media (max-width: 600px) { .site-footer { margin: 18px 10px 10px; font-size: 11.5px; gap: 5px; } }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -1747,7 +1765,11 @@
         .obe-tgrow .n { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
         .obe-tgrow select:disabled { opacity: .35; }
         .obe-stanza { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.5;
-                      font-family: ui-monospace, Menlo, monospace; white-space: pre-wrap; margin: 6px 0 0; }
+                      font-family: ui-monospace, Menlo, monospace; white-space: pre; margin: 6px 0 0;
+                      display: block; width: 100%; box-sizing: border-box; color: var(--text); resize: vertical; min-height: 120px;
+                      overflow-x: auto; -webkit-user-select: text; user-select: text; tab-size: 4; }
+        .obe-stanza:focus { outline: none; border-color: rgba(var(--accent-rgb), .6); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
+        @media (max-width: 600px) { .obe-stanza { font-size: 16px; } }   /* iOS zooms into smaller inputs */
         .obe-json { padding: 10px 14px; } .obe-json textarea { width: 100%; }
         .obe-save { position: sticky; bottom: 0; padding: 10px; border-radius: 14px; background: rgba(16,22,40,0.92); border: 1px solid var(--glass-border); align-items: center; }
 
@@ -2111,6 +2133,9 @@
         
         <nav class="links-bar" id="linksBar" hidden></nav>
 
+        <!-- Update notice: only for logged-in admins, when GitHub has a newer version -->
+        <div class="update-banner" id="updateBanner" hidden></div>
+
         <!-- Announcement Banner (hidden by default, shown if announcement text exists) -->
         <div id="announcementBanner" class="announcement-banner" style="display: none;">
             <strong>📢 Announcement:</strong> <span id="announcementText"></span>
@@ -2312,6 +2337,11 @@
             </div>
         </div><!-- /tabTgDir -->
     </div>
+    <footer class="site-footer" id="siteFooter">
+        <span>© <span id="footerYear"></span> Die N8schicht</span>
+        <span class="ft-sep">·</span><span id="footerVersion" title="Installed version">HBlink4-FreeRadioID</span>
+        <span class="ft-sep">·</span><span id="footerDate" title="Date of the installed version"></span>
+    </footer>
     <div class="tgs-tip" id="tgsTip"></div>
     
     <script>
@@ -2663,6 +2693,8 @@
         }
 
         function renderUserArea() {
+            if (isAdmin() && !state.updateChecked) { state.updateChecked = true; setTimeout(() => checkUpdate(), 400); }
+            if (!isAdmin()) { state.updateChecked = false; const b = document.getElementById('updateBanner'); if (b) b.hidden = true; }
             if (typeof tgsUpdateVisibility === 'function' && state.config) tgsUpdateVisibility();
             const el = document.getElementById('userArea');
             if (!el) return;
@@ -2763,7 +2795,7 @@
             users: ['👥 Users', 'Who may log in. Admins see IP addresses and ports and change settings; users only see the dashboard.'],
             sessions: ['🔑 Sessions', 'All current logins. End one with „Revoke“ – that device is logged out at once.'],
             audit: ['📜 Log', 'Logins, failed attempts and every change in the admin area, with time, person and IP address.'],
-            system: ['🖥️ System', 'State of HTTPS, access and the DMR server, plus restart buttons.'],
+            system: ['🖥️ System', 'State of HTTPS, access and the DMR server, the installed version and updates, plus restart buttons.'],
         };
 
         function openAdmin(tab = 'users') {
@@ -3645,9 +3677,16 @@
                 </fieldset>
 
                 <fieldset><legend>⑤ For the far end</legend>
-                    <p class="muted small">Send this to the sysop of the other server (FreeDMR <code>hblink.cfg</code>). Our address comes from the Configuration tab setting or the subtitle.</p>
-                    <pre class="obe-stanza" id="obeStanza"></pre>
-                    <div class="set-actions"><button type="button" class="btn-s" onclick="navigator.clipboard.writeText(document.getElementById('obeStanza').textContent).then(() => toast('Copied', 'ok'))">⧉ Copy</button></div>
+                    <p class="muted small">Send this to the sysop of the other server (FreeDMR <code>hblink.cfg</code>). Our address comes from the Configuration tab setting or the subtitle.
+                        You can edit the text before copying – it is only a template and is not saved.</p>
+                    <textarea class="obe-stanza" id="obeStanza" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
+                              oninput="obeStanzaEdited(this)" aria-label="Stanza for the far end"></textarea>
+                    <div class="set-actions">
+                        <span class="muted small" id="obeStanzaState" hidden>✏️ edited</span>
+                        <button type="button" class="btn-s" id="obeStanzaReset" onclick="obeStanzaReset()" hidden>↺ Reset</button>
+                        <button type="button" class="btn-s" onclick="obeStanzaSelect()">▣ Select all</button>
+                        <button type="button" class="btn-s" onclick="copyText(document.getElementById('obeStanza').value, this)">⧉ Copy</button>
+                    </div>
                 </fieldset>
             </form>`;
         }
@@ -3661,7 +3700,7 @@
             hint.innerHTML = proto === 'freedmr' && pw > 20 ? '⚠️ FreeDMR uses only the first 20 characters – use at most 20.'
                 : pw === 0 ? 'Required. Identical on both sides.' : 'Identical on both sides.';
             hint.classList.toggle('warn', proto === 'freedmr' && pw > 20);
-            document.getElementById('obeStanza').textContent = obeStanza(t);
+            obeStanzaShow();
             const j = document.getElementById('obeJson'); if (j) j.value = JSON.stringify(obe.trunks, null, 2);
         }
 
@@ -3737,6 +3776,47 @@
             i.value = ''; obe.q = String(v); document.getElementById('obeTgQ').value = obe.q; obeTgRender(); obeApplyVisibility(); obeDirty();
         }
 
+        // Stanza for the far end: generated from the form, editable before copying.
+        // Own edits stay per trunk until "Reset" (not saved anywhere).
+        function obeStanzaShow() {
+            const ta = document.getElementById('obeStanza'); if (!ta) return;
+            obe.stanzaEdits = obe.stanzaEdits || {};
+            const edited = obe.stanzaEdits[obe.idx];
+            const text = edited !== undefined ? edited : obeStanza(obeCur());
+            if (ta.value !== text) ta.value = text;
+            ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 4) + 'px';
+            document.getElementById('obeStanzaState').hidden = edited === undefined;
+            document.getElementById('obeStanzaReset').hidden = edited === undefined;
+        }
+        function obeStanzaEdited(ta) {
+            obe.stanzaEdits = obe.stanzaEdits || {};
+            obe.stanzaEdits[obe.idx] = ta.value;
+            obeStanzaShow();
+        }
+        function obeStanzaReset() { if (obe.stanzaEdits) delete obe.stanzaEdits[obe.idx]; obeStanzaShow(); }
+        function obeStanzaSelect() {
+            const ta = document.getElementById('obeStanza'); ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+        }
+
+        // Copy that also works over plain http and on iOS (navigator.clipboard needs HTTPS)
+        async function copyText(text, btn) {
+            let ok = false;
+            try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); ok = true; } } catch (e) {}
+            if (!ok) {
+                const t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+                document.body.appendChild(t); t.focus(); t.select(); t.setSelectionRange(0, text.length);
+                try { ok = document.execCommand('copy'); } catch (e) {}
+                t.remove();
+            }
+            if (btn) {
+                const old = btn.dataset.label || btn.textContent; btn.dataset.label = old;
+                btn.textContent = ok ? '✓ Copied' : '✗ Select and copy by hand'; btn.classList.toggle('ok', ok);
+                setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1800);
+            } else toast(ok ? 'Copied' : 'Copy failed – select the text and copy by hand', ok ? 'ok' : 'err');
+            return ok;
+        }
+
         function obeStanza(t) {
             const host = ((setField('connect.host') || {}).value || (setField('server_name') || {}).value || 'our.server.example').trim();
             const fd = obeProto(t) === 'freedmr';
@@ -3760,13 +3840,13 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
         function obeDelete(btn) {
             if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Really delete?'; return; }
-            obe.trunks.splice(obe.idx, 1); obe.idx = 0; obeRender(); obeDirty();
+            obe.trunks.splice(obe.idx, 1); obe.idx = 0; obe.stanzaEdits = {}; obeRender(); obeDirty();
         }
         function obeFromJson() {
             try {
                 const v = JSON.parse(document.getElementById('obeJson').value || '[]');
                 if (!Array.isArray(v)) throw new Error('a list [ … ] is expected');
-                obe.trunks = v; obe.idx = 0; obeRender(); obeDirty(); toast('Taken over – check and save', 'ok');
+                obe.trunks = v; obe.idx = 0; obe.stanzaEdits = {}; obeRender(); obeDirty(); toast('Taken over – check and save', 'ok');
             } catch (e) { toast('JSON: ' + e.message, 'err'); }
         }
         async function obeSave() {
@@ -3829,7 +3909,22 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 </tr>`).join('')}</tbody></table>`;
         }
 
+        async function sysUpdCheck(force) {
+            const el = document.getElementById('sysUpd'); if (!el) return;
+            if (force) el.innerHTML = infoRow('GitHub', '<span class="muted">checking…</span>');
+            const u = await checkUpdate(force);
+            if (!u) { el.innerHTML = infoRow('GitHub', '<span class="auth-guest">not reachable</span>'); return; }
+            const state_ = !u.enabled ? '<span class="muted">check switched off</span>'
+                : u.error ? `<span class="auth-guest" title="${escapeHtml(u.error)}">check failed</span>`
+                : u.available ? `<span class="auth-guest">${u.behind} new ${u.behind === 1 ? 'change' : 'changes'}</span>`
+                : '<span class="auth-ok">up to date</span>';
+            el.innerHTML = infoRow('GitHub', state_) +
+                (u.latest ? infoRow('Newest there', escapeHtml(`${u.latest.short} · ${fmtDay(u.latest.date)}`)) : '') +
+                (u.checked_at ? infoRow('Checked', escapeHtml(new Date(u.checked_at * 1000).toLocaleString('en-GB'))) : '');
+        }
+
         async function adminSystem() {
+            setTimeout(() => sysUpdCheck(false), 50);
             const s = await api('GET', '/api/admin/system');
             const yes = '<span class="auth-ok">yes</span>', no = '<span class="muted">no</span>';
             return `<div class="station-grid two">
@@ -3849,6 +3944,15 @@ PROTO_VER: ${fd ? 5 : 1}`;
                     ${infoRow('DMR server (HBlink4)', s.hblink_connected ? '<span class="auth-ok">connected</span>' : '<span class="auth-guest">not connected</span>')}
                     ${infoRow('FreeRadioID IDs', s.frid_ids)}
                     ${infoRow('Avatars cached', s.frid_avatars)}
+                </section>
+                <section class="tile" id="sysVersion"><h3>⬆️ Version</h3>
+                    ${infoRow('Installed', escapeHtml(`v${(s.build || {}).version || '?'} · ${(s.build || {}).short || 'no git'}`))}
+                    ${infoRow('Date', escapeHtml(fmtDay((s.build || {}).date) || '—'))}
+                    ${infoRow('Branch', escapeHtml((s.build || {}).branch || '—'))}
+                    <div id="sysUpd">${infoRow('GitHub', '<span class="muted">checking…</span>')}</div>
+                    <div class="set-actions" style="justify-content:flex-start;margin-top:8px">
+                        <button class="btn-s" onclick="sysUpdCheck(true)">🔍 Check now</button>
+                    </div>
                 </section></div>
                 <div class="set-actions" style="justify-content:flex-start">
                     <button class="btn-s" onclick="adminTab('settings')">⚙️ Change settings</button>
@@ -6317,16 +6421,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
         function cfCopyBtn(text) {
             return `<button type="button" class="cf-copy" data-copy="${escapeHtml(String(text))}" title="Copy">⧉ Copy</button>`;
         }
-        async function cfCopy(btn) {
-            const text = btn.dataset.copy;
-            try { await navigator.clipboard.writeText(text); }
-            catch (e) {
-                const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
-                try { document.execCommand('copy'); } catch (_) {} t.remove();
-            }
-            const old = btn.textContent; btn.textContent = '✓ Copied'; btn.classList.add('ok');
-            setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1400);
-        }
+        async function cfCopy(btn) { await copyText(btn.dataset.copy, btn); }
         function cfChips(list, names, cls) {
             if (list == null) return `<span class="cf-chip any">all talkgroups</span>`;
             if (!list.length) return `<span class="cf-chip any">none</span>`;
@@ -6445,7 +6540,63 @@ PROTO_VER: ${fd ? 5 : 1}`;
                      note: 'Bitte Rufzeichen nennen und Pausen lassen.\nFragen an sysop@die-n8schicht.de · Infos: https://dmr.die-n8schicht.de' };
         }
 
+        // ---------- Footer: version and date ----------
+        function fmtDay(iso) {
+            const d = iso ? new Date(iso) : null;
+            return d && !isNaN(d) ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+        }
+        async function loadVersion() {
+            document.getElementById('footerYear').textContent = new Date().getFullYear();
+            try {
+                const v = await fetch('/api/version', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null);
+                if (!v) return;
+                state.build = v;
+                document.getElementById('footerVersion').textContent =
+                    `HBlink4-FreeRadioID v${v.version || '?'}${v.commit ? ' (' + v.commit + ')' : ''}`;
+                document.getElementById('footerDate').textContent = fmtDay(v.date);
+                if (v.date) document.getElementById('footerYear').textContent = new Date(v.date).getFullYear();
+            } catch (e) {}
+        }
+
+        // ---------- Update notice for admins ----------
+        function updDismissed(sha) { try { return localStorage.getItem('n8.updateDismissed') === sha; } catch (e) { return false; } }
+        async function checkUpdate(force = false) {
+            const el = document.getElementById('updateBanner');
+            if (!isAdmin()) { el.hidden = true; return null; }
+            let u;
+            try { u = await api('GET', '/api/admin/update' + (force ? '?force=1' : '')); } catch (e) { return null; }
+            state.update = u;
+            const show = u.available && u.latest && (force || !updDismissed(u.latest.commit));
+            el.hidden = !show;
+            if (show) {
+                const list = (u.commits || []).slice(0, 5).map(c => `<li><code>${escapeHtml(c.short)}</code> ${escapeHtml(c.message)}</li>`).join('');
+                el.innerHTML = `
+                    <div class="upd-main">
+                        <span class="upd-icon">⬆️</span>
+                        <div class="upd-text"><b>Update available</b> –
+                            ${u.behind} new ${u.behind === 1 ? 'change' : 'changes'} on GitHub
+                            <span class="muted">(${escapeHtml(u.local.short || '?')} → ${escapeHtml(u.latest.short)}, ${escapeHtml(fmtDay(u.latest.date))})</span></div>
+                        <div class="upd-actions">
+                            <button type="button" class="btn-s" onclick="this.closest('.update-banner').classList.toggle('open')">What's new</button>
+                            <a class="btn-s" href="${escapeHtml(u.url)}" target="_blank" rel="noopener">GitHub ↗</a>
+                            <button type="button" class="btn-s" title="Hide until the next version" onclick="updDismiss()">✕</button>
+                        </div>
+                    </div>
+                    <div class="upd-more">
+                        <ul>${list}</ul>
+                        <p class="muted small">Install on the server: <code>cd ${escapeHtml(u.path || '/opt/HBlink4')} &amp;&amp; ${u.owner && u.owner !== 'root' ? 'sudo -u ' + escapeHtml(u.owner) + ' ' : ''}git pull &amp;&amp; sudo systemctl restart hblink4 hblink4-dash</code></p>
+                    </div>`;
+            }
+            return u;
+        }
+        function updDismiss() {
+            try { localStorage.setItem('n8.updateDismissed', state.update.latest.commit); } catch (e) {}
+            document.getElementById('updateBanner').hidden = true;
+        }
+        setInterval(() => { if (isAdmin()) checkUpdate(); }, 3 * 3600 * 1000);
+
         // Initialize dashboard
+        loadVersion();
         initCollapsibles();
         loadConfig();
         if (new URLSearchParams(location.search).has('demo')) {

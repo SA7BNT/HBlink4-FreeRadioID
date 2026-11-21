@@ -89,9 +89,9 @@ Beispiel: Trunk zum Funkerportal (`freedmr.funkerportal.de`).
    - *Network ID*: die Nummer, die die Gegenstelle als `NETWORK_ID` für dich eingetragen hat, z. B. `2624`.
    - *Passphrase*: das vereinbarte Passwort, höchstens 20 Zeichen.
 5. **④ Talkgroups**: **🌐 All talkgroups – no filter** und *TS2*, oder **☑️ Only selected talkgroups** und in der Liste ankreuzen (Suche, „Select all shown“).
-6. **⑤ For the far end**: Den Abschnitt mit **⧉ Copy** kopieren und dem Sysop der Gegenstelle schicken.
+6. **⑤ For the far end**: Den Abschnitt bei Bedarf direkt im Feld anpassen, mit **⧉ Copy** kopieren und dem Sysop der Gegenstelle schicken. **↺ Reset** holt den erzeugten Text zurück.
 
-<p align="center"><img src="../images/admin-openbridge-stanza.png" alt="Abschnitt für die Gegenstelle" width="70%"></p>
+<p align="center"><img src="../images/obp-stanza-edit.png" alt="Abschnitt für die Gegenstelle" width="70%"></p>
 
 7. **💾 Save trunks**, dann **Restart DMR server**.
 8. Auf dem Server den Port öffnen: `sudo ufw allow 51084/udp`, am Router weiterleiten.

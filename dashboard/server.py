@@ -39,6 +39,7 @@ from .avatars import AvatarStore, DEFAULT_URL as FRID_AVATAR_URL
 from .tgstats import TGStats, parse_names as _parse_tg_names, RANGES as TG_RANGES
 from .obpstats import OBPStats
 from .talkgroups import Talkgroups
+from . import version as _version
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1350,6 +1351,31 @@ async def admin_audit(request: Request):
     return {"audit": state.auth.audit_log()}
 
 
+@app.get("/api/version")
+async def api_version():
+    """Version line for the footer (public: no addresses, only version and commit)."""
+    v = _version.local_version()
+    return {"version": v["version"], "commit": v["short"], "date": v["date"]}
+
+
+@app.get("/api/admin/update")
+async def api_admin_update(request: Request, force: bool = False):
+    """Is a newer version on GitHub? Cached for the configured interval."""
+    _require_admin(request)
+    cfg = dashboard_config.get("update") or {}
+    if cfg.get("enabled") is False and not force:
+        return {"enabled": False, "available": False, "local": _version.local_version()}
+    hours = max(1, min(168, int(cfg.get("interval_hours") or 6)))
+    res = await asyncio.to_thread(_version.check, cfg.get("repo") or _version.DEFAULT_REPO,
+                                  cfg.get("branch") or "main", hours * 3600, force)
+    try:
+        import pwd
+        owner = pwd.getpwuid(_version.REPO_ROOT.stat().st_uid).pw_name
+    except Exception:
+        owner = ""
+    return {"enabled": True, **res, "path": str(_version.REPO_ROOT), "owner": owner}
+
+
 @app.get("/api/admin/system")
 async def admin_system(request: Request):
     _require_admin(request)
@@ -1361,7 +1387,7 @@ async def admin_system(request: Request):
             "users": len(state.auth.list_users()), "systemd": bool(os.environ.get("INVOCATION_ID")),
             "hblink_connected": bool(state.hblink_connected),
             "frid_ids": len(state.user_db.frid_ids()), "frid_avatars": state.avatars.stats()["with_avatar"],
-            "version": "HBlink4-FreeRadioID"}
+            "version": "HBlink4-FreeRadioID", "build": _version.local_version()}
     if _tls_manager is not None and _tls_manager.have_cert():
         try:
             import ssl as _ssl

@@ -66,6 +66,7 @@ Links steht die Liste der Abschnitte, rechts der gewählte Abschnitt mit einem S
 | 📈 Talkgroups & statistics | Statistik an/aus, ohne Login sichtbar, Speicherdauer (Vorgabe 30 Tage), **Talkgroup-Liste der N8schicht** an/aus, **eigene Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile); die URL der Liste unter *Advanced* | sofort |
 | 🛠️ Configuration tab | Tab an/aus, Server-Adresse für Hotspots (leer = Untertitel), Standard-Passwort zeigen ja/nein, **Hinweis für Nutzer** | sofort |
 | 🔒 HTTPS & web | HTTPS, Domain, E-Mail; Test-Zertifikate und Ports unter *Advanced* | nach **Neustart** des Dashboards |
+| ⬆️ Updates | Update-Hinweis für Admins an/aus, GitHub-Repository; Branch und Prüfabstand unter *Advanced* | sofort |
 
 <p align="center">
   <img src="../images/admin-settings-tgstats.png" alt="Abschnitt Talkgroups &amp; statistics" width="49%">
@@ -150,7 +151,7 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 | ② **Protocol** | Auswahl **🟢 FreeDMR v5** (FDMR+, FDMR-Secure-Server; Vorgabe) oder **⚪ Classic OpenBridge** (Brandmeister, HBlink3). Bei FreeDMR erscheinen die Schalter *Keep-alives* und *Accept changing address*, bei Classic der Schalter *Send the real repeater ID*. |
 | ③ **Connection** | Adresse und Port der Gegenstelle, unser Port, Netzwerk-ID, Passwort (bei FreeDMR mit Warnung ab 21 Zeichen); Bind-Adresse und Source-Server-ID unter *Advanced* |
 | ④ **Talkgroups** | **🌐 All talkgroups – no filter** mit Wahl des Zeitschlitzes, oder **☑️ Only selected talkgroups** mit der Liste aller bekannten Talkgroups |
-| ⑤ **For the far end** | fertiger Abschnitt für die `hblink.cfg` der Gegenstelle zum Kopieren; Ports über Kreuz, Protokoll und TG-Liste passend |
+| ⑤ **For the far end** | fertiger Abschnitt für die `hblink.cfg` der Gegenstelle; Ports über Kreuz, Protokoll und TG-Liste passend. **Editierbar** vor dem Kopieren |
 
 <p align="center"><img src="../images/admin-openbridge-protocol.png" alt="Protokoll klassisch: andere Optionen" width="72%"></p>
 
@@ -160,7 +161,11 @@ Trunks zu anderen Netzen richtest du hier in einem Formular ein, ohne JSON. Link
 
 **Ohne Filter** laufen alle Talkgroups über den Trunk, außer den lokalen: 1–79, 4000, 5000 und 9990–9999. Das darf nur **ein** aktiver Trunk.
 
-<p align="center"><img src="../images/admin-openbridge-stanza.png" alt="Abschnitt für die Gegenstelle" width="72%"></p>
+<p align="center"><img src="../images/obp-stanza-edit.png" alt="Abschnitt für die Gegenstelle, bearbeitet" width="72%"></p>
+
+**Abschnitt für die Gegenstelle anpassen:** Der Text ist ein normales Eingabefeld. Du kannst Zeilen ändern oder ergänzen (z. B. `TS1_STATIC:` oder eine eigene IP), bevor du ihn verschickst. Sobald du etwas änderst, steht daneben **✏️ edited**; die Formularfelder überschreiben den Text dann nicht mehr. **↺ Reset** holt den erzeugten Text zurück. Gespeichert wird der Text nicht, er ist nur eine Vorlage.
+- **⧉ Copy** kopiert in die Zwischenablage, auch ohne HTTPS und auf dem iPhone. Klappt das in einem Browser nicht, zeigt der Knopf *Select and copy by hand*.
+- **▣ Select all** markiert den ganzen Text, dann geht Kopieren auch per Hand (lange drücken → Kopieren).
 
 Unter **🧑‍💻 Expert: all trunks as JSON** stehen alle Trunks als JSON, zum Ansehen oder Einfügen; **⤴ Take over JSON into the form** übernimmt es ins Formular. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
 
@@ -203,6 +208,17 @@ Die genaue Umsetzung steht in [Anleitungen → Umziehen](anleitungen.md#2-von-hb
 - **Sessions**: alle Anmeldungen mit IP, Browser und Ablauf; jede lässt sich beenden.
 - **Log**: Anmeldungen, Fehlversuche, Benutzer- und Einstellungsänderungen, Neustarts, jeweils mit Zeit, Person und IP.
 - **System**: HTTPS mit Ablaufdatum des Zertifikats, Zugriff, Verbindung zum DMR-Server, FreeRadioID-IDs und gespeicherte Avatare. Dazu die Knöpfe **Restart dashboard** und **Restart DMR server**; sie erscheinen nur, wenn beides als systemd-Dienst läuft.
+- **⬆️ Version** (im Tab System): installierte Version, Commit, Datum und Branch, dazu der Stand auf GitHub. **🔍 Check now** fragt sofort nach.
+
+### ⬆️ Update-Hinweis
+
+<p align="center"><img src="../images/update-banner.png" alt="Update-Hinweis" width="90%"></p>
+
+Gibt es auf GitHub eine neuere Version, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen und den Befehl zum Installieren auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
+
+- Installiert wird **nicht automatisch**; der Hinweis zeigt nur den passenden Befehl (siehe [Betrieb → Aktualisieren](betrieb.md#aktualisieren)).
+- Einstellen unter **Settings → ⬆️ Updates**: an/aus, Repository (`owner/name`), unter *Advanced* Branch und Prüfabstand (Standard alle 6 Stunden).
+- Das Dashboard fragt dafür die öffentliche GitHub-API ab; es werden keine Daten des Servers übertragen.
 
 <p align="center"><img src="../images/admin-log.png" alt="Protokoll" width="85%"></p>
 

@@ -193,6 +193,12 @@ Auf dem Smartphone liegen die Diagramme untereinander, und die Tabelle zeigt nur
 
 Klappst du **Last Heard** über den Pfeil zu, siehst du nur die laufenden Gespräche.
 
+## Fußzeile
+
+<p align="center"><img src="../images/footer.png" alt="Fußzeile" width="70%"></p>
+
+Am Ende jeder Seite steht **© Die N8schicht** mit der installierten Version (Versionsnummer und Commit) und ihrem Datum. So sieht man auf einen Blick, welcher Stand läuft.
+
 ## Repeater, Hotspots, Verbindungen
 
 Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen, die Talkgroups pro Zeitschlitz und rechts den aktuellen Zustand beider Zeitschlitze. Die Login-Art erkennst du am Badge und an der Farbe:
