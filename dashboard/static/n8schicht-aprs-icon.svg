@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="N8schicht APRS">
+  <!-- Favicon / app icon of the APRS map: no text, readable down to 16 px -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14204a"/>
+      <stop offset="0.55" stop-color="#0c1230"/>
+      <stop offset="1" stop-color="#251055"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.55" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#30d158" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#30d158" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff3b0"/>
+      <stop offset="0.5" stop-color="#ffd60a"/>
+      <stop offset="1" stop-color="#ff9f0a"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5ac8fa"/>
+      <stop offset="1" stop-color="#0a84ff"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#7ef0a0"/>
+      <stop offset="1" stop-color="#1fa84a"/>
+    </linearGradient>
+    <mask id="crescent">
+      <rect width="512" height="512" fill="#fff"/>
+      <circle cx="146" cy="104" r="52" fill="#000"/>
+    </mask>
+    <clipPath id="badge"><rect x="16" y="16" width="480" height="480" rx="112"/></clipPath>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#sky)"/>
+  <g clip-path="url(#badge)">
+    <circle cx="282" cy="262" r="250" fill="url(#glow)"/>
+    <g fill="#ffffff">
+      <circle cx="420" cy="92" r="5" opacity="0.85"/>
+      <path d="M232 70 l7 18 18 7 -18 7 -7 18 -7 -18 -18 -7 18 -7z" opacity="0.95"/>
+    </g>
+    <path d="M16 440 Q256 396 496 440 L496 496 L16 496z" fill="#070a1c" opacity="0.65"/>
+  </g>
+
+  <!-- crescent moon -->
+  <circle cx="112" cy="128" r="60" fill="url(#moon)" mask="url(#crescent)"/>
+
+  <!-- track -->
+  <path d="M96 404 C170 404 168 330 236 340" fill="none" stroke="#7ef0a0" stroke-width="16"
+        stroke-linecap="round" stroke-dasharray="1 34" opacity="0.9"/>
+
+  <!-- pin with waves -->
+  <g transform="translate(300 230)">
+    <g fill="none" stroke="url(#wave)" stroke-width="18" stroke-linecap="round">
+      <path d="M-100 -78 A124 124 0 0 0 -100 78"/>
+      <path d="M100 -78 A124 124 0 0 1 100 78"/>
+    </g>
+    <path d="M0 170 C-24 118 -82 76 -82 4 A82 82 0 0 1 82 4 C82 76 24 118 0 170 Z" fill="url(#pin)"
+          stroke="#0b3d1f" stroke-opacity="0.35" stroke-width="5"/>
+    <circle cy="4" r="32" fill="#0c1230"/>
+    <circle cy="4" r="15" fill="#ffffff"/>
+  </g>
+</svg>

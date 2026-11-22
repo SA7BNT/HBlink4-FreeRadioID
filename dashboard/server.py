@@ -49,7 +49,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.2.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.2.1")
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -2448,10 +2448,10 @@ def _aprs_site(conn) -> dict:
         if d and d == host:
             return {"domain": d, "title": state.aprs.c(f"aprs.site{n}.title", "") or dashboard_config.get("dashboard_title")
                     or "APRS", "subtitle": state.aprs.c(f"aprs.site{n}.subtitle", "") or f"APRS map · {d}",
-                    "logo": state.aprs.c(f"aprs.site{n}.logo", "") or dashboard_config.get("logo") or ""}
+                    "logo": state.aprs.c(f"aprs.site{n}.logo", "") or ""}
     return {"domain": host, "title": dashboard_config.get("dashboard_title") or "DMR Die N8schicht",
             "subtitle": f"APRS map · {dashboard_config.get('server_name') or host}",
-            "logo": dashboard_config.get("logo") or ""}
+            "logo": ""}
 
 
 def _aprs_repeaters() -> List[dict]:

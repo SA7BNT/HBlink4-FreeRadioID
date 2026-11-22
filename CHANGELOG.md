@@ -4,6 +4,31 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.2.1] – 2026-11-22
+
+Eigenes **Logo und Icon für die APRS-Karte** im N8schicht-Design und eine aufgeräumtere Karte – besonders am Smartphone
+und auf hellen Kartenstilen (z. B. Topographisch).
+
+### 🎨 Logo und Icon
+- **N8schicht-APRS-Logo** (`dashboard/static/n8schicht-aprs-logo.svg`): Nachthimmel mit Mond wie beim DMR-Logo, grüner
+  Karten-Pin mit Funkwellen, gepunktete APRS-Spur, „N8“ und Plakette **APRS**. Es steht in der Kopfzeile der Karte, wenn für
+  die Domain kein eigenes Logo hochgeladen ist (bisher: Logo des Dashboards).
+- **APRS-Icon** ohne Schrift (`n8schicht-aprs-icon.svg`, `n8schicht-aprs-icon-192.png`), bis 16 px lesbar: Favicon,
+  Browser-Tab und Homescreen-Symbol der Karte.
+- Im Adminbereich heißt der Knopf bei den Domain-Logos **↺ Default** und stellt das APRS-Logo wieder her.
+
+### 🗺️ Karte
+- **Smartphone:** Die Stationsliste ist jetzt eine Leiste mit Griff und Zählern („📍 224 stations · 📻 4 DMR“); antippen klappt
+  sie auf und zu. Zugeklappt verdeckt sie nur noch einen schmalen Streifen der Karte (vorher wurde die Liste mitten in den
+  Filtern abgeschnitten). Der ☰-Knopf in der Kopfzeile entfällt.
+- **Filter** stehen in einer Zeile und lassen sich seitlich wischen, statt über drei Zeilen umzubrechen.
+- **Panel und Popups deckender** (Glas mit 86 % statt 72 %): auf hellen und bunten Karten (OpenStreetMap, Topographisch) gut lesbar.
+- **Kartennachweis kürzer:** Der Hinweis auf die APRS-Symbole steht jetzt unten in der Stationsliste; am Smartphone ist der
+  Kachel-Nachweis kleiner und braucht nur noch eine Zeile.
+
+### Doku
+- [docs/de/aprs.md](docs/de/aprs.md): neuer Abschnitt *Logo und Icon*, Screenshots der Karte neu.
+
 ## [1.2.0] – 2026-11-22
 
 **APRS für DMR Die N8schicht:** ein APRS-Server in Python, Uplink & Downlink wahlweise zu APRS-IS, CB-APRS oder eigenen

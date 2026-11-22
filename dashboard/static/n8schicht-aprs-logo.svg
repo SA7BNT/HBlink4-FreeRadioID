@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DMR Die N8schicht – APRS">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14204a"/>
+      <stop offset="0.55" stop-color="#0c1230"/>
+      <stop offset="1" stop-color="#251055"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.28" r="0.6">
+      <stop offset="0" stop-color="#ffd60a" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffd60a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.8" cy="0.32" r="0.45">
+      <stop offset="0" stop-color="#30d158" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#30d158" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff3b0"/>
+      <stop offset="0.5" stop-color="#ffd60a"/>
+      <stop offset="1" stop-color="#ff9f0a"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5ac8fa"/>
+      <stop offset="1" stop-color="#0a84ff"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#7ef0a0"/>
+      <stop offset="1" stop-color="#1fa84a"/>
+    </linearGradient>
+    <linearGradient id="txt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c9dcff"/>
+    </linearGradient>
+    <mask id="crescent">
+      <rect width="512" height="512" fill="#fff"/>
+      <circle cx="186" cy="118" r="70" fill="#000"/>
+    </mask>
+    <clipPath id="badge"><rect x="16" y="16" width="480" height="480" rx="112"/></clipPath>
+  </defs>
+
+  <!-- night-sky badge -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#sky)"/>
+  <g clip-path="url(#badge)">
+    <circle cx="150" cy="150" r="260" fill="url(#glow)"/>
+    <circle cx="410" cy="160" r="230" fill="url(#glow2)"/>
+    <!-- faint map grid -->
+    <g stroke="#5ac8fa" stroke-width="1.5" opacity="0.10">
+      <path d="M16 236 H496 M16 300 H496 M96 16 V496 M176 16 V496 M256 16 V496 M336 16 V496 M416 16 V496"/>
+    </g>
+    <!-- stars -->
+    <g fill="#ffffff">
+      <circle cx="300" cy="78" r="3.2" opacity="0.9"/>
+      <circle cx="250" cy="150" r="1.8" opacity="0.6"/>
+      <circle cx="70" cy="262" r="2.2" opacity="0.6"/>
+      <circle cx="460" cy="292" r="2" opacity="0.5"/>
+      <path d="M262 54 l5 13 13 5 -13 5 -5 13 -5 -13 -13 -5 13 -5z" opacity="0.95"/>
+    </g>
+    <!-- horizon -->
+    <path d="M16 452 Q256 412 496 452 L496 496 L16 496z" fill="#070a1c" opacity="0.6"/>
+  </g>
+
+  <!-- crescent moon -->
+  <circle cx="142" cy="146" r="78" fill="url(#moon)" mask="url(#crescent)"/>
+
+  <!-- APRS track: dotted route into the map pin -->
+  <path d="M246 236 C290 232 296 200 330 210" fill="none" stroke="#7ef0a0" stroke-width="7"
+        stroke-linecap="round" stroke-dasharray="1 15" opacity="0.85"/>
+  <circle cx="246" cy="236" r="7" fill="#7ef0a0" opacity="0.7"/>
+
+  <!-- map pin with radio waves -->
+  <g transform="translate(384 140) scale(0.94)">
+    <g fill="none" stroke="url(#wave)" stroke-width="10" stroke-linecap="round">
+      <path d="M-54 -44 A70 70 0 0 0 -54 44"/>
+      <path d="M54 -44 A70 70 0 0 1 54 44"/>
+      <path d="M-76 -64 A100 100 0 0 0 -76 64" opacity="0.6"/>
+      <path d="M76 -64 A100 100 0 0 1 76 64" opacity="0.6"/>
+    </g>
+    <path d="M0 96 C-14 66 -46 42 -46 2 A46 46 0 0 1 46 2 C46 42 14 66 0 96 Z" fill="url(#pin)"
+          stroke="#0b3d1f" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cy="2" r="18" fill="#0c1230"/>
+    <circle cy="2" r="9" fill="#ffffff"/>
+  </g>
+
+  <!-- N8 -->
+  <text x="228" y="392" text-anchor="middle"
+        font-family="'SF Pro Display','Inter','Segoe UI','Helvetica Neue',Arial,sans-serif"
+        font-weight="900" font-size="210" letter-spacing="-8" fill="url(#txt)">N<tspan fill="url(#moon)">8</tspan></text>
+
+  <!-- APRS pill -->
+  <rect x="156" y="414" width="160" height="44" rx="22" fill="#1fa84a" opacity="0.95"/>
+  <text x="236" y="445" text-anchor="middle"
+        font-family="'SF Pro Display','Inter','Segoe UI','Helvetica Neue',Arial,sans-serif"
+        font-weight="800" font-size="28" letter-spacing="6" fill="#ffffff">APRS</text>
+</svg>

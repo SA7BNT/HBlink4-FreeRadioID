@@ -4,8 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>APRS map</title>
-    <link rel="icon" id="favicon" type="image/svg+xml" href="/static/n8schicht-icon.svg">
-    <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
+    <link rel="icon" id="favicon" type="image/svg+xml" href="/static/n8schicht-aprs-icon.svg">
+    <link rel="alternate icon" type="image/png" href="/static/n8schicht-aprs-icon-192.png">
+    <link rel="apple-touch-icon" href="/static/n8schicht-aprs-icon-192.png">
     <meta name="theme-color" content="#070b17">
     <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
     <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -17,7 +18,7 @@
             --glass-blur: blur(22px) saturate(170%); --radius-lg: 22px; --radius-md: 16px; --radius-sm: 12px;
             --accent: #5ac8fa; --accent-rgb: 90, 200, 250; --accent2: #9bd8ff; --title-to: #9bd8ff;
             --text: #f5f7fb; --text-dim: rgba(235, 240, 250, 0.62); --green: #30d158; --amber: #ffd60a; --red: #ff453a;
-            --logo-size: 44px; --logo-radius: 0px; --panel: rgba(16, 22, 40, 0.72); --dmr: #bf5af2;
+            --logo-size: 44px; --logo-radius: 0px; --panel: rgba(13, 19, 38, 0.86); --dmr: #bf5af2;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -32,7 +33,7 @@
             -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
             box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
         }
-        html[data-theme-mode=light] { --panel: rgba(255, 255, 255, 0.78); }
+        html[data-theme-mode=light] { --panel: rgba(255, 255, 255, 0.9); }
 
         /* ---- header (same look as the dashboard) ---- */
         header {
@@ -71,7 +72,11 @@
                   background: rgba(0, 0, 0, 0.22); border: 1px solid var(--glass-border); }
         html[data-theme-mode=light] .search { background: rgba(255, 255, 255, 0.7); }
         .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--text); font: inherit; font-size: 14px; }
-        .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filters { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px;
+                   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 22px), transparent 100%);
+                   mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 22px), transparent 100%); }
+        .filters::-webkit-scrollbar { display: none; }
+        .filters button { flex: 0 0 auto; white-space: nowrap; }
         .filters button {
             padding: 5px 11px; border-radius: 999px; border: 1px solid var(--glass-border); background: none; cursor: pointer;
             color: var(--text-dim); font: inherit; font-size: 12px; font-weight: 650;
@@ -171,6 +176,8 @@
         #gate { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; padding: 20px; }
         #gate .card { max-width: 380px; padding: 26px 24px; border-radius: var(--radius-lg); text-align: center; display: flex; flex-direction: column; gap: 12px; }
         #panelToggle { display: none; }
+        .p-grab { display: none; }
+        .p-foot a { color: var(--accent); text-decoration: none; }
 
         /* ---- embedded in the dashboard (iframe) ---- */
         body.embed header { display: none; }
@@ -183,13 +190,23 @@
             .logo { height: 34px; } h1 { font-size: 17px; } .sub { font-size: 11px; max-width: 46vw; }
             .chips .hide-m { display: none; }
             .chip { padding: 5px 9px; font-size: 11.5px; }
-            #panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 46vh; transition: height 0.25s ease; }
-            #panel.min { height: 112px; }
+            #panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 50vh; transition: height 0.25s ease; }
+            #panel.min { height: 54px; }
+            #panel.min .p-head, #panel.min .p-tabs, #panel.min .p-body, #panel.min .p-foot { display: none; }
+            .p-grab { display: flex; align-items: center; gap: 10px; position: relative; width: 100%; padding: 18px 16px 10px; border: 0;
+                      background: none; color: var(--text); font: inherit; font-size: 13.5px; cursor: pointer; }
+            .p-grab .bar { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 40px; height: 5px; border-radius: 3px;
+                           background: rgba(127, 127, 127, 0.55); }
+            .p-grab .sum b { color: var(--accent); }
+            .p-grab .chev { margin-left: auto; color: var(--text-dim); transition: transform 0.2s; transform: rotate(180deg); }
+            #panel.min .p-grab .chev { transform: none; }
+            #panel:not(.min) .p-grab { padding-bottom: 4px; }
+            .leaflet-control-attribution { font-size: 9px; max-width: calc(100vw - 20px); }
             #panelToggle { display: inline-flex; }
             body.embed #panel { left: 6px; right: 6px; bottom: 6px; top: auto; }
             .leaflet-top.leaflet-right { top: 64px; }
-            .leaflet-bottom.leaflet-right { bottom: calc(46vh + 10px); }
-            body.panel-min .leaflet-bottom.leaflet-right { bottom: 122px; }
+            .leaflet-bottom.leaflet-right { bottom: calc(50vh + 10px); }
+            body.panel-min .leaflet-bottom.leaflet-right { bottom: 64px; }
         }
     </style>
 </head>
@@ -198,7 +215,7 @@
 
 <header class="glass">
     <a class="brand" id="brand" href="/aprs">
-        <img class="logo" id="logo" src="/static/n8schicht-icon.svg" alt="">
+        <img class="logo" id="logo" src="/static/n8schicht-aprs-logo.svg" alt="">
         <div style="min-width:0"><h1 id="title">APRS</h1><div class="sub" id="subtitle">APRS map</div></div>
     </a>
     <div class="chips">
@@ -206,12 +223,16 @@
         <span class="chip hide-m" title="Stations on the map"><span>📍</span><b id="cntStations">0</b><span class="hide-m">stations</span></span>
         <span class="chip hide-m" id="dmrChip" title="Stations with a position from a DMR radio"><span>📻</span><b id="cntDmr">0</b><span>DMR</span></span>
         <span class="chip hide-m" id="isChip" title="Connection to the APRS network">🌍 <span class="netname">APRS-IS</span></span>
-        <button class="chip" id="panelToggle" onclick="togglePanel()">☰</button>
         <a class="chip primary" id="dashLink" href="/">📊 <span class="hide-m">Dashboard</span></a>
     </div>
 </header>
 
 <aside id="panel" class="glass">
+    <button class="p-grab" type="button" onclick="togglePanel()" aria-label="Show or hide the station list">
+        <span class="bar"></span>
+        <span class="sum">📍 <b id="grabStations">0</b> stations · 📻 <b id="grabDmr">0</b> DMR</span>
+        <span class="chev">▴</span>
+    </button>
     <div class="p-head">
         <label class="search">🔎 <input id="q" type="search" placeholder="Callsign, DMR ID or comment" autocomplete="off" spellcheck="false"></label>
         <div class="filters" id="filters">
@@ -232,11 +253,12 @@
         <div class="legend"><span><i style="background:#bf5af2"></i>DMR</span><span><i style="background:#0a84ff"></i>Repeater</span>
             <span><i style="background:#30d158"></i>Client</span><span><i style="background:#8e8e93"></i><span class="netname">APRS-IS</span></span></div>
         <span id="connectInfo" style="margin-left:auto"></span>
+        <span style="width:100%;font-size:10.5px">Symbols <a href="https://github.com/hessu/aprs-symbols" target="_blank" rel="noopener">hessu/aprs-symbols</a></span>
     </div>
 </aside>
 
 <div id="gate"><div class="card glass">
-    <img src="/static/n8schicht-icon.svg" alt="" style="width:64px;height:64px;margin:0 auto" id="gateLogo">
+    <img src="/static/n8schicht-aprs-logo.svg" alt="" style="width:64px;height:64px;margin:0 auto" id="gateLogo">
     <h2 style="font-size:19px">🔐 Please log in</h2>
     <p style="color:var(--text-dim);font-size:13.5px">The APRS map of this server is only visible to logged-in users.</p>
     <a class="btn primary" id="gateLink" href="/" style="padding:10px 14px;font-size:14px">Log in on the dashboard</a>
@@ -320,7 +342,8 @@ function initMap() {
     const dark = c.dark === 'dark' || (c.dark === 'auto' && document.documentElement.dataset.themeMode !== 'light');
     document.getElementById('map').classList.toggle('tiles-dark', dark);
     L.tileLayer(c.tiles, { maxZoom: 19, subdomains: 'abc', crossOrigin: true,
-        attribution: c.attribution + ' | Symbols <a href="https://github.com/hessu/aprs-symbols">hessu/aprs-symbols</a>' }).addTo(map);
+        attribution: c.attribution }).addTo(map);
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     const Locate = L.Control.extend({ options: { position: 'topright' }, onAdd() {
         const d = L.DomUtil.create('div', 'leaflet-bar');
         d.innerHTML = '<a href="#" class="ctl-btn" title="Show all stations">🧭</a>';
@@ -447,6 +470,8 @@ function renderList() {
     set('nAll', c.all); set('nDmr', c.dmr); set('nRpt', c.rpt); set('nLocal', c.local); set('nIs', c.aprsis); set('nWx', c.wx);
     document.getElementById('cntStations').textContent = c.all;
     document.getElementById('cntDmr').textContent = c.dmr;
+    document.getElementById('grabStations').textContent = c.all;
+    document.getElementById('grabDmr').textContent = c.dmr;
     const body = document.getElementById('pBody');
     if (S.tab === 'packets') { renderPackets(body); return; }
     const list = [...S.stations.values()].filter(s => s.lat != null && matchesFilter(s)).sort((a, b) => b.ts - a.ts).slice(0, 400);
@@ -543,9 +568,9 @@ async function start() {
     try { N8Theme.apply(c.theme || {}); } catch (e) { }
     document.documentElement.style.setProperty('--logo-size', `${Math.max(24, Math.min(96, Number(c.logo_size || 44)))}px`);
     document.documentElement.style.setProperty('--logo-radius', `${Math.max(0, Math.min(50, Number(c.logo_radius || 0)))}%`);
-    const logo = c.site.logo || '/static/n8schicht-icon.svg';
+    const logo = c.site.logo || '/static/n8schicht-aprs-logo.svg';
     document.getElementById('logo').src = logo; document.getElementById('gateLogo').src = logo;
-    document.getElementById('favicon').href = c.site.logo || c.favicon || '/static/n8schicht-icon.svg';
+    document.getElementById('favicon').href = c.site.logo || '/static/n8schicht-aprs-icon.svg';
     document.getElementById('title').textContent = c.site.title;
     document.getElementById('subtitle').textContent = c.site.subtitle;
     document.title = `${c.site.title} · APRS`;

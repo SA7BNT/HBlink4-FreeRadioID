@@ -60,9 +60,9 @@ Fertig: Die Karte ist unter `https://aprs.example.org/`, `https://map.example.or
 <p align="center"><img src="../images/aprs-station.jpg" alt="Station mit Detailfenster und Spur" width="90%"></p>
 
 - **Kopfzeile** wie im Dashboard: Logo, Titel und Untertitel der Domain, **Live**-Status, Zahl der Stationen und der DMR-Stationen, Zustand der Verbindung zum APRS-Netz (APRS-IS bzw. CB-APRS) und der Knopf **📊 Dashboard**.
-- **Stationsliste** links (am Smartphone unten, mit ☰ ein- und ausklappbar): neueste zuerst, mit APRS-Symbol, Herkunft, Kommentar, Alter und Geschwindigkeit. Ein Klick zeigt die Station auf der Karte.
+- **Stationsliste** links (am Smartphone als Leiste unten mit der Zahl der Stationen und DMR-Stationen; antippen klappt die Liste auf und zu): neueste zuerst, mit APRS-Symbol, Herkunft, Kommentar, Alter und Geschwindigkeit. Ein Klick zeigt die Station auf der Karte.
 - **Suche** nach Rufzeichen, DMR-ID, Name oder Kommentar.
-- **Filter:** 📻 DMR · 📡 Repeater · 🖥️ Clients (Apps an deinem Server) · 🌍 APRS-IS bzw. CB-APRS (Downlink) · 🌦️ Wetter.
+- **Filter** in einer Zeile (seitlich wischen): 📻 DMR · 📡 Repeater · 🖥️ Clients (Apps an deinem Server) · 🌍 APRS-IS bzw. CB-APRS (Downlink) · 🌦️ Wetter.
 - **Farben:** DMR-Stationen leuchten violett, Repeater blau, eigene Clients grün, Stationen aus dem Downlink grau. Neue Positionen pulsieren kurz.
 - **Detailfenster:** letzte Meldung, Position mit **QTH-Locator**, Geschwindigkeit, Richtung, Höhe, bei DMR-Stationen **DMR-ID, Talkgroup, über welchen Repeater/Hotspot** und wie die Position kam (im Sprachruf, Datenruf NMEA oder LRRP), Avatar von FreeRadioID, Kommentar, Wetterwerte, die letzten Rohpakete, **〰️ Track** (Spur) und ein Link zu aprs.fi.
 - **📜 Live packets:** die Rohpakete in Echtzeit (abschaltbar).
@@ -80,6 +80,20 @@ Fertig: Die Karte ist unter `https://aprs.example.org/`, `https://map.example.or
 <p align="center"><img src="../images/aprs-dashboard-tab.jpg" alt="APRS-Tab im Dashboard" width="85%"></p>
 
 **Wer sieht die Karte?** *Map → Map visible without login* (Vorgabe: an) gilt unabhängig vom Dashboard. Ist es aus, sehen nur angemeldete Benutzer die Karte. IP-Adressen erscheinen auf der Karte nie.
+
+### Logo und Icon
+
+<p align="center"><img src="../images/aprs-logo.png" alt="N8schicht-APRS-Logo und -Icon" width="85%"></p>
+
+Die Karte hat ein eigenes Logo im N8schicht-Design: Nachthimmel mit Mond wie beim DMR-Logo, dazu ein grüner Karten-Pin mit Funkwellen, eine gepunktete APRS-Spur und die Plakette **APRS**. Das **Icon** (ohne Schrift, bis 16 px lesbar) ist Favicon, Browser-Tab und App-Symbol auf dem Smartphone-Homescreen.
+
+| Datei | Verwendung |
+|---|---|
+| `dashboard/static/n8schicht-aprs-logo.svg` | Logo in der Kopfzeile der Karte, wenn für die Domain kein eigenes Logo hochgeladen ist |
+| `dashboard/static/n8schicht-aprs-icon.svg` | Favicon der Karte |
+| `dashboard/static/n8schicht-aprs-icon-192.png` | Apple-Touch-Icon / Homescreen |
+
+Ein eigenes Logo pro Domain lädst du unter **📡 APRS → Domains** hoch; **↺ Default** stellt das APRS-Logo wieder her.
 
 ## DAPRS: GPS von DMR-Funkgeräten
 
@@ -176,7 +190,7 @@ Der Uplink schickt deine Pakete (DMR-Positionen, Pakete deiner Clients, auf Wuns
 Unter **📡 APRS → Domains** trägst du bis zu **drei Domains** ein, z. B. `aprs.example.org`, `aprs2.example.org` und `map.example.org`. Jede Domain
 
 - öffnet **unter `/` direkt die Karte** (das Dashboard bleibt dort unter `/dashboard` erreichbar),
-- hat einen eigenen **Titel**, **Untertitel** und ein eigenes **Logo** (Upload wie unter Appearance; leer = Logo des Dashboards),
+- hat einen eigenen **Titel**, **Untertitel** und ein eigenes **Logo** (Upload wie unter Appearance; leer = [N8schicht-APRS-Logo](#logo-und-icon)),
 - kommt mit **HTTPS with Let's Encrypt** (Vorgabe: an) als **zusätzlicher Name in das Zertifikat** des Dashboards.
 
 So funktioniert das Zertifikat:
@@ -216,7 +230,7 @@ Alle Werte liegen in SQLite (`dashboard/data/dashboard.db`).
 | 🛰️ DAPRS decoding (DMR-Server) | `dmr.daprs.enabled`, `dmr.daprs.embedded_gps`, `dmr.daprs.data_gps`, `dmr.daprs.data_ids` | folgt `aprs.enabled`, an, an, alle Ziele |
 | 📍 DMR → APRS | `daprs.enabled`, `daprs.to_aprsis`, `daprs.block_guests`, `daprs.ssid`, `daprs.symbol`, `daprs.comment`, `daprs.min_interval`, `daprs.overrides` (Liste aus `dmr_id`, `callsign`, `ssid`, `symbol`, `comment`, `off`), `daprs.objects.repeaters` / `.hotspots` / `.to_aprsis` / `.interval_min` / `.comment` / `.repeater_symbol` / `.hotspot_symbol` | an, an, an, 7, `/[`, `DMR TG{tg}`, 60 s, leer, an / **aus** / aus / 30 min / `DMR` / `/r` / `/n` |
 | 🗺️ Map | `aprs.map.public`, `.dashboard_tab`, `.sources` (`all`/`local`), `.max_age_hours`, `.center`, `.zoom`, `.tiles` (`auto`/`dark`/`osm`/`topo`/`custom`), `.tile_url`, `.tracks`, `.show_packets`, `.station_days`, `.track_days`, `.packet_days` | an, an, alle, 24 h, `51.2, 10.4`, 6, auto, leer, an, an, 30, 30, 7 Tage |
-| 🌐 Domains 🔄 | `aprs.site1.domain` … `aprs.site3.domain`, je `.https`, `.title`, `.subtitle`, `.logo` | leer, HTTPS an, Titel/Logo des Dashboards |
+| 🌐 Domains 🔄 | `aprs.site1.domain` … `aprs.site3.domain`, je `.https`, `.title`, `.subtitle`, `.logo` | leer, HTTPS an, Titel des Dashboards, APRS-Logo |
 
 🔄 = Domains wirken nach einem Neustart des Dashboards; alles andere sofort.
 
