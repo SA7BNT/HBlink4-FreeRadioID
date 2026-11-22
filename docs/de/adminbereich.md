@@ -112,7 +112,7 @@ Rechts zeigt eine **Vorschau** Browser-Tab und Kopfzeile. Gleichzeitig ändert s
 | Bereich | Einstellungen |
 |---|---|
 | 🏷️ **Titles** | **Title** (groß neben dem Logo), **Subtitle** (Zeile darunter), **Description** (im Tab *Configuration*), **Browser tab title** (leer = Title) |
-| 🎨 **Colours** | **Farbprofil** per Klick: 🌙 N8 Night (Vorgabe), 🌊 Ocean, 🌌 Aurora, 🔥 Ember, 🔮 Violet, ⚫ Graphite. Fein einstellen mit **Accent colour** (Knöpfe, Zahlen, aktive Tabs), **Background colour**, **Background glow** (0 = flach), **Card brightness** und **Glass blur effect** (aus = schneller auf alten Handys). **↺** setzt eine Farbe zurück aufs Profil. |
+| 🎨 **Colours** | **Farbprofil** per Klick: 🌙 N8 Night (Vorgabe), 🌊 Ocean, 🌌 Aurora, 🔥 Ember, 🔮 Violet, ⚫ Graphite und ☀️ **Daylight** (hell). Danach **jede Farbe einzeln**: *Accent* (Knöpfe, Zahlen, aktive Tabs), *Accent 2* (Verlauf von Knöpfen und Titel), *Background*, die drei Leuchtfarben *Glow top left / top right / bottom*, *Text* und *Card tint*. „from profile“ = Farbe kommt aus dem Profil, **↺** setzt sie zurück. Regler: **Background glow** (0 = flach), **Card brightness**, **Roundness** (Ecken, 0–28 px) und **Glass blur** (aus = schneller auf alten Handys). Unter den Reglern prüft eine **Lesbarkeitsanzeige** den Kontrast von Text zu Hintergrund und warnt unter 4,5 : 1. |
 | 🖼️ **Logo & browser icon** | **⬆️ Upload image**: PNG, JPEG, WebP, GIF oder SVG, höchstens 1 MB; das Favicon auch als ICO. Alternativ die Adresse eines Bildes. **↺ N8 logo** stellt das N8schicht-Logo wieder her. Dazu **Logo size** (24–96 px) und **Logo corners** (0 = wie gezeichnet, 50 = rund). |
 
 <p align="center">
@@ -120,6 +120,20 @@ Rechts zeigt eine **Vorschau** Browser-Tab und Kopfzeile. Gleichzeitig ändert s
 </p>
 
 <p align="center"><img src="../images/admin-appearance-ember.png" alt="Farbprofil Ember als Vorschau" width="80%"></p>
+
+**☀️ Daylight** ist das helle Profil für Tageslicht und helle Räume. Alle Bereiche – Live, Statistik, OpenBridge, Talkgroups,
+Dialoge und der Adminbereich – haben dafür eine eigene helle Darstellung (`dashboard/static/n8-light.css`):
+
+<p align="center">
+  <img src="../images/theme-daylight.png" alt="Dashboard im Profil Daylight" width="68%">
+  &nbsp;
+  <img src="../images/admin-appearance-daylight.png" alt="Appearance im Profil Daylight" width="28%">
+</p>
+
+**Dieselbe Farb-Engine in allen N8-Oberflächen.** Das *N8 Theme* (`n8-theme.js`, `n8theme.py`) steckt genauso in der
+[FRN-Weboberfläche](https://github.com/dhartmann1979/adn-frn-server) (Admin → Theme) und im
+[N8-Hotspot](https://github.com/dhartmann1979/N8-HotSpot) (Admin → Appearance). Ein Farbschema lässt sich dort als JSON
+kopieren und hier wieder einsetzen – oder umgekehrt –, dann sehen alle drei gleich aus.
 
 **↺ N8 standard** stellt Farben und Logo-Größe auf das N8-Design zurück. Hochgeladene Bilder liegen in der Datenbank und sind unter `/branding/logo` und `/branding/favicon` erreichbar. SVG-Dateien mit Skripten oder externen Links werden abgelehnt.
 
@@ -132,10 +146,21 @@ Eigene Links für alle Besucher, auch ohne Login: Webseite, Chat-Gruppe, Wiki, K
 - **Show the link menu** schaltet das Menü ein.
 - **Menu button text**: Beschriftung des Knopfs, Vorgabe „🔗 Links“.
 - **Display**: *Button with drop-down menu* (ein Knopf oben rechts mit aufklappender Liste) oder *Row of buttons under the header* (alle Links nebeneinander unter der Kopfzeile).
-- **Links**: Emoji, Name, Adresse und ob der Link in einem neuen Tab öffnet. Mit **↑ ↓** sortieren, **🗑** löschen, **➕ Add link** oder die Schnellstart-Knöpfe (Website, Chat, E-Mail, Setup-Tab) zum Anlegen. Erlaubt sind `https://…`, `mailto:…`, Pfade wie `/static/…` und Tabs wie `#config`.
+- **Links**: Emoji, Name, Adresse, ob der Link in einem neuen Tab öffnet und ob das **Site-Icon** der Seite gezeigt wird. Mit **↑ ↓** sortieren, **🗑** löschen, **➕ Add link** oder die Schnellstart-Knöpfe (Website, Chat, E-Mail, Setup-Tab) zum Anlegen. Erlaubt sind `https://…`, `mailto:…`, Pfade wie `/static/…` und Tabs wie `#config`.
 - Unter *Advanced* bleibt der frühere einzelne **Network-Info-Knopf**.
 
-<p align="center"><img src="../images/links-menu.png" alt="Link-Menü in der Kopfzeile" width="80%"></p>
+<p align="center"><img src="../images/links-menu.png" alt="Link-Menü mit Site-Icons" width="55%"></p>
+
+**🌐 Site-Icons.** Für Web-Links (`https://`, `http://`) holt das Dashboard das Favicon der verlinkten Seite – aus
+`<link rel="icon">` der Startseite oder `/favicon.ico` – und legt es in seiner SQLite-Datenbank ab (Tabelle `link_icons`,
+30 Tage gültig; fehlt eins, wird es nach einer Stunde neu versucht). Abgerufen wird beim Start und nach jedem Speichern der Links.
+Der Browser holt das Bild dann vom Dashboard (`/api/link-icon/…`), nicht von der fremden Seite – Besucher hinterlassen dort also
+keine Spuren. Gibt es kein Icon oder ist die Seite nicht erreichbar, steht das Emoji da. Für `mailto:`, `/pfad` und `#tab` ist der
+Schalter grau.
+
+Sicherheit: Nur öffentliche Adressen werden abgefragt (keine privaten oder lokalen IPs, auch nicht über Weiterleitungen),
+höchstens 256 KB, nur echte Bilddateien (PNG, ICO, GIF, JPEG, WebP, SVG); SVG mit Skripten oder externen Verweisen wird verworfen.
+Ausgeliefert wird mit strenger Content-Security-Policy und nur für Links, die wirklich eingetragen sind.
 
 ## ↔️ OpenBridge
 

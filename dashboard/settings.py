@@ -73,6 +73,7 @@ THEME_PRESETS = (
     ("ember", "🔥 Ember (orange)"),
     ("violet", "🔮 Violet"),
     ("graphite", "⚫ Graphite"),
+    ("daylight", "☀️ Daylight (light)"),
 )
 
 DASH_FIELDS: List[Field] = [
@@ -85,9 +86,16 @@ DASH_FIELDS: List[Field] = [
     # -- appearance: colours
     Field("theme.preset", "appearance", "Colour profile", "choice", "n8", choices=THEME_PRESETS),
     Field("theme.accent", "appearance", "Accent colour", "color", "", "Buttons, numbers, active tabs. Empty = from the profile"),
+    Field("theme.accent2", "appearance", "Accent colour 2", "color", "", "Second colour of buttons and the title"),
     Field("theme.background", "appearance", "Background colour", "color", "", "Empty = from the profile"),
+    Field("theme.glow1", "appearance", "Glow top left", "color", ""),
+    Field("theme.glow2", "appearance", "Glow top right", "color", ""),
+    Field("theme.glow3", "appearance", "Glow bottom", "color", ""),
+    Field("theme.text", "appearance", "Text colour", "color", "", "Empty = suits the background automatically"),
+    Field("theme.panel", "appearance", "Card tint", "color", "", "Colour mixed into the glass cards"),
     Field("theme.glow", "appearance", "Background glow", "int", 100, "0 = flat background", min=0, max=150),
     Field("theme.glass", "appearance", "Card brightness", "int", 50, "How bright the glass cards are", min=0, max=100),
+    Field("theme.radius", "appearance", "Roundness (px)", "int", 22, "Corners of cards and buttons", min=0, max=28),
     Field("theme.blur", "appearance", "Glass blur effect", "bool", True, "Off = faster on old phones"),
     # -- appearance: logos
     Field("logo", "appearance", "Logo", "image", "", "Empty = N8schicht logo"),

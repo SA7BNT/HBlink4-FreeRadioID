@@ -40,6 +40,7 @@ from .tgstats import TGStats, parse_names as _parse_tg_names, RANGES as TG_RANGE
 from .obpstats import OBPStats
 from .talkgroups import Talkgroups
 from . import version as _version
+from . import siteicons as _siteicons
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -250,6 +251,7 @@ class DashboardState:
         # Users, sessions, audit log and settings (SQLite)
         _ensure_writable(self._data_dir)
         self.auth = AuthStore(self._data_dir / "dashboard.db")
+        self.icons = _siteicons.IconCache(self._data_dir / "dashboard.db")   # favicons of the link menu
         self.auth.sync_superadmin((dashboard_config.get("auth") or {}).get("superadmin") or {})
 
         # FreeRadioID avatars, cached in the same database
@@ -1541,6 +1543,8 @@ async def admin_save_settings(request: Request, body: dict = Body(...)):
     if changed:
         state.auth.audit("settings_changed", actor["username"], ", ".join(changed), _client_ip(request))
     await _after_settings_change(changed)
+    if "links.items" in changed:
+        asyncio.create_task(_refresh_link_icons())
     return _settings_result(changed)
 
 
@@ -1625,6 +1629,8 @@ async def import_apply(request: Request, body: dict = Body(...)):
     state.auth.audit("config_imported", actor["username"], f"{body.get('format', '')}: {', '.join(changed)}",
                      _client_ip(request))
     await _after_settings_change(changed)
+    if "links.items" in changed:
+        asyncio.create_task(_refresh_link_icons())
     return _settings_result(changed)
 
 
@@ -1640,6 +1646,8 @@ async def admin_reset_settings(request: Request, body: dict = Body(...)):
     changed = [k for k in FIELD_BY_KEY if _get_cfg(k) != before[k]]
     state.auth.audit("settings_reset", actor["username"], section, _client_ip(request))
     await _after_settings_change(changed)
+    if "links.items" in changed:
+        asyncio.create_task(_refresh_link_icons())
     return _settings_result(changed)
 
 
@@ -1821,7 +1829,47 @@ async def get_config():
     tgs = _tg_cfg()
     cfg["tg_stats"] = {"enabled": bool(tgs.get("enabled", True)), "public": bool(tgs.get("public", True))}
     cfg["connect"] = {"enabled": bool((dashboard_config.get("connect") or {}).get("enabled", True))}
+    # link menu: address of the cached site icon of every web link
+    links = dict(cfg.get("links") or {})
+    if links.get("items"):
+        links["items"] = [{**i, "icon_key": _siteicons.key_for(i["url"]) if i.get("site_icon", True) else None}
+                          for i in links["items"] if isinstance(i, dict)]
+        cfg["links"] = links
     return cfg
+
+
+def _link_icon_urls() -> List[str]:
+    items = ((dashboard_config.get("links") or {}).get("items")) or []
+    return [i["url"] for i in items if isinstance(i, dict) and i.get("site_icon", True) is not False
+            and _siteicons.origin_for(i.get("url", ""))]
+
+
+async def _refresh_link_icons(force: bool = False) -> None:
+    urls = _link_icon_urls()
+    if urls:
+        try:
+            await asyncio.to_thread(state.icons.refresh_many, urls, force)
+        except Exception as e:
+            logger.debug(f"link icons: {e}")
+
+
+@app.get("/api/link-icon/{key}")
+async def link_icon(key: str):
+    """Cached favicon of a linked website (only for links that are in the menu)."""
+    if not re.fullmatch(r"[0-9a-f]{64}", key):
+        raise _HTTPError(404, "unknown icon")
+    url = next((u for u in _link_icon_urls() if _siteicons.key_for(u) == key), None)
+    if not url:
+        raise _HTTPError(404, "unknown icon")
+    icon = state.icons.cached(key)
+    if icon is None:                       # not fetched yet: fill the cache now (once per hour at most)
+        await asyncio.to_thread(state.icons.refresh_one, url)
+        icon = state.icons.cached(key)
+    if icon is None:
+        raise _HTTPError(404, "no icon")
+    return Response(icon["data"], media_type=icon["content_type"], headers={
+        "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:"})
 
 
 @app.get("/api/repeaters")
@@ -2324,6 +2372,7 @@ if static_path.exists():
 @app.on_event("startup")
 async def _start_update_loop():
     asyncio.create_task(_update_loop())
+    asyncio.create_task(_refresh_link_icons())
 
 
 @app.on_event("startup")

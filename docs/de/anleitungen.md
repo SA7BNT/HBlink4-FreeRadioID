@@ -103,8 +103,8 @@ Beispiel: Trunk zum Funkerportal (`freedmr.funkerportal.de`).
 
 1. **⚙️ Admin area → 🎨 Appearance**.
 2. **🏷️ Titles**: Titel, Untertitel und Titel im Browser-Tab eintragen.
-3. **🎨 Colours**: Ein Farbprofil anklicken. Das Dashboard hinter dem Fenster zeigt es sofort.
-4. Feinschliff: eigene **Accent colour**, **Background colour**, **Background glow**, **Card brightness**. **↺** setzt eine Farbe aufs Profil zurück.
+3. **🎨 Colours**: Ein Farbprofil anklicken (für ein helles Dashboard **☀️ Daylight**). Das Dashboard hinter dem Fenster zeigt es sofort.
+4. Feinschliff: unter *Own colours* eine Farbe anklicken und ändern – Akzent, Akzent 2, Hintergrund, die drei Leuchtfarben, Text oder Kartentönung –, dazu **Background glow**, **Card brightness**, **Roundness**. **↺** setzt eine Farbe aufs Profil zurück. Achte auf die Lesbarkeitsanzeige unter der Vorschau.
 5. **🖼️ Logo**: **⬆️ Upload image** (PNG, JPEG, WebP, GIF oder SVG, bis 1 MB), Größe und Ecken mit den Reglern. Darunter das Browser-Icon.
 6. **💾 Save appearance**. Gefällt es nicht: Fenster schließen, dann ist alles wie vorher; **↺ N8 standard** stellt das N8-Design wieder her.
 
@@ -118,8 +118,9 @@ Beispiel: Trunk zum Funkerportal (`freedmr.funkerportal.de`).
 2. **Show the link menu** einschalten.
 3. **➕ Add link** oder ein Schnellstart-Knopf (🌐 Website, 💬 Chat, ✉️ E-Mail, 🛠️ Setup tab).
 4. Pro Link: Emoji, Name und Adresse (`https://…`, `mailto:…` oder `#config` für den Setup-Tab). Mit **↑ ↓** sortieren.
+   **site icon** an lassen, dann zeigt das Menü das Favicon der Webseite (das Emoji bleibt als Ersatz, falls die Seite keins hat).
 5. *Display*: Knopf mit Ausklappliste oder Knopfreihe unter der Kopfzeile.
-6. **💾 Save links**. Das Menü erscheint sofort für alle Besucher.
+6. **💾 Save links**. Das Menü erscheint sofort für alle Besucher; die Site-Icons kommen nach wenigen Sekunden dazu.
 
 <p align="center"><img src="../images/links-menu.png" alt="Link-Menü in der Kopfzeile" width="70%"></p>
 

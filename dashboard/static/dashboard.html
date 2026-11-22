@@ -8,6 +8,9 @@
     <link rel="alternate icon" type="image/png" href="/static/n8schicht-icon-192.png">
     <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
     <meta name="theme-color" content="#0b1224">
+    <link rel="stylesheet" href="/static/n8-theme.css">
+    <script src="/static/n8-theme.js"></script>
+    <link rel="stylesheet" href="/static/n8-light.css" id="n8LightCss">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -1770,6 +1773,11 @@
         .upd-notes ul { margin: 2px 0 4px 18px; padding: 0; } .upd-notes li { margin: 2px 0; }
         .upd-notes p { margin: 3px 0; }
         .update-banner .upd-notes { margin: 4px 0 6px; }
+
+        /* site icons in the link menu */
+        .li-ic { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: 0 0 auto; }
+        .li-fav { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; }
+        .ln-site.off { opacity: .4; }
         /* ---- admin fixes ---- */
         /* fixed-height window: header, tab bar and area selector keep their size, only the body scrolls */
         .modal-content.admin > :not(.admin-body) { flex-shrink: 0; }
@@ -1910,7 +1918,7 @@
                        padding: 6px 12px; border-radius: 999px; background: var(--glass-bg); border: 1px solid var(--glass-border); }
         .links-bar a:hover { border-color: rgba(var(--accent-rgb), .5); }
         .ln-list { display: flex; flex-direction: column; gap: 6px; }
-        .ln-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1.4fr) auto auto; gap: 6px; align-items: center;
+        .ln-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1.4fr) auto auto auto; gap: 6px; align-items: center;
                   background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 6px; }
         .ln-row input:not([type=checkbox]) { width: 100%; }
         .ln-icon { text-align: center; font-size: 16px; }
@@ -3306,49 +3314,24 @@
         }
 
         // ================= Appearance: colour profiles, titles, logos =================
-        const THEMES = {
-            n8:       { accent: '#5ac8fa', bg: '#070b17', glows: ['#0a84ff', '#bf5af2', '#30d158'] },
-            ocean:    { accent: '#22d3ee', bg: '#04121c', glows: ['#0ea5e9', '#14b8a6', '#3b82f6'] },
-            aurora:   { accent: '#34d399', bg: '#04130e', glows: ['#10b981', '#22d3ee', '#a3e635'] },
-            ember:    { accent: '#fb923c', bg: '#140906', glows: ['#f97316', '#ef4444', '#facc15'] },
-            violet:   { accent: '#c084fc', bg: '#0d0918', glows: ['#8b5cf6', '#ec4899', '#6366f1'] },
-            graphite: { accent: '#a3b1c6', bg: '#0b0c0f', glows: ['#64748b', '#475569', '#94a3b8'] },
-        };
         const hexRgb = h => { const n = parseInt((h || '#000000').slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
         const mixHex = (h, w, t) => { const a = hexRgb(h), b = hexRgb(w); return '#' + a.map((x, i) => Math.round(x + (b[i] - x) * t).toString(16).padStart(2, '0')).join(''); };
 
         // cfg: { theme: {preset, accent, background, glow, glass, blur}, logo_size, logo_radius }
+        // cfg: { theme: {preset, accent, accent2, background, glow1..3, text, panel, glow, glass, blur, radius}, logo_size, logo_radius }
+        // The colours themselves come from the shared N8 Theme 2 engine (static/n8-theme.js).
         function applyTheme(cfg) {
-            const t = (cfg && cfg.theme) || {};
-            const p = THEMES[t.preset] || THEMES.n8;
-            const accent = /^#[0-9a-f]{6}$/i.test(t.accent || '') ? t.accent : p.accent;
-            const bg = /^#[0-9a-f]{6}$/i.test(t.background || '') ? t.background : p.bg;
-            const glow = Math.max(0, Math.min(150, Number(t.glow ?? 100))) / 100;
-            const glass = Math.max(0, Math.min(100, Number(t.glass ?? 50))) / 100;
+            cfg = cfg || {};
+            N8Theme.apply(cfg.theme || {});
             const root = document.documentElement.style;
-            root.setProperty('--accent', accent);
-            root.setProperty('--accent-rgb', hexRgb(accent).join(', '));
-            root.setProperty('--title-to', mixHex(accent, '#ffffff', 0.45));
-            root.setProperty('--glass-bg', `rgba(255, 255, 255, ${(0.02 + glass * 0.07).toFixed(3)})`);
-            root.setProperty('--glass-blur', t.blur === false ? 'none' : 'blur(22px) saturate(170%)');
             root.setProperty('--logo-size', `${Math.max(24, Math.min(96, Number(cfg.logo_size || 44)))}px`);
             root.setProperty('--logo-radius', `${Math.max(0, Math.min(50, Number(cfg.logo_radius || 0)))}%`);
-            const g = (c, a) => `rgba(${hexRgb(c).join(', ')}, ${(a * glow).toFixed(3)})`;
-            let el = document.getElementById('themeStyle');
-            if (!el) { el = document.createElement('style'); el.id = 'themeStyle'; document.head.appendChild(el); }
-            el.textContent = `body { background:
-                radial-gradient(1100px 700px at 8% -10%, ${g(p.glows[0], 0.35)}, transparent 60%),
-                radial-gradient(900px 650px at 100% 0%, ${g(p.glows[1], 0.28)}, transparent 60%),
-                radial-gradient(900px 700px at 50% 110%, ${g(p.glows[2], 0.18)}, transparent 60%),
-                linear-gradient(180deg, ${bg} 0%, ${mixHex(bg, '#1a2440', 0.18)} 100%) !important;
-                background-attachment: fixed !important; }
-                .btn-primary, .btn-s.btn-primary { background: linear-gradient(135deg, ${accent}, ${mixHex(accent, '#5e5ce6', 0.55)}) !important; }`;
         }
 
         function appearanceValues(form) {
             const v = k => form.elements[k] ? (form.elements[k].type === 'checkbox' ? form.elements[k].checked : form.elements[k].value) : undefined;
-            return { theme: { preset: v('theme.preset'), accent: v('theme.accent'), background: v('theme.background'),
-                              glow: v('theme.glow'), glass: v('theme.glass'), blur: v('theme.blur') },
+            const ed = document.getElementById('apTheme');
+            return { theme: ed ? N8Theme.readEditor(ed) : {},
                      logo_size: v('logo_size'), logo_radius: v('logo_radius'),
                      dashboard_title: v('dashboard_title'), server_name: v('server_name'),
                      logo: v('logo'), favicon: v('favicon') };
@@ -3363,28 +3346,15 @@
             pv.querySelector('.pv-logo').src = a.logo || '/static/n8schicht-icon.svg';
             pv.querySelector('.pv-fav').src = a.favicon || a.logo || '/static/n8schicht-icon.svg';
             pv.querySelector('.pv-tab-title').textContent = form.elements['page_title'].value || a.dashboard_title || 'DMR Die N8schicht';
-            document.querySelectorAll('#apPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.v === a.theme.preset));
-            const P = THEMES[a.theme.preset] || THEMES.n8;
-            [['theme.accent', P.accent], ['theme.background', P.bg]].forEach(([k, dflt]) => {
-                const t = form.elements[k]; if (!t) return;
-                t.placeholder = dflt;
-                const pick = t.previousElementSibling; if (pick && pick.type === 'color') pick.value = /^#[0-9a-f]{6}$/i.test(t.value) ? t.value : dflt;
-            });
         }
 
-        function presetSwatches(cur) {
-            const f = setField('theme.preset');
-            return `<div class="presets" id="apPresets">${f.choices.map(([k, label]) => {
-                const p = THEMES[k] || THEMES.n8;
-                return `<button type="button" class="preset ${k === cur ? 'active' : ''}" data-v="${k}" onclick="pickPreset(this)"
-                    style="background: radial-gradient(60px 40px at 15% 0%, ${p.glows[0]}88, transparent), radial-gradient(60px 40px at 100% 0%, ${p.glows[1]}77, transparent), ${p.bg}">
-                    <i style="background:${p.accent}"></i><span>${escapeHtml(label)}</span></button>`; }).join('')}</div>`;
-        }
-        function pickPreset(btn) {
-            const form = btn.closest('form');
-            form.elements['theme.preset'].value = btn.dataset.v;
-            form.classList.add('is-dirty');
-            appearancePreview(form);
+        // The theme editor writes into hidden fields named theme.*, so the normal settings save takes them along
+        function themeToFields(form, t) {
+            Object.entries(t).forEach(([k, v]) => {
+                const el = form.elements['theme.' + k]; if (!el) return;
+                const nv = typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v ?? '');
+                if (el.value !== nv) { el.value = nv; form.classList.add('is-dirty'); }
+            });
         }
 
         function imagePicker(f, kind) {
@@ -3427,8 +3397,11 @@
             const sys = await loadSettingsData();
             const F = k => setField(k);
             const row = (k, o) => settingInput(F(k), o);
-            const P = THEMES[F('theme.preset').value] || THEMES.n8;
-            setTimeout(() => { const f = document.getElementById('apForm'); if (f) { setWatch(f); appearancePreview(f);
+            const THEME_KEYS = ['preset', ...N8Theme.COLOR_KEYS, 'glow', 'glass', 'blur', 'radius'];
+            const cur = {}; THEME_KEYS.forEach(k => { const f = F('theme.' + k); if (f) cur[k] = f.value; });
+            setTimeout(() => { const f = document.getElementById('apForm'); if (f) { setWatch(f);
+                N8Theme.bindEditor(document.getElementById('apTheme'), t => { themeToFields(f, t); appearancePreview(f); });
+                appearancePreview(f);
                 f.addEventListener('input', () => appearancePreview(f)); f.addEventListener('change', () => appearancePreview(f)); } });
             return `${adminBanners(sys)}
             <form id="apForm" class="ap-layout" onsubmit="event.preventDefault(); saveAppearance(this)">
@@ -3440,11 +3413,9 @@
                     </section>
                     <section class="tile set-tile">
                         <div class="set-panel-head"><div><h3 class="set-panel-title">🎨 Colours</h3>
-                            <p class="set-panel-help">Pick a profile; fine-tune below if you like. You see the result right away.</p></div></div>
-                        <input type="hidden" name="theme.preset" value="${escapeHtml(F('theme.preset').value)}">
-                        ${presetSwatches(F('theme.preset').value)}
-                        ${row('theme.accent', { placeholder: P.accent })}${row('theme.background', { placeholder: P.bg })}
-                        ${row('theme.glow', { slider: true })}${row('theme.glass', { slider: true })}${row('theme.blur')}
+                            <p class="set-panel-help">Pick a profile, then change any colour you like – or build a completely own scheme. You see the result right away.</p></div></div>
+                        ${THEME_KEYS.map(k => `<input type="hidden" name="theme.${k}" value="${escapeHtml(cur[k] === true ? 'true' : cur[k] === false ? 'false' : (cur[k] ?? ''))}">`).join('')}
+                        ${N8Theme.editorHtml(cur, 'apTheme')}
                     </section>
                     <section class="tile set-tile">
                         <div class="set-panel-head"><div><h3 class="set-panel-title">🖼️ Logo &amp; browser icon</h3>
@@ -3473,8 +3444,9 @@
         function resetAppearance() {
             const f = document.getElementById('apForm');
             const set = (k, v) => { if (f.elements[k]) { if (f.elements[k].type === 'checkbox') f.elements[k].checked = v; else f.elements[k].value = v; } };
-            set('theme.preset', 'n8'); set('theme.accent', ''); set('theme.background', ''); set('theme.glow', 100);
-            set('theme.glass', 50); set('theme.blur', true); set('logo_size', 44); set('logo_radius', 0);
+            N8Theme.setEditor(document.getElementById('apTheme'), N8Theme.DEFAULTS);
+            themeToFields(f, N8Theme.normalize(N8Theme.DEFAULTS));
+            set('logo_size', 44); set('logo_radius', 0);
             f.querySelectorAll('.range-wrap').forEach(w => w.querySelector('output').textContent = w.querySelector('input').value);
             f.classList.add('is-dirty');
             appearancePreview(f);
@@ -3490,8 +3462,13 @@
             const L = (cfg && cfg.links) || {};
             const items = (L.enabled && Array.isArray(L.items)) ? L.items.filter(i => i && i.label && i.url) : [];
             const btn = document.getElementById('linksMenu'), bar = document.getElementById('linksBar');
+            // site icon of the linked page (cached on the server); the emoji stays as fallback
+            const ic = i => i.icon_key
+                ? `<span class="li-ic"><img class="li-fav" src="/api/link-icon/${encodeURIComponent(i.icon_key)}" alt="" loading="lazy"
+                       onerror="this.replaceWith(document.createTextNode(this.dataset.fb))" data-fb="${escapeHtml(i.icon || '🔗')}"></span>`
+                : `<span class="li-ic">${escapeHtml(i.icon || '🔗')}</span>`;
             const a = i => `<a href="${escapeHtml(i.url)}" ${i.new_tab !== false && !/^[#/]/.test(i.url) ? 'target="_blank" rel="noopener"' : ''}>`
-                + `<span class="li-ic">${escapeHtml(i.icon || '🔗')}</span>${escapeHtml(i.label)}</a>`;
+                + `${ic(i)}${escapeHtml(i.label)}</a>`;
             if (!items.length) { btn.hidden = true; bar.hidden = true; return; }
             if (L.style === 'bar') {
                 btn.hidden = true; bar.hidden = false;
@@ -3516,19 +3493,25 @@
                 <div class="ln-row" data-i="${i}">
                     <input class="ln-icon" value="${escapeHtml(it.icon || '')}" placeholder="🔗" maxlength="8" title="Emoji in front of the name" oninput="lnSet(${i}, 'icon', this.value)">
                     <input class="ln-label" value="${escapeHtml(it.label || '')}" placeholder="Name, e.g. N8schicht website" maxlength="40" oninput="lnSet(${i}, 'label', this.value)">
-                    <input class="ln-url" value="${escapeHtml(it.url || '')}" placeholder="https://…" oninput="lnSet(${i}, 'url', this.value)">
+                    <input class="ln-url" value="${escapeHtml(it.url || '')}" placeholder="https://…" oninput="lnSet(${i}, 'url', this.value); lnWeb(this)">
                     <label class="ln-newtab" title="Open in a new browser tab"><span class="switch"><input type="checkbox" ${it.new_tab !== false ? 'checked' : ''} onchange="lnSet(${i}, 'new_tab', this.checked)"><span></span></span> new tab</label>
+                    <label class="ln-newtab ln-site ${/^https?:\/\//i.test(it.url || '') ? '' : 'off'}" title="Show the icon of the linked website instead of the emoji (fetched once and stored on the server; web links only)"><span class="switch"><input type="checkbox" ${it.site_icon !== false ? 'checked' : ''} ${/^https?:\/\//i.test(it.url || '') ? '' : 'disabled'} onchange="lnSet(${i}, 'site_icon', this.checked)"><span></span></span> site icon</label>
                     <span class="ln-move">
                         <button type="button" class="btn-s" title="Up" onclick="lnMove(${i}, -1)" ${i ? '' : 'disabled'}>↑</button>
                         <button type="button" class="btn-s" title="Down" onclick="lnMove(${i}, 1)" ${i < lnItems.length - 1 ? '' : 'disabled'}>↓</button>
                         <button type="button" class="btn-s danger" title="Remove" onclick="lnDel(${i})">🗑</button></span>
                 </div>`).join('') : '<div class="tgs-empty">No links yet. Add the first one below.</div>';
         }
+        // the site icon only exists for web links (https://, http://)
+        function lnWeb(inp) {
+            const lab = inp.closest('.ln-row').querySelector('.ln-site'), web = /^https?:\/\//i.test(inp.value.trim());
+            lab.classList.toggle('off', !web); lab.querySelector('input').disabled = !web;
+        }
         function lnDirty() { const f = document.getElementById('lnForm'); if (f) f.classList.add('is-dirty'); }
         function lnSet(i, k, v) { lnItems[i][k] = v; lnDirty(); }
         function lnMove(i, d) { const j = i + d; [lnItems[i], lnItems[j]] = [lnItems[j], lnItems[i]]; lnRows(); lnDirty(); }
         function lnDel(i) { lnItems.splice(i, 1); lnRows(); lnDirty(); }
-        function lnAdd(tpl) { lnItems.push(tpl || { icon: '🔗', label: '', url: '', new_tab: true }); lnRows(); lnDirty();
+        function lnAdd(tpl) { lnItems.push(tpl || { icon: '🔗', label: '', url: '', new_tab: true, site_icon: true }); lnRows(); lnDirty();
             const rows = document.querySelectorAll('#lnList .ln-label'); if (rows.length) rows[rows.length - 1].focus(); }
 
         async function adminLinks() {

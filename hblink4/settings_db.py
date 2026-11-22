@@ -196,8 +196,10 @@ def validate(field: Field, value: Any) -> Any:
                 raise SettingsError(f"{field.label}: link {i} needs a name.")
             if not (url.startswith("/") or url.startswith("#") or re.match(r"^(https?://|mailto:)", url, re.I)):
                 raise SettingsError(f"{field.label}: link „{label}“ must start with https://, mailto:, / or #.")
+            web = bool(re.match(r"^https?://", url, re.I))
             out.append({"label": label, "url": url, "icon": str(item.get("icon") or "").strip()[:8],
-                        "new_tab": bool(item.get("new_tab", True))})
+                        "new_tab": bool(item.get("new_tab", True)),
+                        "site_icon": web and item.get("site_icon", True) is not False})
         return out
     if k == "words":
         items = value if isinstance(value, list) else re.split(r"[,;\n]+", str(value or ""))

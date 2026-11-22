@@ -4,6 +4,34 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.1.0] – 2026-11-22
+
+Frei einstellbare Farben mit hellem Profil und Favicons im Link-Menü. Das Farbsystem (**N8 Theme**) ist jetzt in allen
+N8-Oberflächen gleich: diesem Dashboard, der [FRN-Weboberfläche](https://github.com/dhartmann1979/adn-frn-server) und dem
+[N8-Hotspot](https://github.com/dhartmann1979/N8-HotSpot).
+
+### 🎨 Aussehen (Adminbereich → Appearance)
+- **Neues Farbprofil ☀️ Daylight** – hell, für Tageslicht. Alle Bereiche (Live, Statistik, OpenBridge, Talkgroups, Dialoge,
+  Adminbereich) haben dafür eine eigene helle Darstellung (`dashboard/static/n8-light.css`).
+- **Jede Farbe frei wählbar:** zusätzlich zu Akzent und Hintergrund jetzt *Accent 2* (Verlauf von Knöpfen und Titel),
+  die drei Leuchtfarben des Hintergrunds, *Text* und *Card tint*. „from profile“ zeigt, welche Farbe noch aus dem Profil kommt; ↺ setzt sie zurück.
+- **Neuer Regler Roundness** (Ecken von Karten und Knöpfen, 0–28 px).
+- **Lesbarkeitsprüfung:** warnt, wenn Text auf dem gewählten Hintergrund schlecht lesbar ist (Kontrast unter 4,5 : 1).
+- Farbcodes werden auf dem Server geprüft (`dashboard/n8theme.py`); ungültige Werte werden abgelehnt statt gespeichert.
+- Neue Einstellungen: `theme.accent2`, `theme.glow1`–`glow3`, `theme.text`, `theme.panel`, `theme.radius`. Bestehende Einstellungen bleiben gültig.
+
+### 🔗 Link-Menü mit Site-Icons
+- Web-Links zeigen das **Favicon der verlinkten Seite** statt des Emojis. Das Dashboard holt es beim Start und nach dem Speichern
+  der Links, prüft es und speichert es in SQLite (`link_icons`, 30 Tage; fehlende werden stündlich neu versucht).
+  Besucher laden das Bild vom Dashboard (`/api/link-icon/…`), nicht von der fremden Seite.
+- Neuer Schalter **site icon** je Link (Vorgabe an); für `mailto:`, `/pfad` und `#tab` ausgegraut.
+- Sicherheit: nur öffentliche Adressen (Schutz gegen SSRF, auch über Weiterleitungen), max. 256 KB, nur echte Bilder,
+  SVG ohne Skripte und externe Verweise, Auslieferung mit strenger Content-Security-Policy.
+
+### Technik
+- Neue Dateien: `dashboard/static/n8-theme.js`, `n8-theme.css`, `n8-light.css`, `dashboard/n8theme.py`, `dashboard/siteicons.py`.
+- Neue Tests: `tests/test_n8theme.py`, `tests/test_siteicons.py` (Netz gemockt); insgesamt 282.
+
 ## [1.0.0] – 2026-11-21
 
 Erste Version mit Versionsnummer. Sie fasst alles zusammen, was diese Ausgabe gegenüber dem

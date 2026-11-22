@@ -139,7 +139,7 @@ class TestNewKinds(unittest.TestCase):
             validate(FIELD_BY_KEY["logo"], "javascript:alert(1)")
         links = validate(FIELD_BY_KEY["links.items"], [{"label": "Wiki", "url": "https://x.de", "icon": "📘"},
                                                        {"label": "", "url": ""}])
-        self.assertEqual(links, [{"label": "Wiki", "url": "https://x.de", "icon": "📘", "new_tab": True}])
+        self.assertEqual(links, [{"label": "Wiki", "url": "https://x.de", "icon": "📘", "new_tab": True, "site_icon": True}])
         with self.assertRaises(SettingsError):
             validate(FIELD_BY_KEY["links.items"], [{"label": "x", "url": "javascript:alert(1)"}])
 

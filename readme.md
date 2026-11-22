@@ -37,9 +37,9 @@ Ein DMR-Server für Repeater, Hotspots und Apps wie Z3DMR (HomeBrew-Protokoll, z
 | ↔️ **OpenBridge** | FreeDMR-kompatibel (`DMRE` v5, Keep-alives) und klassisch; im Adminbereich als Formular mit Protokoll-Auswahl, „alle Talkgroups“ oder Auswahl aus der Talkgroup-Liste. Tab im Dashboard mit Status, Gegenstelle, Verkehr in beide Richtungen, Top-Talkgroups, letzten Gesprächen und durchsuchbarer Talkgroup-Liste. In der Live-Ansicht nur kompakt, in der Statistik mitgezählt. |
 | 🛠️ **Configuration-Tab** | Server, Port, FreeRadioID- und Gast-Passwort, Talkgroups und fertige Einstellungen für Pi-Star/WPSD und MMDVMHost, zum Kopieren |
 | 🎙️ **Live-Dashboard** | Wer gerade spricht, steht immer ganz oben (**ON AIR**). Last Heard zeigt Avatare und FreeRadioID-Profile. Die Darstellung ist für Smartphone und Desktop optimiert. |
-| 🎨 **Eigenes Aussehen** | Farbprofile, eigene Akzent- und Hintergrundfarbe, Logo und Favicon hochladen, Titel und Browser-Tab, alles mit Live-Vorschau |
+| 🎨 **Eigenes Aussehen** | N8 Theme: 7 Farbprofile inkl. hellem **Daylight**, jede Farbe frei wählbar (Akzente, Hintergrund, Leuchtfarben, Text, Karten), Rundung, Lesbarkeitsprüfung; Logo und Favicon hochladen, Titel und Browser-Tab, alles mit Live-Vorschau. Dieselbe Engine wie in der FRN-Oberfläche und im N8-Hotspot. |
 | 📥 **Konfigurations-Konverter** | Umzug von HBlink3, FreeDMR/FDMR+, ADN oder einem anderen HBlink4: Datei laden, Vorschläge prüfen, übernehmen |
-| 🔗 **Link-Menü** | eigene Links (Webseite, Chat, Kontakt …) als Menü oder Knopfreihe in der Kopfzeile |
+| 🔗 **Link-Menü** | eigene Links (Webseite, Chat, Kontakt …) als Menü oder Knopfreihe in der Kopfzeile, mit den **Favicons der verlinkten Seiten** (im Dashboard in SQLite zwischengespeichert) |
 | ⚙️ **Adminbereich statt Config-Dateien** | Alle Einstellungen von Dashboard **und** DMR-Server liegen in SQLite und werden im Browser geändert. Änderungen am DMR-Server wirken sofort, ohne SSH. |
 | 👥 **Benutzer & Rechte** | Superadmin, Admins und Benutzer. **IP-Adressen und Ports sehen nur Admins.** Dazu Sitzungen und ein Protokoll aller Änderungen. |
 | 📘 **FreeRadioID-ID-Listen** | Rufzeichen kommen standardmäßig aus der Liste von FreeRadioID.net (radioid.net plus FreeRadioID-IDs). |
@@ -87,7 +87,11 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 </tr>
 <tr>
 <td><img src="docs/images/admin-openbridge.png" alt="OpenBridge-Editor"><br><b>OpenBridge im Formular</b>: Protokoll, Verbindung, Talkgroups und fertiger Abschnitt für die Gegenstelle.</td>
-<td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: Farbprofile, Logo-Upload, Titel, mit Live-Vorschau.</td>
+<td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: 7 Farbprofile, jede Farbe frei wählbar, Logo-Upload, Titel, mit Live-Vorschau.</td>
+</tr>
+<tr>
+<td><img src="docs/images/theme-daylight.png" alt="Daylight"><br><b>☀️ Daylight</b>: das helle Farbprofil.</td>
+<td><img src="docs/images/links-menu.png" alt="Link-Menü"><br><b>🔗 Link-Menü</b> mit den Site-Icons der verlinkten Seiten.</td>
 </tr>
 <tr>
 <td><img src="docs/images/admin-settings-dmr.png" alt="DMR-Einstellungen"><br><b>Einstellungen mit Seitennavigation</b>: Schalter, Auswahllisten, seltene Optionen eingeklappt.</td>

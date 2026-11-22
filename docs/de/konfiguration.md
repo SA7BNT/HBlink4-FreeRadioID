@@ -72,8 +72,8 @@ Kommst du von einem anderen Server, übernimmt der [📥 Import](adminbereich.md
 
 | Abschnitt | Schlüssel | Vorgabe |
 |---|---|---|
-| 🎨 Appearance | `dashboard_title`, `server_name`, `server_description`, `page_title`, `theme.preset` / `.accent` / `.background` / `.glow` / `.glass` / `.blur`, `logo`, `logo_size`, `logo_radius`, `favicon` | DMR Die N8schicht, dmr.die-n8schicht.de, N8schicht DMR Network, leer, N8 Night, Profilfarben, 100, 50, an, N8schicht-Logo, 44 px, 0 % |
-| 🔗 Link menu | `links.enabled`, `links.label`, `links.style` (`menu`/`bar`), `links.items` (Liste aus `label`, `url`, `icon`, `new_tab`), `network_info.enabled` / `.button_text` / `.url` | aus, „🔗 Links“, Menü |
+| 🎨 Appearance | `dashboard_title`, `server_name`, `server_description`, `page_title`, `theme.preset` / `.accent` / `.accent2` / `.background` / `.glow1` / `.glow2` / `.glow3` / `.text` / `.panel` / `.glow` / `.glass` / `.blur` / `.radius`, `logo`, `logo_size`, `logo_radius`, `favicon` | DMR Die N8schicht, dmr.die-n8schicht.de, N8schicht DMR Network, leer, N8 Night, Profilfarben, 100, 50, an, 22 px, N8schicht-Logo, 44 px, 0 % |
+| 🔗 Link menu | `links.enabled`, `links.label`, `links.style` (`menu`/`bar`), `links.items` (Liste aus `label`, `url`, `icon`, `new_tab`, `site_icon`), `network_info.enabled` / `.button_text` / `.url` | aus, „🔗 Links“, Menü |
 | 📢 Announcement | `announcement.enabled` / `.text` | aus |
 | 🔐 Access | `auth.public_dashboard`, `auth.session_hours`, `auth.remember_days` | öffentlich, 12 h, 30 Tage |
 | 🛡️ FreeRadioID data | `freeradioid.avatars`, `freeradioid.profile_lookup`, `user_database.freeradioid.enabled` | alles an |
