@@ -1,6 +1,6 @@
 # ⚙️ Adminbereich
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · **Adminbereich** · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · **Adminbereich** · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -37,7 +37,7 @@ Im Adminbereich stellst du **Dashboard und DMR-Server** ein, ohne SSH und ohne C
 
 ## Aufbau
 
-Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 📥 Import · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste. Das Fenster ist immer gleich groß, egal welcher Bereich offen ist; nur der Inhalt rollt. Jeder Bereich beginnt mit einem Satz, worum es geht.
+Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 📡 APRS · 📥 Import · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste. Das Fenster ist immer gleich groß, egal welcher Bereich offen ist; nur der Inhalt rollt. Jeder Bereich beginnt mit einem Satz, worum es geht.
 
 Schritt-für-Schritt-Anleitungen für die häufigsten Aufgaben stehen in [🧭 Anleitungen](anleitungen.md).
 
@@ -230,6 +230,16 @@ So wird ein eingefügter Abschnitt einsortiert:
 - **Übernommen werden:** Network-ID, Passwort, Ports, `TGID_ACL` (`PERMIT:ALL` = alle Talkgroups, `PERMIT:Liste` = diese Talkgroups), `ENHANCED_OBP`, `PROTO_VER`, `RELAX_CHECKS`. `DENY`-Listen kennt HBlink4 nicht; der Trunk führt dann alle Talkgroups außer den lokalen.
 
 Unter dem Feld steht danach, welcher Trunk geändert oder angelegt wurde, und was du noch prüfen solltest. Erst **💾 Save trunks** speichert. **💾 Save trunks** prüft alles mit HBlink4 und speichert. Trunks ändern sich nach einem Neustart des DMR-Servers.
+
+## 📡 APRS
+
+<p align="center"><img src="../images/admin-aprs.png" alt="APRS-Übersicht" width="85%"></p>
+
+APRS-Server, **Uplink & Downlink** (APRS-IS, CB-APRS oder eigene Server), **DAPRS** (GPS-Positionen von DMR-Funkgeräten werden APRS-Positionen), die Karte und bis zu drei eigene Domains mit Let's Encrypt – alles in einem Bereich mit Seitennavigation: **📊 Overview · 📡 Server · 🌍 Uplink & downlink · 🛰️ DAPRS decoding · 📍 DMR → APRS · 🗺️ Map · 🌐 Domains**. APRS ist nach der Installation **aus**.
+
+Die Übersicht zeigt Ports, Server-ID mit Passcode, jede Verbindung ins APRS-Netz mit Zustand, DAPRS-Zähler, Stationen, den Zertifikatsstatus jeder Domain, einen Passcode-Rechner und die verbundenen APRS-Clients (mit **Disconnect**). Änderungen wirken sofort; nur neue Domains brauchen einen Neustart des Dashboards.
+
+➡️ Alles dazu: **[📡 APRS, DAPRS und Karte](aprs.md)**
 
 ## 📥 Import
 

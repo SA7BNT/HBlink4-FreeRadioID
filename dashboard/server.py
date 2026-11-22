@@ -41,12 +41,15 @@ from .obpstats import OBPStats
 from .talkgroups import Talkgroups
 from . import version as _version
 from . import siteicons as _siteicons
+from .aprs.service import AprsService
+from .aprs.store import public as _aprs_public
+from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_call
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.1.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.2.0")
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -276,6 +279,13 @@ class DashboardState:
         if seeded:
             logger.info(f"⚙️ {seeded} settings taken over from config.json into the database; "
                         "from now on they are edited in the admin area")
+
+        # APRS server, APRS-IS uplink and DAPRS gateway (dashboard/aprs/), own database aprs.db
+        self.aprs = AprsService(
+            lambda: dashboard_config, self._data_dir, version=_version._package_version(),
+            callsign_of=lambda rid: self.user_db.get(rid, ""),
+            name_of=lambda rid: (self.user_db.frid_info(rid) or {}).get("name", ""),
+            repeaters=lambda: _aprs_repeaters())
 
         # Load persisted data
         self._load_persisted_data()
@@ -836,6 +846,14 @@ class EventReceiver:
                 del state.repeaters[data['repeater_id']]
                 logger.info(f"Repeater disconnected: {data['repeater_id']} ({data.get('callsign', 'UNKNOWN')}) - reason: {data.get('reason', 'unknown')}")
         
+        elif event_type == 'gps_position':
+            # DAPRS: a radio reported its position (embedded GPS or GPS data call)
+            try:
+                state.aprs.on_gps(data)
+            except Exception as e:
+                logger.error(f"📍 DAPRS: {e}")
+            return
+
         elif event_type == 'repeater_details':
             # Store detailed repeater information (sent once on connection)
             state.repeater_details[data['repeater_id']] = {
@@ -1250,6 +1268,7 @@ async def _security_middleware(request: Request, call_next):
             return JSONResponse({"error": "Missing X-Dashboard header."}, status_code=403)
         # Private dashboard: everything but login and branding needs a session.
         if (not _public_dashboard() and not path.startswith("/api/auth/") and path != "/api/config"
+                and not (path.startswith("/api/aprs/") and state.aprs.c("aprs.map.public", True))
                 and not current_user(request)):
             return JSONResponse({"error": "Please log in."}, status_code=401)
     response = await call_next(request)
@@ -1486,7 +1505,8 @@ async def admin_system(request: Request):
             "users": len(state.auth.list_users()), "systemd": bool(os.environ.get("INVOCATION_ID")),
             "hblink_connected": bool(state.hblink_connected),
             "frid_ids": len(state.user_db.frid_ids()), "frid_avatars": state.avatars.stats()["with_avatar"],
-            "version": "HBlink4-FreeRadioID", "build": _version.local_version()}
+            "version": "HBlink4-FreeRadioID", "build": _version.local_version(),
+            "aprs_domains": _aprs_domains(), "cert_names": sorted(_tls_manager.cert_names()) if _tls_manager else []}
     if _tls_manager is not None and _tls_manager.have_cert():
         try:
             import ssl as _ssl
@@ -1501,7 +1521,14 @@ _USERDB_KEYS = {"user_database.source_url", "user_database.filter.countries",
                 "user_database.freeradioid.enabled", "freeradioid.avatars"}
 
 
+_APRS_RELOAD_PREFIXES = ("aprs.enabled", "aprs.server_id", "aprs.server.", "aprs.uplink.")
+
+
 async def _after_settings_change(changed: List[str]):
+    if any(k.startswith(_APRS_RELOAD_PREFIXES) for k in changed):
+        asyncio.create_task(state.aprs.reload())
+    elif any(k.startswith("daprs.objects.") for k in changed):
+        state.aprs._obj_sent.clear()          # objects are sent again with the new values
     if any(k.startswith("talkgroups.") for k in changed):
         asyncio.create_task(refresh_talkgroups("settings"))
     elif "tg_stats.names" in changed:
@@ -1545,6 +1572,10 @@ async def admin_save_settings(request: Request, body: dict = Body(...)):
         changed = state.settings.update(dashboard_config, changes, actor["username"])
     except SettingsError as e:
         raise _HTTPError(400, str(e))
+    if "aprs.enabled" in changed and "dmr.daprs.enabled" not in changes:
+        # APRS on/off also switches the GPS decoding in the DMR server
+        changed += state.settings.update(dashboard_config, {"dmr.daprs.enabled": bool(state.aprs.enabled)},
+                                         actor["username"])
     if changed:
         state.auth.audit("settings_changed", actor["username"], ", ".join(changed), _client_ip(request))
     await _after_settings_change(changed)
@@ -1693,7 +1724,8 @@ async def admin_restart(request: Request):
 
 # ---------------------------------------------------------------- branding
 # Own logo and favicon, uploaded in the admin area and kept in SQLite.
-_BRANDING_KINDS = {"logo": "logo", "favicon": "favicon"}
+_BRANDING_KINDS = {"logo": "logo", "favicon": "favicon", "aprs.site1.logo": "aprs.site1.logo",
+                   "aprs.site2.logo": "aprs.site2.logo", "aprs.site3.logo": "aprs.site3.logo"}
 _BRANDING_MAX = 1024 * 1024
 _SVG_FORBIDDEN = re.compile(rb"<script|<foreignobject|\bon[a-z]+\s*=|javascript:|<iframe|<embed|<object"
                             rb"|xlink:href\s*=\s*[\"']\s*(?!#|data:image/)|\bhref\s*=\s*[\"']\s*(?!#|data:image/)",
@@ -1766,7 +1798,7 @@ async def delete_branding(kind: str, request: Request):
         raise _HTTPError(404, "Unknown image.")
     _branding_db()
     state.auth._x("DELETE FROM branding WHERE kind = ?", (kind,))
-    changed = state.settings.update(dashboard_config, {kind: ""}, actor["username"])
+    changed = state.settings.update(dashboard_config, {kind: FIELD_BY_KEY[kind].default}, actor["username"])
     state.auth.audit("branding_removed", actor["username"], kind, _client_ip(request))
     await _after_settings_change(changed)
     return {"ok": True}
@@ -1834,6 +1866,8 @@ async def get_config():
     tgs = _tg_cfg()
     cfg["tg_stats"] = {"enabled": bool(tgs.get("enabled", True)), "public": bool(tgs.get("public", True))}
     cfg["connect"] = {"enabled": bool((dashboard_config.get("connect") or {}).get("enabled", True))}
+    cfg["aprs"] = {"enabled": state.aprs.enabled,
+                   "tab": bool(state.aprs.enabled and state.aprs.c("aprs.map.dashboard_tab", True))}
     # link menu: address of the cached site icon of every web link
     links = dict(cfg.get("links") or {})
     if links.get("items"):
@@ -2375,9 +2409,274 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 # Serve frontend
+# ===================================================================== APRS
+# APRS-IS server, uplink and DAPRS gateway live in dashboard/aprs/. Here: the map
+# page (also at / for the APRS domains), its API, live updates and the admin API.
+_APRS_HTML = Path(__file__).parent / "static" / "aprs.html"
+_OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+_APRS_TILES = {
+    "osm": ("https://tile.openstreetmap.org/{z}/{x}/{y}.png", _OSM_ATTR),
+    "topo": ("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+             _OSM_ATTR + ', SRTM | &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'),
+}
+
+
+_APRS_SITES = (1, 2, 3)
+
+
+def _aprs_domains(https_only: bool = False) -> List[str]:
+    """Domains that open the map directly; https_only: those that go into the certificate."""
+    if not state.aprs.enabled:
+        return []
+    out: List[str] = []
+    for n in _APRS_SITES:
+        d = str(state.aprs.c(f"aprs.site{n}.domain", "") or "").strip().lower()
+        if d and d not in out and (not https_only or state.aprs.c(f"aprs.site{n}.https", True)):
+            out.append(d)
+    return out
+
+
+def _request_host(conn) -> str:
+    return (conn.headers.get("host") or "").split(":")[0].strip().lower()
+
+
+def _aprs_site(conn) -> dict:
+    """Title, subtitle and logo of the map for the domain it was opened on."""
+    host = _request_host(conn)
+    for n in _APRS_SITES:
+        d = str(state.aprs.c(f"aprs.site{n}.domain", "") or "").strip().lower()
+        if d and d == host:
+            return {"domain": d, "title": state.aprs.c(f"aprs.site{n}.title", "") or dashboard_config.get("dashboard_title")
+                    or "APRS", "subtitle": state.aprs.c(f"aprs.site{n}.subtitle", "") or f"APRS map · {d}",
+                    "logo": state.aprs.c(f"aprs.site{n}.logo", "") or dashboard_config.get("logo") or ""}
+    return {"domain": host, "title": dashboard_config.get("dashboard_title") or "DMR Die N8schicht",
+            "subtitle": f"APRS map · {dashboard_config.get('server_name') or host}",
+            "logo": dashboard_config.get("logo") or ""}
+
+
+def _aprs_repeaters() -> List[dict]:
+    """Connected repeaters/hotspots with their login position (for the APRS objects)."""
+    out = []
+    for rid, r in list(state.repeaters.items()):
+        d = state.repeater_details.get(rid) or {}
+        out.append({**r, "latitude": d.get("latitude", ""), "longitude": d.get("longitude", ""),
+                    "height": d.get("height", ""), "url": d.get("url", "")})
+    return out
+
+
+def _aprs_allowed(conn) -> bool:
+    return bool(state.aprs.c("aprs.map.public", True)) or current_user(conn) is not None
+
+
+def _aprs_check(request: Request) -> None:
+    if not state.aprs.enabled:
+        raise _HTTPError(404, "APRS is switched off.")
+    if not _aprs_allowed(request):
+        raise _HTTPError(401, "Please log in.")
+
+
+def _aprs_sources() -> Optional[set]:
+    return None if state.aprs.c("aprs.map.sources", "all") == "all" else {"dmr", "rpt", "local"}
+
+
+def _aprs_page() -> HTMLResponse:
+    if not _APRS_HTML.exists():
+        return HTMLResponse("<h1>APRS map not found</h1>", status_code=404)
+    return HTMLResponse(_APRS_HTML.read_text(encoding="utf-8"))
+
+
+@app.get("/aprs", response_class=HTMLResponse)
+async def aprs_map_page():
+    if not state.aprs.enabled:
+        return HTMLResponse("<h1>APRS is switched off</h1>", status_code=404)
+    return _aprs_page()
+
+
+@app.get("/api/aprs/config")
+async def aprs_config(request: Request):
+    if not state.aprs.enabled:
+        raise _HTTPError(404, "APRS is switched off.")
+    c = state.aprs.c
+    try:
+        lat, lon = (float(x) for x in str(c("aprs.map.center", "51.2, 10.4")).replace(";", ",").split(","))
+    except ValueError:
+        lat, lon = 51.2, 10.4
+    style = c("aprs.map.tiles", "auto")
+    if style not in ("auto", "dark", "osm", "topo", "custom"):
+        style = "auto"
+    url, attribution = _APRS_TILES["topo" if style == "topo" else "osm"]
+    if style == "custom" and c("aprs.map.tile_url", ""):
+        url, attribution = str(c("aprs.map.tile_url")), "Map tiles: own tile server"
+    https_cfg = dashboard_config.get("https") or {}
+    dash_url = (f"https://{https_cfg.get('domain')}/" if https_cfg.get("enabled") and https_cfg.get("domain")
+                else "/dashboard" if _request_host(request) in _aprs_domains() else "/")
+    site = _aprs_site(request)
+    user = current_user(request)
+    ports = []
+    if state.aprs.running and state.aprs.c("aprs.server.enabled", False) and state.aprs.listening:
+        ports = [p for p in (c("aprs.server.port_filter", 14580),) if p]
+    return {
+        "site": site,
+        "theme": dashboard_config.get("theme") or {},
+        "logo_size": dashboard_config.get("logo_size", 44),
+        "logo_radius": dashboard_config.get("logo_radius", 0),
+        "favicon": dashboard_config.get("favicon") or "",
+        "map": {"center": [lat, lon], "zoom": int(c("aprs.map.zoom", 6) or 6), "tiles": url,
+                "attribution": attribution, "dark": style if style in ("auto", "dark") else False,
+                "tracks": bool(c("aprs.map.tracks", True)), "show_packets": bool(c("aprs.map.show_packets", True)),
+                "max_age_hours": int(c("aprs.map.max_age_hours", 24) or 24), "sources": c("aprs.map.sources", "all")},
+        "allowed": _aprs_allowed(request),
+        "logged_in": bool(user), "admin": is_admin(user),
+        "dashboard_url": dash_url,
+        "network": state.aprs.network_label,
+        "server": {"id": state.aprs.my_id, "ports": ports, "host": site["domain"] or _request_host(request),
+                   "uplink": state.aprs.uplink.get("state") == "connected" and bool(state.aprs.uplink.get("verified"))},
+        "version": _version._package_version(),
+    }
+
+
+@app.get("/api/aprs/stations")
+async def aprs_stations(request: Request, hours: float = 0):
+    _aprs_check(request)
+    max_h = float(state.aprs.c("aprs.map.max_age_hours", 24) or 24)
+    h = min(max_h, hours) if hours > 0 else max_h
+    return {"stations": state.aprs.store.list(h * 3600, _aprs_sources()), "now": time.time()}
+
+
+@app.get("/api/aprs/station/{call}")
+async def aprs_station(call: str, request: Request):
+    _aprs_check(request)
+    call = call.strip()[:12]
+    st = state.aprs.store.stations.get(call) or state.aprs.store.stations.get(call.upper())
+    if not st:
+        raise _HTTPError(404, "Unknown station.")
+    sources = _aprs_sources()
+    if sources is not None and st.get("source") not in sources:
+        raise _HTTPError(404, "Unknown station.")
+    hours = float(state.aprs.c("aprs.map.max_age_hours", 24) or 24)
+    out = {"station": _aprs_public(st),
+           "track": await asyncio.to_thread(state.aprs.store.track, st["call"], hours)
+           if state.aprs.c("aprs.map.tracks", True) else []}
+    if state.aprs.c("aprs.map.show_packets", True):
+        out["packets"] = await asyncio.to_thread(state.aprs.store.packets_of, st["call"], 25)
+    return out
+
+
+@app.get("/api/aprs/packets")
+async def aprs_packets(request: Request, limit: int = 100):
+    _aprs_check(request)
+    if not state.aprs.c("aprs.map.show_packets", True):
+        return {"packets": []}
+    sources = _aprs_sources()
+    items = [p for p in reversed(state.aprs.store.recent)
+             if sources is None or p.get("origin") != "uplink"]
+    return {"packets": items[:max(1, min(500, limit))]}
+
+
+@app.get("/api/aprs/status")
+async def aprs_status(request: Request):
+    _aprs_check(request)
+    st = state.aprs.status(admin=False)
+    return {k: st[k] for k in ("enabled", "running", "server_enabled", "clients", "counts", "version")} | {
+        "uplink": {"state": st["uplink"].get("state"), "verified": st["uplink"].get("verified")},
+        "stats": {k: st["stats"].get(k, 0) for k in ("rx", "daprs_positions", "from_uplink", "from_clients")}}
+
+
+@app.websocket("/api/aprs/ws")
+async def aprs_ws(websocket: WebSocket):
+    if not state.aprs.enabled or not _aprs_allowed(websocket):
+        await websocket.close(code=4401)
+        return
+    await websocket.accept()
+    q = state.aprs.subscribe()
+
+    async def reader():
+        while True:
+            msg = await websocket.receive_text()
+            if msg == "ping":
+                await websocket.send_text("pong")
+
+    rt = asyncio.create_task(reader())
+    try:
+        while not rt.done():
+            try:
+                first = await asyncio.wait_for(q.get(), 15)
+            except asyncio.TimeoutError:
+                continue
+            await asyncio.sleep(0.4)            # collect a few, send them as one frame
+            batch = [first]
+            while not q.empty() and len(batch) < 400:
+                batch.append(q.get_nowait())
+            sources = _aprs_sources()
+            show_packets = bool(state.aprs.c("aprs.map.show_packets", True))
+            items = []
+            for m in batch:
+                if m["type"] == "station" and (sources is None or m["station"].get("source") in sources):
+                    items.append(m)
+                elif m["type"] == "packet" and show_packets and (sources is None or m["packet"]["origin"] != "uplink"):
+                    items.append(m)
+            if items:
+                await websocket.send_json({"type": "batch", "items": items})
+    except Exception:
+        pass
+    finally:
+        rt.cancel()
+        state.aprs.unsubscribe(q)
+
+
+# -- admin
+@app.get("/api/admin/aprs")
+async def admin_aprs(request: Request):
+    _require_admin(request)
+    st = state.aprs.status(admin=True)
+    st["domains"] = _aprs_domains()
+    st["https_domains"] = _aprs_domains(https_only=True)
+    https_cfg = dashboard_config.get("https") or {}
+    st["https"] = {"enabled": bool(https_cfg.get("enabled")), "domain": https_cfg.get("domain", ""),
+                   "cert_names": sorted(_tls_manager.cert_names()) if _tls_manager else [],
+                   "missing": _tls_manager.missing_names() if _tls_manager else []}
+    return st
+
+
+@app.post("/api/admin/aprs/kick/{client_id}")
+async def admin_aprs_kick(client_id: int, request: Request):
+    actor = _require_admin(request)
+    if not state.aprs.kick(client_id):
+        raise _HTTPError(404, "Client not connected.")
+    state.auth.audit("aprs_client_kicked", actor["username"], str(client_id), _client_ip(request))
+    return {"ok": True}
+
+
+@app.post("/api/admin/aprs/reload")
+async def admin_aprs_reload(request: Request):
+    actor = _require_admin(request)
+    await state.aprs.reload()
+    state.auth.audit("aprs_restarted", actor["username"], "", _client_ip(request))
+    return {"ok": True, "status": state.aprs.status(admin=True)}
+
+
+@app.post("/api/admin/aprs/objects")
+async def admin_aprs_objects(request: Request):
+    _require_admin(request)
+    state.aprs._obj_sent.clear()
+    return {"ok": True, "sent": state.aprs.object_pass()}
+
+
+@app.get("/api/admin/aprs/passcode")
+async def admin_aprs_passcode(request: Request, call: str = ""):
+    _require_admin(request)
+    call = call.strip().upper()
+    if not _aprs_valid_call(call):
+        raise _HTTPError(400, "Callsign like DL1ABC or DL1ABC-9.")
+    return {"call": call, "passcode": _aprs_passcode(call)}
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def dashboard():
-    """Serve dashboard HTML"""
+async def dashboard(request: Request):
+    """Serve dashboard HTML (the APRS map at / on the APRS domains; /dashboard is always the dashboard)"""
+    if request.url.path == "/" and state.aprs.enabled and _request_host(request) in _aprs_domains():
+        return _aprs_page()
     html_path = Path(__file__).parent / 'static' / 'dashboard.html'
     if not html_path.exists():
         return HTMLResponse("<h1>Dashboard HTML not found</h1><p>Please create dashboard/static/dashboard.html</p>", status_code=404)
@@ -2427,6 +2726,7 @@ async def startup_event():
         disable_ipv6=receiver_config.get('disable_ipv6', False)
     )
     asyncio.create_task(receiver.start())
+    await state.aprs.start()
     asyncio.create_task(midnight_reset_task())
     asyncio.create_task(user_db_refresh_task())
     asyncio.get_running_loop().call_later(15, lambda: asyncio.ensure_future(refresh_talkgroups("startup")))
@@ -2453,6 +2753,10 @@ async def shutdown_event():
     """Clean shutdown - save data"""
     logger.info("💾 Dashboard shutting down, saving data...")
     save_persistent_data()
+    try:
+        await asyncio.wait_for(state.aprs.stop(), 3)
+    except Exception:
+        pass
     logger.info("✅ Dashboard shutdown complete")
 
 
@@ -2705,7 +3009,7 @@ async def _serve(host: str, port: int):
 
     if https_cfg.get("enabled"):
         from .tls import CertManager, build_http_app
-        _tls_manager = cm = CertManager(https_cfg, state._data_dir)
+        _tls_manager = cm = CertManager(https_cfg, state._data_dir, extra_domains=_aprs_domains(https_only=True))
         http_port = int(https_cfg.get("http_port", 80))
         http_app = build_http_app(cm, redirect=True)
         await start_optional(_Server.make(http_app, host=host, port=http_port, lifespan="off"),
@@ -2730,6 +3034,20 @@ async def _serve(host: str, port: int):
                 await start_optional(_Server.make(http_app, host=host, port=port, lifespan="off"),
                                      "redirect to HTTPS")
             helpers.append(asyncio.create_task(renew_loop(main)))
+
+            async def expand_cert(main):
+                # new APRS domain(s): get them into the certificate and load it without a restart
+                missing = cm.missing_names()
+                if not missing:
+                    return
+                ok = [d for d in await cm.resolvable_extra() if d in missing]
+                if not ok:
+                    return
+                logger.info(f"🔒 Adding {', '.join(ok)} to the certificate")
+                if await cm.obtain() and main.config.ssl is not None:
+                    main.config.ssl.load_cert_chain(cm.cert_file, cm.key_file)
+                    logger.info("🔒 Certificate with the new names loaded")
+            helpers.append(asyncio.create_task(expand_cert(main)))
         else:
             # Serve over HTTP right away; get the certificate in the background
             tasks.append(await start(_Server.make(app, host=host, port=port)))

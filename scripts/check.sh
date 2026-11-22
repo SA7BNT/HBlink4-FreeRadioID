@@ -104,7 +104,8 @@ CUR="$(python3 scripts/setup_apply.py current . 2>/dev/null || true)"
 DMR_PORT="$(echo "$CUR" | python3 -c "import json,sys;print(json.load(sys.stdin).get('dmr_port',62031))" 2>/dev/null || echo 62031)"
 WEB_PORT="$(echo "$CUR" | python3 -c "import json,sys;print(json.load(sys.stdin).get('web_port',8080))" 2>/dev/null || echo 8080)"
 if command -v ss >/dev/null 2>&1; then
-    for spec in "udp:$DMR_PORT:DMR (HBlink4)" "tcp:$WEB_PORT:dashboard" "tcp:80:HTTP/Let's Encrypt" "tcp:443:HTTPS"; do
+    for spec in "udp:$DMR_PORT:DMR (HBlink4)" "tcp:$WEB_PORT:dashboard" "tcp:80:HTTP/Let's Encrypt" "tcp:443:HTTPS" \
+                "tcp:14580:APRS-IS filter port" "tcp:10152:APRS-IS full feed"; do
         IFS=: read -r proto port label <<< "$spec"
         flag="-ltnp"; [ "$proto" = udp ] && flag="-lunp"
         line="$(ss -H $flag "sport = :$port" 2>/dev/null | head -1)"
@@ -116,6 +117,8 @@ if command -v ss >/dev/null 2>&1; then
         fi
     done
     warn "Each port must be used by exactly one program. Another DMR server (ADN/FreeDMR proxy) on $DMR_PORT blocks HBlink4."
+    info_aprs="APRS ports 14580/10152 are only in use while Admin area → APRS → 'Open the APRS-IS ports' is on (another aprsc there blocks them)."
+    echo "    $info_aprs"
 else
     warn "ss not installed (apt install iproute2): port check skipped"
 fi

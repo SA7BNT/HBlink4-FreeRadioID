@@ -17,6 +17,7 @@
   <a href="docs/de/installation.md">Installation</a> ·
   <a href="docs/de/dashboard.md">Dashboard</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
+  <a href="docs/de/aprs.md">APRS</a> ·
   <a href="docs/de/konfiguration.md">Konfiguration</a> ·
   <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
   <a href="docs/de/betrieb.md">Betrieb &amp; Fehlersuche</a> ·
@@ -43,7 +44,8 @@ Ein DMR-Server für Repeater, Hotspots und Apps wie Z3DMR (HomeBrew-Protokoll, z
 | ⚙️ **Adminbereich statt Config-Dateien** | Alle Einstellungen von Dashboard **und** DMR-Server liegen in SQLite und werden im Browser geändert. Änderungen am DMR-Server wirken sofort, ohne SSH. |
 | 👥 **Benutzer & Rechte** | Superadmin, Admins und Benutzer. **IP-Adressen und Ports sehen nur Admins.** Dazu Sitzungen und ein Protokoll aller Änderungen. |
 | 📘 **FreeRadioID-ID-Listen** | Rufzeichen kommen standardmäßig aus der Liste von FreeRadioID.net (radioid.net plus FreeRadioID-IDs). |
-| 🔒 **HTTPS** | Let's-Encrypt-Zertifikat, automatisch geholt und erneuert |
+| 📡 **APRS & DAPRS** *(neu in 1.2.0)* | APRS-Server in Python (Ports 14580/10152), **Uplink & Downlink wählbar: APRS-IS, CB-APRS oder eigene Server**, **DAPRS**: GPS-Positionen von DMR-Funkgeräten (im Sprachruf und als Datenruf, NMEA/LRRP) werden APRS-Positionen, Repeater als Objekte. Live-**Karte** im N8-Design unter `/aprs`, als Dashboard-Tab und unter **bis zu drei eigenen Domains** mit Let's Encrypt. Standardmäßig aus, die Installation fragt es ab. |
+| 🔒 **HTTPS** | Let's-Encrypt-Zertifikat, automatisch geholt und erneuert – auch für die APRS-Domains |
 | 🧭 **Geführte Installation** | `scripts/setup.sh` fragt alles ab, richtet die Dienste ein und prüft am Ende das Ergebnis. |
 
 <p align="center">
@@ -90,6 +92,14 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 <td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: 7 Farbprofile, jede Farbe frei wählbar, Logo-Upload, Titel, mit Live-Vorschau.</td>
 </tr>
 <tr>
+<td><img src="docs/images/aprs-map.jpg" alt="APRS-Karte"><br><b>🗺️ APRS-Karte</b>: DMR-Positionen, Repeater, APRS-Apps und Stationen aus APRS-IS bzw. CB-APRS, live.</td>
+<td><img src="docs/images/aprs-station.jpg" alt="APRS-Station"><br><b>Station mit DMR-Daten</b>: Talkgroup, Hotspot, Art der GPS-Meldung, Spur und Rohpakete.</td>
+</tr>
+<tr>
+<td><img src="docs/images/admin-aprs.png" alt="APRS im Adminbereich"><br><b>📡 APRS im Adminbereich</b>: Server, Verbindungen, DAPRS, Domains und Clients auf einen Blick.</td>
+<td><img src="docs/images/admin-aprs-uplink-manual.png" alt="Uplink & Downlink"><br><b>🌍 Uplink & Downlink</b>: APRS-IS, CB-APRS oder eigene Server mit Richtung.</td>
+</tr>
+<tr>
 <td><img src="docs/images/theme-daylight.png" alt="Daylight"><br><b>☀️ Daylight</b>: das helle Farbprofil.</td>
 <td><img src="docs/images/links-menu.png" alt="Link-Menü"><br><b>🔗 Link-Menü</b> mit den Site-Icons der verlinkten Seiten.</td>
 </tr>
@@ -106,6 +116,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 | 📦 [Installation](docs/de/installation.md) | Voraussetzungen, geführte Installation, HTTPS, Firewall, Aktualisieren |
 | 🎙️ [Dashboard](docs/de/dashboard.md) | Tabs Live/Statistics/OpenBridge/Talkgroups/Configuration, ON AIR, Talkgroup-Statistik, Last Heard, Karten, Detailansicht, Login-Arten |
 | 🧭 [Anleitungen](docs/de/anleitungen.md) | Schritt für Schritt: Hotspot verbinden, Umzug mit dem Import, OpenBridge zu FreeDMR, Logo und Farben, Link-Menü, Ankündigung, Admins |
+| 📡 [APRS](docs/de/aprs.md) | APRS-Server, Uplink & Downlink (APRS-IS, CB-APRS, manuell), DAPRS, Karte, eigene Domains mit Let's Encrypt, Fehlersuche |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Import, Sitzungen, Protokoll, System |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |

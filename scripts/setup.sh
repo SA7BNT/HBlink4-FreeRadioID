@@ -20,7 +20,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 B='\033[1m'; D='\033[2m'; R='\033[0;31m'; G='\033[0;32m'; Y='\033[0;33m'; C='\033[0;36m'; M='\033[0;35m'; N='\033[0m'
-STEP=0; STEPS=9
+STEP=0; STEPS=10
 
 banner() {
     echo
@@ -161,6 +161,31 @@ if [ "$HTTPS" = true ]; then
 fi
 
 # ---------------------------------------------------------------------- 8
+step "APRS: Karte, DAPRS und APRS-Server"
+info "Positionen von DMR-Funkgeräten (DAPRS) als APRS, eine Karte im N8-Design, optional ein eigener"
+info "APRS-Server (Python) mit Uplink & Downlink zu APRS-IS, CB-APRS oder eigenen Servern. Vorgabe: aus."
+DEF_APRS=n; [ "$(cur aprs)" = true ] && DEF_APRS=j
+ask_yn APRS "APRS einschalten?" "$DEF_APRS"
+APRS_ID="$(cur aprs_id)"; APRS_DOMAINS="$(cur aprs_domains)"; APRS_PORTS=false; APRS_UPLINK="$(cur aprs_uplink)"; APRS_CB_LOGIN="$(cur aprs_cb_login)"
+if [ "$APRS" = true ]; then
+    ask APRS_ID "Server-ID (dein Rufzeichen mit SSID, z. B. DB0ABC-10; leer = nur Karte)" "$APRS_ID"
+    ask APRS_DOMAINS "Domains für die Karte (bis zu 3, mit Komma; leer = nur $SERVER_NAME/aprs)" "$APRS_DOMAINS"
+    [ -n "$APRS_DOMAINS" ] && info "Die Domains müssen per DNS auf diesen Server zeigen; mit HTTPS kommen sie ins Let's-Encrypt-Zertifikat."
+    if [ -n "$APRS_ID" ]; then
+        DEF_P=n; [ "$(cur aprs_ports)" = true ] && DEF_P=j
+        ask_yn APRS_PORTS "APRS-Ports für Apps und iGates öffnen (TCP 14580 Filter, 10152 Full Feed)?" "$DEF_P"
+        info "Uplink & Downlink: 0 = keiner, 1 = APRS-IS (Amateurfunk), 2 = CB-APRS (eu.cbaprs.net), 3 = manuell (im Adminbereich)"
+        while true; do
+            ask APRS_UPLINK "Netz" "${APRS_UPLINK:-0}"
+            case "$APRS_UPLINK" in 0|1|2|3) break ;; *) warn "0, 1, 2 oder 3" ;; esac
+        done
+        [ "$APRS_UPLINK" = 2 ] && ask APRS_CB_LOGIN "Login bei CB-APRS (leer = Server-ID)" "$APRS_CB_LOGIN"
+    else
+        APRS_UPLINK=0
+    fi
+fi
+
+# ---------------------------------------------------------------------- 9
 step "Zusammenfassung"
 FR_TXT="aus"; [ "$FRID" = true ] && FR_TXT="an, Gäste senden auf: $GUEST_TGS"
 HT_TXT="aus (http://$SERVER_NAME:$WEB_PORT)"; [ "$HTTPS" = true ] && HT_TXT="an (https://$DOMAIN)"
@@ -174,6 +199,14 @@ row "Dashboard          " "$TITLE – $DESCRIPTION"
 row "Öffentlich         " "$PUB_TXT"
 row "Superadmin         " "$ADMIN_USER"
 row "HTTPS              " "$HT_TXT"
+AP_TXT="aus"
+if [ "$APRS" = true ]; then
+    AP_TXT="an, Karte: ${APRS_DOMAINS:-$SERVER_NAME/aprs}"
+    [ -n "$APRS_ID" ] && AP_TXT="$AP_TXT · ID $APRS_ID"
+    [ "$APRS_PORTS" = true ] && AP_TXT="$AP_TXT · Ports 14580/10152"
+    case "$APRS_UPLINK" in 1) AP_TXT="$AP_TXT · APRS-IS" ;; 2) AP_TXT="$AP_TXT · CB-APRS" ;; 3) AP_TXT="$AP_TXT · manuell" ;; esac
+fi
+row "APRS               " "$AP_TXT"
 row "Dienst-Benutzer    " "$SVC_USER"
 ask_yn GO "So einrichten?" j
 [ "$GO" = true ] || { warn "Abgebrochen, nichts geändert."; exit 0; }
@@ -186,7 +219,9 @@ ANSWERS="$(mktemp)"
 N8_SERVER_NAME="$SERVER_NAME" N8_DMR_PORT="$DMR_PORT" N8_TS1="$TS1" N8_TS2="$TS2" N8_FRID="$FRID" \
 N8_PASSPHRASE="$PASSPHRASE" N8_GUEST_TGS="$GUEST_TGS" N8_TITLE="$TITLE" N8_DESCRIPTION="$DESCRIPTION" \
 N8_WEB_PORT="$WEB_PORT" N8_PUBLIC="$PUBLIC" N8_ADMIN_USER="$ADMIN_USER" N8_ADMIN_HASH="$ADMIN_HASH" \
-N8_HTTPS="$HTTPS" N8_DOMAIN="$DOMAIN" N8_EMAIL="$EMAIL" python3 - "$ANSWERS" <<'PY'
+N8_HTTPS="$HTTPS" N8_DOMAIN="$DOMAIN" N8_EMAIL="$EMAIL" N8_APRS="$APRS" N8_APRS_ID="$APRS_ID" \
+N8_APRS_DOMAINS="$APRS_DOMAINS" N8_APRS_PORTS="$APRS_PORTS" N8_APRS_UPLINK="$APRS_UPLINK" N8_APRS_CB_LOGIN="$APRS_CB_LOGIN" \
+python3 - "$ANSWERS" <<'PY'
 import json, os, sys
 e = lambda k: os.environ.get("N8_" + k, "")
 json.dump({
@@ -195,6 +230,8 @@ json.dump({
     "dashboard_title": e("TITLE"), "server_description": e("DESCRIPTION"), "web_port": e("WEB_PORT"),
     "public": e("PUBLIC") == "true", "admin_user": e("ADMIN_USER"), "admin_hash": e("ADMIN_HASH"),
     "https": e("HTTPS") == "true", "domain": e("DOMAIN"), "email": e("EMAIL"),
+    "aprs": e("APRS") == "true", "aprs_id": e("APRS_ID"), "aprs_domains": e("APRS_DOMAINS"),
+    "aprs_ports": e("APRS_PORTS") == "true", "aprs_uplink": e("APRS_UPLINK") or "0", "aprs_cb_login": e("APRS_CB_LOGIN"),
 }, open(sys.argv[1], "w"))
 PY
 if venv/bin/python scripts/setup_apply.py write "$REPO_ROOT" "$ANSWERS"; then
@@ -204,15 +241,17 @@ else
 fi
 rm -f "$ANSWERS"
 
-# ---------------------------------------------------------------------- 9
+# ---------------------------------------------------------------------- 10
 step "Firewall, Dienste & Prüfung"
 if [ "${SKIP_FIREWALL:-0}" != 1 ] && command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
     ufw allow "$DMR_PORT/udp" >/dev/null && ok "ufw: UDP $DMR_PORT offen"
     if [ "$HTTPS" = true ]; then ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; ok "ufw: TCP 80 und 443 offen"
     else ufw allow "$WEB_PORT/tcp" >/dev/null && ok "ufw: TCP $WEB_PORT offen"; fi
+    if [ "$APRS_PORTS" = true ]; then ufw allow 14580/tcp >/dev/null; ufw allow 10152/tcp >/dev/null; ok "ufw: TCP 14580 und 10152 offen (APRS)"; fi
 else
     info "keine aktive ufw-Firewall gefunden – Ports ggf. selbst freigeben: UDP $DMR_PORT, TCP $([ "$HTTPS" = true ] && echo "80 und 443" || echo "$WEB_PORT")"
 fi
+[ "$APRS_PORTS" = true ] && info "APRS-Server: TCP 14580 und 10152 müssen von außen erreichbar sein"
 rm -f /tmp/hblink4.sock 2>/dev/null
 chown -R "$SVC_USER:$SVC_GROUP" "$REPO_ROOT" && ok "Dateien gehören $SVC_USER"
 if [ "${SKIP_SERVICES:-0}" = 1 ] || ! command -v systemctl >/dev/null 2>&1; then
@@ -234,5 +273,6 @@ echo -e "   Dashboard:    ${B}$URL${N}"
 echo -e "   Anmelden:     🔐 Login oben rechts als ${B}$ADMIN_USER${N}"
 echo -e "   Repeater:     $SERVER_NAME, Port $DMR_PORT, Passwort wie eingegeben"
 [ "$FRID" = true ] && echo -e "   FreeRadioID:  eigenes FreeRadioID-Passwort = volle Rechte, Standard-Passwort = Gast"
+[ "$APRS" = true ] && echo -e "   APRS-Karte:   ${B}$URL/aprs${N}${APRS_DOMAINS:+ und $APRS_DOMAINS} (alles Weitere: ⚙️ Admin area → 📡 APRS)"
 echo -e "   Alles weitere stellst du im Dashboard ein: ⚙️ Admin area → Settings."
 echo

@@ -12,6 +12,11 @@ How it works
   running server without a restart.
 * Ports below 1024 need CAP_NET_BIND_SERVICE (set in hblink4-dash.service).
 
+Additional names (the APRS map domains, e.g. aprs.die-n8schicht.de) go into
+the same certificate as extra names (SAN). Before they are requested, each is
+looked up in DNS: a name that does not point to the same address as the main
+domain is left out (with a log line) instead of making the whole request fail.
+
 Alternatively, point https.cert_file / https.key_file at certificates you
 manage yourself and set https.letsencrypt to false.
 """
@@ -22,8 +27,10 @@ import logging
 import os
 import re
 import shutil
+import socket
+import ssl
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -37,9 +44,15 @@ _DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$")
 
 
 class CertManager:
-    def __init__(self, cfg: Dict[str, Any], data_dir: Path):
+    def __init__(self, cfg: Dict[str, Any], data_dir: Path, extra_domains: Iterable[str] = ()):
         self.cfg = cfg or {}
         self.domain: str = str(self.cfg.get("domain") or "").strip().lower()
+        self.extra: List[str] = []
+        for d in extra_domains or ():
+            d = str(d or "").strip().lower().rstrip(".")
+            if d and d != self.domain and _DOMAIN_RE.match(d) and d not in self.extra:
+                self.extra.append(d)
+        self.requested: List[str] = []    # extra names that went into the last request
         self.email: str = str(self.cfg.get("email") or "").strip()
         self.letsencrypt: bool = bool(self.cfg.get("letsencrypt", True))
         self.staging: bool = bool(self.cfg.get("staging", False))
@@ -70,9 +83,55 @@ class CertManager:
         except OSError:
             return 0.0
 
-    def https_url(self, path: str = "/") -> str:
+    @property
+    def all_domains(self) -> List[str]:
+        return [self.domain] + self.extra
+
+    def https_url(self, path: str = "/", host: str = "") -> str:
         port = "" if self.https_port == 443 else f":{self.https_port}"
-        return f"https://{self.domain}{port}{path}"
+        host = (host or "").split(":")[0].lower()
+        name = host if host in self.all_domains else self.domain
+        return f"https://{name}{port}{path}"
+
+    def cert_names(self) -> Set[str]:
+        """DNS names in the current certificate (empty if unknown)."""
+        if not self.have_cert():
+            return set()
+        try:
+            info = ssl._ssl._test_decode_cert(self.cert_file)  # type: ignore[attr-defined]
+            return {v.lower() for k, v in info.get("subjectAltName", ()) if k == "DNS"}
+        except Exception:
+            return set()
+
+    def missing_names(self) -> List[str]:
+        """Extra names that the certificate does not cover yet."""
+        if not self.letsencrypt or not self.extra:
+            return []
+        names = self.cert_names()
+        return [d for d in self.extra if d not in names] if names else list(self.extra)
+
+    @staticmethod
+    def _addresses(name: str) -> Set[str]:
+        try:
+            return {ai[4][0] for ai in socket.getaddrinfo(name, None, proto=socket.IPPROTO_TCP)}
+        except OSError:
+            return set()
+
+    async def resolvable_extra(self) -> List[str]:
+        """Extra names that point to the same address(es) as the main domain."""
+        if not self.extra:
+            return []
+        main = await asyncio.to_thread(self._addresses, self.domain)
+        ok = []
+        for d in self.extra:
+            addrs = await asyncio.to_thread(self._addresses, d)
+            if addrs and (not main or addrs & main):
+                ok.append(d)
+            else:
+                logger.warning(f"🔒 {d} is left out of the certificate: it does not point to this server "
+                               f"({', '.join(sorted(addrs)) or 'no DNS entry'}; {self.domain}: "
+                               f"{', '.join(sorted(main)) or '?'})")
+        return ok
 
     # -------------------------------------------------------------- certbot
     def _certbot_base(self) -> list:
@@ -111,16 +170,21 @@ class CertManager:
             logger.error(f"🔒 https.domain {self.domain!r} is not a valid public domain name")
             return False
         try:
+            extra = await self.resolvable_extra()
+            names = [self.domain] + extra
             args = self._certbot_base() + [
                 "certonly", "--webroot", "-w", str(self.webroot),
-                "-d", self.domain, "--cert-name", self.domain, "--agree-tos", "--keep-until-expiring"]
+                "--cert-name", self.domain, "--agree-tos", "--keep-until-expiring", "--expand"]
+            for n in names:
+                args += ["-d", n]
+            self.requested = extra
         except RuntimeError as e:
             logger.error(f"🔒 {e}")
             return False
         args += ["--email", self.email] if self.email else ["--register-unsafely-without-email"]
         if self.staging:
             args.append("--staging")
-        logger.info(f"🔒 Requesting Let's Encrypt certificate for {self.domain} …")
+        logger.info(f"🔒 Requesting Let's Encrypt certificate for {', '.join(names)} …")
         try:
             rc = await self._run(args)
         except asyncio.TimeoutError:
@@ -168,7 +232,8 @@ def build_http_app(cm: CertManager, redirect: bool = True) -> Starlette:
         if not redirect:
             return PlainTextResponse("HTTPS only", status_code=404)
         query = f"?{request.url.query}" if request.url.query else ""
-        return RedirectResponse(cm.https_url(request.url.path + query), status_code=301)
+        return RedirectResponse(cm.https_url(request.url.path + query, request.headers.get("host", "")),
+                                status_code=301)
 
     return Starlette(routes=[
         Route("/.well-known/acme-challenge/{token}", challenge),

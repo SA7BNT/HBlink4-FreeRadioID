@@ -1,6 +1,6 @@
 # 🩺 Betrieb & Fehlersuche
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · **Betrieb & Fehlersuche**
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · **Betrieb & Fehlersuche**
 
 ---
 
@@ -61,6 +61,9 @@ Zu jedem Problem steht die passende Lösung mit **→** dahinter. Am Ende steht 
 | Eine Talkgroup läuft nur über einen der Trunks | ältere Version: eine Talkgroup in der Liste eines Trunks „gehörte“ nur diesem Trunk; Gespräche dieser Talkgroup von anderen Trunks wurden verworfen | aktualisieren; jetzt führen alle Trunks die Talkgroup parallel ([Adminbereich → Wohin ein Gespräch geht](adminbereich.md#wohin-ein-gespräch-geht)) |
 | `own stream … came back – dropped` | zwei Trunks führen in Netze, die selbst verbunden sind; unser Gespräch kam über den anderen Trunk zurück | kein Fehler: der Echo-Schutz hat gegriffen |
 | `frame is … s off our clock` | Uhrzeit eines Servers falsch | NTP einrichten: `sudo apt install chrony` |
+| APRS-Karte leer, `APRS server not started` | APRS aus oder keine Server-ID | Adminbereich → 📡 APRS → Server; mehr in [APRS → Fehlersuche](aprs.md#fehlersuche) |
+| `APRS port 14580 not available` | ein anderer APRS-Server (z. B. aprsc) belegt den Port | anderen Dienst stoppen oder anderen Port wählen |
+| Karten-Domain ohne Zertifikat (`… is left out of the certificate`) | DNS der Domain zeigt nicht auf den Server | DNS korrigieren, Dashboard neu starten |
 | Superadmin-Passwort vergessen | – | neuen Hash erzeugen (`./venv/bin/python -m dashboard.auth hash-password`), in `dashboard/config.json` eintragen, Dashboard neu starten; oder `sudo ./scripts/setup.sh` |
 
 ## Aktualisieren
@@ -158,6 +161,8 @@ cd /opt/HBlink4
 sudo -u hblink sqlite3 dashboard/data/dashboard.db ".backup '/tmp/dashboard-$(date +%F).db'"
 sudo tar czf ~/hblink4-backup-$(date +%F).tgz config/config.json dashboard/config.json /tmp/dashboard-$(date +%F).db
 ```
+
+Mit APRS kommt `dashboard/data/aprs.db` dazu (Stationen, Spuren, Rohpakete; höchstens 90 Tage): genauso mit `.backup` sichern, oder weglassen – sie füllt sich von selbst wieder.
 
 `.backup` sichert die Datenbank auch im laufenden Betrieb sauber; dafür braucht es das Paket `sqlite3`. **Zurückspielen:** Dienste stoppen, die drei Dateien an ihren Platz kopieren, die Rechte für den Dienst-Benutzer setzen und die Dienste starten.
 

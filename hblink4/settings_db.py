@@ -229,6 +229,7 @@ DMR_SECTIONS: List[Tuple[str, str]] = [
     ("dmr_types", "📲 Device detection"),
     ("dmr_advanced", "🧩 Patterns, blacklist & links (JSON)"),
     ("dmr_obp", "↔️ OpenBridge trunks"),
+    ("dmr_daprs", "🛰️ DAPRS – GPS from radios"),
 ]
 
 DMR_FIELDS: List[Field] = [
@@ -289,6 +290,16 @@ DMR_FIELDS: List[Field] = [
     Field("dmr.openbridge_transit", "dmr_obp", "Pass calls between trunks", "bool", True,
           "On: a call coming in over one trunk also goes out over all other trunks that carry the talkgroup. "
           "Loops are stopped by the echo guard and the FreeDMR hop counter."),
+    Field("dmr.daprs.enabled", "dmr_daprs", "Decode GPS positions (DAPRS)", "bool", False,
+          "Switched on together with APRS (APRS tab → Server). Finds positions that radios send over DMR and hands them to the APRS server of the dashboard"),
+    Field("dmr.daprs.embedded_gps", "dmr_daprs", "GPS in voice calls (embedded GPS LC)", "bool", True,
+          "Radios with GPS that send their position during a call (Motorola, Hytera, AnyTone …)", depends="dmr.daprs.enabled"),
+    Field("dmr.daprs.data_gps", "dmr_daprs", "GPS data calls (NMEA, LRRP)", "bool", True,
+          "Position reports sent as a data call, e.g. AnyTone/TYT \"Digital APRS\" to 900999 or Motorola LRRP",
+          depends="dmr.daprs.enabled"),
+    Field("dmr.daprs.data_ids", "dmr_daprs", "Accept GPS data sent to", "tglist", None,
+          "DMR IDs/talkgroups the radios send their GPS data to. all = any destination; e.g. 900999, 5057",
+          depends="dmr.daprs.enabled"),
 ]
 
 

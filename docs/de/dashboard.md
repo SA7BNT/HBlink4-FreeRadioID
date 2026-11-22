@@ -1,6 +1,6 @@
 # 🎙️ Dashboard
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · **Dashboard** · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · **Dashboard** · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -44,17 +44,18 @@ Die Status-Knöpfe sind kurz gehalten: **✓ Live**, **✓ DMR**, 🔇/🔊. Der
 - **↔️ OpenBridge** zeigt aktive und eingerichtete Trunks (z. B. `1/1`) sowie die Gespräche von heute: ⬇ empfangen und ⬆ gesendet. Die Kachel erscheint nur, wenn ein Trunk eingerichtet ist. Ein Klick öffnet den [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 - **🛡️ FreeRadioID** zeigt verifizierte Stationen und Gäste. Die Kachel erscheint nur, wenn der FreeRadioID-Login aktiv ist.
 
-## Tabs: 🎙️ Live, 📈 Statistics, ↔️ OpenBridge, 🗂️ Talkgroups, 🛠️ Configuration
+## Tabs: 🎙️ Live, 📈 Statistics, ↔️ OpenBridge, 🗂️ Talkgroups, 🗺️ APRS, 🛠️ Configuration
 
-Im Menü der Kopfzeile wählst du zwischen fünf Ansichten:
+Im Menü der Kopfzeile wählst du zwischen bis zu sechs Ansichten:
 
 - **🎙️ Live**: alles, was gerade passiert, also Statistik, Last Heard und Verbindungen. Diese Ansicht ist der Start.
 - **📈 Statistics**: die [Talkgroup-Statistik](#-talkgroup-statistik). Die Zahl am Tab gibt an, wie viele Talkgroups heute aktiv waren.
 - **↔️ OpenBridge** (am Smartphone „OBP“): [die Trunks im Detail](#️-openbridge--die-trunks-im-detail). Die Zahl am Tab zeigt aktive und eingerichtete Trunks. Der Tab erscheint nur, wenn ein Trunk eingerichtet ist.
 - **🗂️ Talkgroups** (am Smartphone „TGs“): [das Talkgroup-Verzeichnis](#️-talkgroups--das-verzeichnis) mit Suche.
+- **🗺️ APRS**: die [APRS-Karte](aprs.md#die-karte) mit DMR-Positionen, Repeatern und APRS-Stationen. Der Tab erscheint, wenn APRS eingeschaltet ist; **⤢ Full screen** öffnet die Karte auf eigener Seite (`/aprs`).
 - **🛠️ Configuration** (am Smartphone „Setup“): [alles, was man zum Verbinden braucht](#️-configuration--so-verbindest-du-dich).
 
-Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#openbridge`, `…/#talkgroups`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
+Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#openbridge`, `…/#talkgroups`, `…/#aprs`, `…/#config`). So landest du nach dem Neuladen wieder dort und kannst die Tabs direkt verlinken, z. B. `https://dmr.die-n8schicht.de/#config` für neue Funkamateure.
 
 ## ↔️ OpenBridge – die Trunks im Detail
 

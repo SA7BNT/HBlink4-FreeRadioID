@@ -60,6 +60,7 @@ from .utils import (
     fmt_ts_tg, pad_text, pad_num, pad_decimal
 )
 from . import obp_freedmr as fdmr
+from .daprs import DaprsDecoder
 from .config import load_config as load_config_func, parse_outbound_connections as parse_outbound_func, parse_openbridge_connections as parse_openbridge_func
 from .protocol import (
     parse_dmr_packet, is_dmr_terminator, validate_packet_length,
@@ -182,6 +183,10 @@ class HBProtocol(asyncio.DatagramProtocol):
             cache_timeout = 60
         self._user_cache = UserCache(timeout_seconds=cache_timeout)
         LOGGER.info(f'User cache initialized with {cache_timeout}s timeout')
+
+        # DAPRS: GPS positions from radios (embedded GPS LC, GPS data calls) -> dashboard APRS
+        self._daprs = DaprsDecoder(CONFIG.get('daprs', {}))
+        self._daprs_on = self._daprs.enabled
         
         # No conversion caching - simple int.from_bytes() is fast enough
         # and avoids unbounded cache growth (memory leak prevention)
@@ -200,6 +205,8 @@ class HBProtocol(asyncio.DatagramProtocol):
             except Exception as e:
                 LOGGER.error(f'⚙️ New patterns/blacklist rejected, keeping the old ones: {e}')
             self._frid = FreeRadioIDAuth(CONFIG.get('freeradioid', {}), LOGGER)
+            self._daprs.configure(CONFIG.get('daprs', {}))
+            self._daprs_on = self._daprs.enabled
             # Talkgroup lists of connected repeaters that did not send their own (RPTO)
             for rid, rep in list(self._repeaters.items()):
                 if rep.connection_state == 'connected' and not rep.rpto_received:
@@ -3995,6 +4002,19 @@ class HBProtocol(asyncio.DatagramProtocol):
     # DMR Packet Processing
     # ================================
     
+    def _emit_gps(self, repeater: RepeaterState, fix) -> None:
+        """A GPS position found by DAPRS: log it and hand it to the dashboard (APRS)."""
+        data = fix.as_event()
+        data.update({
+            'repeater_id': rid_to_int(repeater.repeater_id),
+            'repeater_callsign': repeater.get_callsign_str(),
+            'connection_type': repeater.connection_type,
+            'auth_method': repeater.auth_method,
+        })
+        LOGGER.info(f'📍 DAPRS {fix.source} position from {fix.radio_id} via {data["repeater_id"]} '
+                    f'({data["repeater_callsign"]}) TS{fix.slot}: {fix.lat:.5f}, {fix.lon:.5f}')
+        self._events.emit('gps_position', data)
+
     def _parse_dmr_packet(self, data: bytes) -> Optional[Dict[str, Any]]:
         """Parse DMR packet - delegated to protocol module"""
         return parse_dmr_packet(data)
@@ -4025,6 +4045,15 @@ class HBProtocol(asyncio.DatagramProtocol):
         _stream_id = packet['stream_id']
         _dtype_vseq = data[15] & 0x0F
         _payload = data[20:53] if len(data) >= 53 else b''
+
+        # DAPRS: look for GPS positions (embedded GPS in voice bursts B-E, GPS data calls).
+        # Before stream handling on purpose: data bursts often arrive with fresh stream IDs
+        # and are refused as contention there, but still belong to one GPS report.
+        if self._daprs_on and _frame_type != 1:
+            fix = self._daprs.feed(repeater_id, _slot, _rf_src, _dst_id, _frame_type, _dtype_vseq,
+                                   _payload, _call_type)
+            if fix is not None:
+                self._emit_gps(repeater, fix)
 
         # Check if this is a stream terminator (immediate end detection)
         # Note: _is_dmr_terminator() checks packet header flags for immediate detection

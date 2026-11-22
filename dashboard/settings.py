@@ -18,6 +18,7 @@ addresses / event link, which a program needs before it can read the database.
 from __future__ import annotations
 
 import copy
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,7 +28,7 @@ from hblink4.settings_db import (  # noqa: E402
     DMR_FIELDS, DMR_SECTIONS, Field, SettingsDB, SettingsError, get_path, set_path, validate,
 )
 
-__all__ = ["SettingsStore", "SettingsError", "FIELDS", "FIELD_BY_KEY", "SECTIONS", "SECTION_HELP", "get_path", "set_path",
+__all__ = ["APRS_SECTIONS", "SettingsStore", "SettingsError", "FIELDS", "FIELD_BY_KEY", "SECTIONS", "SECTION_HELP", "get_path", "set_path",
            "validate", "RADIOID_URL", "FREERADIOID_ALL_URL"]
 
 RADIOID_URL = "https://database.radioid.net/static/user.csv"
@@ -44,7 +45,15 @@ DASH_SECTIONS: List[Tuple[str, str]] = [
     ("connect", "🛠️ Configuration tab"),
     ("https", "🔒 HTTPS & web"),
     ("update", "⬆️ Updates"),
+    ("aprs_server", "📡 APRS server"),
+    ("aprs_uplink", "🌍 Uplink & downlink"),
+    ("aprs_daprs", "🛰️ DAPRS – DMR → APRS"),
+    ("aprs_map", "🗺️ APRS map"),
+    ("aprs_sites", "🌐 APRS domains"),
 ]
+
+# Sections shown in the admin area's APRS tab instead of under Settings
+APRS_SECTIONS = ("aprs_server", "aprs_uplink", "aprs_daprs", "dmr_daprs", "aprs_map", "aprs_sites")
 
 # One sentence per section for the admin area (what is this about?)
 SECTION_HELP: Dict[str, str] = {
@@ -58,12 +67,18 @@ SECTION_HELP: Dict[str, str] = {
     "connect": "The Configuration tab tells new users how to connect their hotspot.",
     "https": "Encrypted access with a free Let's Encrypt certificate.",
     "update": "Logged-in admins get a notice when GitHub has a newer version.",
+    "aprs_server": "An APRS-IS compatible server in Python: APRS apps, iGates and trackers connect to it like to any APRS-IS server.",
+    "aprs_uplink": "Connection to an APRS network – APRS-IS, CB-APRS or your own servers: DMR positions go up, stations come down onto the map.",
+    "aprs_daprs": "What happens with the GPS positions of DMR radios: callsign from the ID list, SSID, symbol, comment, APRS-IS.",
+    "aprs_map": "The APRS map: who sees it, what it shows and how long stations stay.",
+    "aprs_sites": "Up to three domains that open the map directly, each with its own title and logo and, if wanted, a Let's Encrypt certificate.",
     "dmr_server": "Port and timing of the DMR server.",
     "dmr_access": "Password and talkgroups for repeaters and hotspots.",
     "dmr_frid": "Personal logins via FreeRadioID.net and the guest access.",
     "dmr_types": "How stations are sorted into repeaters, hotspots, apps and networks: by the package name their software reports at login.",
     "dmr_advanced": "Rules per station, blocked IDs and links to other servers – for experienced sysops.",
     "dmr_obp": "Trunks to other networks such as FreeDMR.",
+    "dmr_daprs": "The DMR server finds GPS positions in the radio traffic (DAPRS). What happens with them is set in the APRS tab.",
 }
 
 THEME_PRESETS = (
@@ -172,6 +187,133 @@ DASH_FIELDS: List[Field] = [
           "Always asks for the password again. Pulls only from the git remote set up on the server.",
           choices=(("superadmin", "Superadmin only"), ("admin", "All admins"), ("nobody", "Nobody (update by hand)")),
           depends="update.enabled"),
+    # -- APRS server
+    Field("aprs.enabled", "aprs_server", "APRS (map, DAPRS, server)", "bool", False,
+          "Off by default. Switches on the map, the station database and the DMR → APRS gateway. "
+          "The TCP ports and the uplink below are separate switches."),
+    Field("aprs.server_id", "aprs_server", "Server ID (your callsign)", "text", "",
+          "Callsign with SSID, e.g. DB0ABC-10. Login name at APRS-IS (the passcode is computed) and name in the packet path.",
+          depends="aprs.enabled"),
+    Field("aprs.server.enabled", "aprs_server", "Open the APRS-IS ports (TCP)", "bool", False,
+          "APRSdroid, Xastir, YAAC, iGates and trackers connect here. Open the ports in the firewall.",
+          depends="aprs.enabled"),
+    Field("aprs.server.port_filter", "aprs_server", "Filter port", "int", 14580,
+          "Clients choose what they get with a filter (r/lat/lon/km …)", min=1, max=65535, depends="aprs.server.enabled"),
+    Field("aprs.server.port_full", "aprs_server", "Full-feed port", "int", 10152,
+          "Everything the server has, unfiltered. 0 = off", min=0, max=65535, depends="aprs.server.enabled", advanced=True),
+    Field("aprs.server.bind", "aprs_server", "Listen address", "text", "",
+          "Empty = all addresses (IPv4 and IPv6)", depends="aprs.server.enabled", advanced=True),
+    Field("aprs.server.max_clients", "aprs_server", "Max. clients", "int", 200, min=1, max=5000,
+          depends="aprs.server.enabled", advanced=True),
+    Field("aprs.server.dupe_seconds", "aprs_server", "Duplicate window (s)", "int", 30,
+          "The same packet again within this time is dropped (APRS-IS standard: 30 s)", min=5, max=300, advanced=True),
+
+    # -- uplink & downlink
+    Field("aprs.uplink.enabled", "aprs_uplink", "Uplink & downlink", "bool", False,
+          "Connect this server to an APRS network: positions from DMR go up, stations from there come down onto the map."),
+    Field("aprs.uplink.mode", "aprs_uplink", "Network", "choice", "aprsis",
+          choices=(("aprsis", "🌍 APRS-IS (amateur radio, worldwide)"), ("cbaprs", "📻 CB-APRS (CB radio, eu.cbaprs.net)"),
+                   ("manual", "🛠️ Manual – own servers, several links, up/down separately")),
+          depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.aprsis.host", "aprs_uplink", "APRS-IS server", "text", "euro.aprs2.net",
+          "euro.aprs2.net (Europe), rotate.aprs2.net (worldwide) or your own Tier-2 server", depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.aprsis.port", "aprs_uplink", "Port", "int", 14580, min=1, max=65535, depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.aprsis.filter", "aprs_uplink", "Downlink filter", "text", "r/51.2/10.4/450",
+          "What comes down: r/lat/lon/km = radius around a point (default: Germany). Empty = nothing comes down.",
+          depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.cbaprs.host", "aprs_uplink", "CB-APRS server", "text", "eu.cbaprs.net",
+          "eu.cbaprs.net (Europe) or us.cbaprs.net", depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.cbaprs.port", "aprs_uplink", "Port", "int", 27235, min=1, max=65535, depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.cbaprs.login", "aprs_uplink", "Login (CB callsign)", "text", "",
+          "Empty = the server ID", depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.cbaprs.passcode", "aprs_uplink", "Passcode", "text", "",
+          "Empty = computed from the login; -1 = receive only", depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.cbaprs.filter", "aprs_uplink", "Downlink filter", "text", "r/51.2/10.4/450",
+          "What comes down from CB-APRS. Empty = nothing", depends="aprs.uplink.enabled"),
+    Field("aprs.uplink.manual", "aprs_uplink", "Links", "json", [],
+          "One row per server: host, port, login, passcode (empty = computed), filter and direction", depends="aprs.uplink.enabled"),
+
+    # -- DAPRS gateway
+    Field("daprs.enabled", "aprs_daprs", "DMR positions become APRS positions", "bool", True,
+          "Positions the DMR server finds (DAPRS) go onto the map as CALL-SSID; the callsign comes from the ID list"),
+    Field("daprs.to_aprsis", "aprs_daprs", "Send them up (uplink)", "bool", True,
+          "Only while the uplink is connected and verified", depends="daprs.enabled"),
+    Field("daprs.block_guests", "aprs_daprs", "Not for guests", "bool", True,
+          "Stations logged in with the guest password (FreeRadioID) only appear on the local map", depends="daprs.enabled"),
+    Field("daprs.ssid", "aprs_daprs", "SSID", "int", 7, "CALL-7 for a handheld; 0 = no SSID. Per ID below.",
+          min=0, max=15, depends="daprs.enabled"),
+    Field("daprs.symbol", "aprs_daprs", "Symbol", "text", "/[",
+          "Table and symbol code: /[ person, /> car, /k truck, /b bike, /- house, /r antenna", depends="daprs.enabled"),
+    Field("daprs.comment", "aprs_daprs", "Comment", "text", "DMR TG{tg}",
+          "Placeholders: {tg} talkgroup, {repeater} hotspot/repeater callsign, {dmrid}, {slot}, {server}",
+          depends="daprs.enabled"),
+    Field("daprs.min_interval", "aprs_daprs", "Up at most every (s)", "int", 60,
+          "Per station. The local map always shows the newest position.", min=10, max=3600, depends="daprs.enabled"),
+    Field("daprs.overrides", "aprs_daprs", "Per DMR ID", "json", [],
+          "Own callsign, SSID, symbol or comment for single IDs, or switch one off", depends="daprs.enabled"),
+    Field("daprs.objects.repeaters", "aprs_daprs", "Repeaters on the map", "bool", True,
+          "As APRS objects at the position they report at login, with frequency and colour code"),
+    Field("daprs.objects.hotspots", "aprs_daprs", "Hotspots on the map", "bool", False,
+          "Hotspot positions are often home addresses – off by default"),
+    Field("daprs.objects.to_aprsis", "aprs_daprs", "Send these objects up (uplink)", "bool", False),
+    Field("daprs.objects.interval_min", "aprs_daprs", "Object beacon every (min)", "int", 30, min=5, max=240,
+          advanced=True),
+    Field("daprs.objects.comment", "aprs_daprs", "Object comment", "text", "DMR",
+          "After frequency and colour code", advanced=True),
+    Field("daprs.objects.repeater_symbol", "aprs_daprs", "Repeater symbol", "text", "/r", advanced=True),
+    Field("daprs.objects.hotspot_symbol", "aprs_daprs", "Hotspot symbol", "text", "/n", advanced=True),
+
+    # -- map
+    Field("aprs.map.public", "aprs_map", "Map visible without login", "bool", True,
+          "Independent of the dashboard: the map can be public while the dashboard is not"),
+    Field("aprs.map.dashboard_tab", "aprs_map", "APRS tab in the dashboard", "bool", True),
+    Field("aprs.map.sources", "aprs_map", "Stations on the map", "choice", "all",
+          choices=(("all", "All (DMR, own clients and downlink)"), ("local", "Only DMR and own clients"))),
+    Field("aprs.map.max_age_hours", "aprs_map", "Show stations of the last (h)", "int", 24, min=1, max=168),
+    Field("aprs.map.center", "aprs_map", "Map centre (lat, lon)", "text", "51.2, 10.4",
+          "Where the map opens, e.g. 52.29, 8.92"),
+    Field("aprs.map.zoom", "aprs_map", "Zoom", "int", 6, "2 = world, 6 = Germany, 10 = region", min=2, max=18),
+    Field("aprs.map.tiles", "aprs_map", "Map style", "choice", "auto",
+          choices=(("auto", "Automatic – dark map for dark colour profiles, light map for Daylight"),
+                   ("dark", "Dark (OpenStreetMap, darkened) – fits the N8 design"), ("osm", "OpenStreetMap"),
+                   ("topo", "Topographic (OpenTopoMap)"), ("custom", "Own tile server"))),
+    Field("aprs.map.tile_url", "aprs_map", "Own tile URL", "text", "",
+          "https://…/{z}/{x}/{y}.png – only for \"Own tile server\" (e.g. with your own API key)", advanced=True),
+    Field("aprs.map.tracks", "aprs_map", "Show tracks", "bool", True, "Line of the last positions of moving stations"),
+    Field("aprs.map.show_packets", "aprs_map", "Show raw packets", "bool", True,
+          "Packet log under the map and in the station window"),
+    Field("aprs.map.station_days", "aprs_map", "Keep stations (days)", "int", 30, "SQLite, at most 90 days",
+          min=1, max=90, advanced=True),
+    Field("aprs.map.track_days", "aprs_map", "Keep tracks (days)", "int", 30, "SQLite, at most 90 days",
+          min=1, max=90, advanced=True),
+    Field("aprs.map.packet_days", "aprs_map", "Keep raw packets (days)", "int", 7, "SQLite, at most 90 days",
+          min=1, max=90, advanced=True),
+
+    Field("aprs.site1.domain", "aprs_sites", "Domain 1", "text", "",
+          "e.g. aprs.example.org – opens the map at /. Must point to this server (DNS). Empty = off",
+          restart=True),
+    Field("aprs.site1.https", "aprs_sites", "Domain 1: HTTPS with Let's Encrypt", "bool", True,
+          "Goes into the certificate of the dashboard (Settings → HTTPS & web must be on)", restart=True),
+    Field("aprs.site1.title", "aprs_sites", "Title 1", "text", "", "Empty = title of the dashboard"),
+    Field("aprs.site1.subtitle", "aprs_sites", "Subtitle 1", "text", "", "Empty = APRS map · domain"),
+    Field("aprs.site1.logo", "aprs_sites", "Logo 1", "image", "", "Empty = logo of the dashboard"),
+    Field("aprs.site2.domain", "aprs_sites", "Domain 2", "text", "",
+          "e.g. aprs2.example.org – opens the map at /. Must point to this server (DNS). Empty = off",
+          restart=True),
+    Field("aprs.site2.https", "aprs_sites", "Domain 2: HTTPS with Let's Encrypt", "bool", True,
+          "Goes into the certificate of the dashboard (Settings → HTTPS & web must be on)", restart=True),
+    Field("aprs.site2.title", "aprs_sites", "Title 2", "text", "", "Empty = title of the dashboard"),
+    Field("aprs.site2.subtitle", "aprs_sites", "Subtitle 2", "text", "", "Empty = APRS map · domain"),
+    Field("aprs.site2.logo", "aprs_sites", "Logo 2", "image", "", "Empty = logo of the dashboard"),
+    Field("aprs.site3.domain", "aprs_sites", "Domain 3", "text", "",
+          "e.g. map.example.org – opens the map at /. Must point to this server (DNS). Empty = off",
+          restart=True),
+    Field("aprs.site3.https", "aprs_sites", "Domain 3: HTTPS with Let's Encrypt", "bool", True,
+          "Goes into the certificate of the dashboard (Settings → HTTPS & web must be on)", restart=True),
+    Field("aprs.site3.title", "aprs_sites", "Title 3", "text", "", "Empty = title of the dashboard"),
+    Field("aprs.site3.subtitle", "aprs_sites", "Subtitle 3", "text", "", "Empty = APRS map · domain"),
+    Field("aprs.site3.logo", "aprs_sites", "Logo 3", "image", "", "Empty = logo of the dashboard"),
+
     Field("https.enabled", "https", "HTTPS with Let's Encrypt", "bool", False,
           "Needs certbot, the domain pointing here and ports 80/443 open", restart=True),
     Field("https.domain", "https", "Domain", "text", "", restart=True, depends="https.enabled"),
@@ -205,6 +347,111 @@ _MIGRATE_UNTOUCHED = {
     "user_database.filter.countries": (["United States", "Canada"],),
 }
 _SEED_SOURCES = ("config.json", "config/config.json", "dashboard/config.json")
+
+
+_DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$")
+_CALL_RE = re.compile(r"^[A-Z0-9]{3,9}(-[A-Z0-9]{1,2})?$")
+
+
+def _check_aprs(clean: Dict[str, Any]) -> None:
+    """APRS values that the generic field types cannot check."""
+    for key in list(clean):
+        v = clean[key]
+        if key.startswith("aprs.site") and key.endswith(".domain") and v:
+            v = v.strip().lower().rstrip(".")
+            if not _DOMAIN_RE.match(v):
+                raise SettingsError(f"{FIELD_BY_KEY[key].label}: not a domain name (e.g. aprs.example.org).")
+            clean[key] = v
+        elif key == "aprs.server_id" and v:
+            v = v.strip().upper()
+            if not _CALL_RE.match(v):
+                raise SettingsError("Server ID: a callsign with optional SSID, e.g. DB0ABC-10.")
+            clean[key] = v
+        elif key in ("daprs.symbol", "daprs.objects.repeater_symbol", "daprs.objects.hotspot_symbol") and v:
+            if len(v) != 2 or not (v[0] in "/\\" or v[0].isalnum()) or not 33 <= ord(v[1]) <= 126:
+                raise SettingsError(f"{FIELD_BY_KEY[key].label}: two characters, table and code, e.g. /[ or /r.")
+        elif key == "aprs.map.center":
+            try:
+                lat, lon = (float(x) for x in v.replace(";", ",").split(","))
+                if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                    raise ValueError
+            except ValueError:
+                raise SettingsError("Map centre: latitude, longitude – e.g. 52.29, 8.92")
+        elif key in ("aprs.uplink.aprsis.filter", "aprs.uplink.cbaprs.filter") and v:
+            from .aprs.filters import FilterSet, FilterError
+            try:
+                FilterSet(v)
+            except FilterError as e:
+                raise SettingsError(f"APRS-IS filter: {e}")
+        elif key == "aprs.uplink.cbaprs.passcode" and v:
+            if not re.fullmatch(r"-1|\d{1,5}", v.strip()):
+                raise SettingsError("CB-APRS passcode: a number, -1 or empty.")
+            clean[key] = v.strip()
+        elif key == "aprs.uplink.manual":
+            out = []
+            for i, o in enumerate(v[:10], 1):
+                host = str(o.get("host") or "").strip()
+                if not host:
+                    continue
+                if not re.fullmatch(r"[A-Za-z0-9.:-]{1,253}", host):
+                    raise SettingsError(f"Link {i}: invalid host.")
+                try:
+                    port = int(o.get("port") or 14580)
+                except (TypeError, ValueError):
+                    port = 0
+                if not 1 <= port <= 65535:
+                    raise SettingsError(f"Link {i}: port 1–65535.")
+                login = str(o.get("login") or "").strip().upper()
+                if login and not _CALL_RE.match(login):
+                    raise SettingsError(f"Link {i}: login is a callsign, e.g. DB0ABC-10 (empty = server ID).")
+                pc = str(o.get("passcode") if o.get("passcode") is not None else "").strip()
+                if pc and not re.fullmatch(r"-1|\d{1,5}", pc):
+                    raise SettingsError(f"Link {i}: passcode is a number, -1 or empty.")
+                flt = str(o.get("filter") or "").strip()
+                if flt:
+                    from .aprs.filters import FilterSet, FilterError
+                    try:
+                        FilterSet(flt)
+                    except FilterError as e:
+                        raise SettingsError(f"Link {i}: filter {e}")
+                direction = str(o.get("direction") or "both")
+                if direction not in ("both", "up", "down"):
+                    raise SettingsError(f"Link {i}: direction both, up or down.")
+                out.append({"name": str(o.get("name") or host)[:30], "host": host, "port": port, "login": login,
+                            "passcode": pc, "filter": flt, "direction": direction, "enabled": o.get("enabled", True) is not False})
+            clean[key] = out
+        elif key == "daprs.overrides":
+            out = []
+            for i, o in enumerate(v[:500], 1):
+                try:
+                    rid = int(o.get("dmr_id"))
+                except (TypeError, ValueError):
+                    raise SettingsError(f"Per DMR ID: entry {i} has no valid dmr_id.")
+                item: Dict[str, Any] = {"dmr_id": rid}
+                if o.get("callsign"):
+                    cs = str(o["callsign"]).strip().upper()
+                    if not re.match(r"^[A-Z0-9]{3,7}$", cs):
+                        raise SettingsError(f"Per DMR ID {rid}: callsign without SSID, e.g. DL1ABC.")
+                    item["callsign"] = cs
+                if o.get("ssid") not in (None, ""):
+                    try:
+                        ssid = int(o["ssid"])
+                    except (TypeError, ValueError):
+                        ssid = -1
+                    if not 0 <= ssid <= 15:
+                        raise SettingsError(f"Per DMR ID {rid}: SSID 0–15.")
+                    item["ssid"] = ssid
+                if o.get("symbol"):
+                    sym = str(o["symbol"])
+                    if len(sym) != 2:
+                        raise SettingsError(f"Per DMR ID {rid}: symbol is two characters, e.g. /> .")
+                    item["symbol"] = sym
+                if o.get("comment"):
+                    item["comment"] = str(o["comment"])[:60]
+                if o.get("off"):
+                    item["off"] = True
+                out.append(item)
+            clean[key] = out
 
 
 class SettingsStore:
@@ -277,6 +524,7 @@ class SettingsStore:
             if not f:
                 raise SettingsError(f"Unknown setting {key}.")
             clean[key] = validate(f, raw)
+        _check_aprs(clean)
         self._check_dmr_structure(clean)
         stored = self.db.stored()
         changed = []

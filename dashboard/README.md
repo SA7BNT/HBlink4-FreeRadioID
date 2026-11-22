@@ -4,6 +4,11 @@ Real-time monitoring dashboard for HBlink4 DMR server with modern look and feel.
 
 ## Features
 
+- **APRS (since 1.2.0, off by default)**: APRS-IS compatible server in Python (`dashboard/aprs/`, ports 14580/10152),
+  uplink & downlink to APRS-IS, CB-APRS or manual servers, DAPRS gateway (GPS positions that HBlink4 finds in
+  DMR traffic become APRS positions), repeater objects and a Leaflet map at `/aprs`, as dashboard tab and on up to
+  three own domains with Let's Encrypt. German documentation: [docs/de/aprs.md](../docs/de/aprs.md)
+
 - **Real-time Updates**: WebSocket-based live updates every second (no page refreshes required)
 - **Repeater Monitoring**: See all connected repeaters with their configurations and connection health
 - **Active Streams**: Monitor ongoing DMR transmissions in real-time with duration counters

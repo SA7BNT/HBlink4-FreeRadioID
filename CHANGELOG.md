@@ -4,6 +4,79 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.2.0] – 2026-11-22
+
+**APRS für DMR Die N8schicht:** ein APRS-Server in Python, Uplink & Downlink wahlweise zu APRS-IS, CB-APRS oder eigenen
+Servern, **DAPRS** (GPS-Positionen von DMR-Funkgeräten werden APRS-Positionen) und eine Live-Karte im N8schicht-Design –
+auch unter bis zu drei eigenen Domains mit Let's-Encrypt-Zertifikat. Alles im Adminbereich unter **📡 APRS**.
+**APRS ist nach dem Update ausgeschaltet**; es ändert sich nichts, bis du es einschaltest. Anleitung: [docs/de/aprs.md](docs/de/aprs.md).
+
+### 🛰️ DAPRS – GPS aus dem DMR-Verkehr (DMR-Server)
+- **Embedded GPS:** Funkgeräte, die ihre Position während eines Sprachrufs senden („GPS Info“-LC in den Bursts B–E),
+  werden erkannt. Jeder Block wird vollständig geprüft (Hamming, Spaltenparität, Prüfsumme); fehlerhafte werden verworfen.
+- **GPS-Datenrufe:** Datenkopf + Rate-½-Blöcke mit **NMEA** (`$GPRMC`/`$GNRMC`/`$GPGGA`/`$GNGGA`, auch als UTF-16-SMS
+  und in IP/UDP) und **Motorola LRRP** (UDP 4001), z. B. „Digital APRS“ als Privatruf an `900999`. Rate ¾ und Rate 1
+  werden nicht geraten, sondern gezählt.
+- Ziele einschränkbar (*Accept GPS data sent to*), Wiederholungen derselben Station innerhalb von 10 s werden unterdrückt.
+- Kostet im Hot Path nur einen Vergleich pro Burst; neue Logzeile `📍 DAPRS … position from …`; neues Ereignis
+  `gps_position` an das Dashboard. Neue DMR-Einstellungen `dmr.daprs.*` (folgen dem APRS-Schalter).
+
+### 📡 APRS-Server (Dashboard)
+- APRS-IS-kompatibel: Port **14580** mit Filtern (`r/ a/ p/ b/ o/ t/ s/ d/ e/ g/ u/ m/ f/`, Ausschluss mit `-`,
+  `#filter` im Betrieb) und **10152** Full Feed; Login mit Passcode, `logresp`, Keep-alive, q-Konstrukt (`qAC`, `qAR`, `qAO`),
+  Schleifen- und Duplikatschutz (30 s), Flutschutz, Verbindungsgrenzen pro IP, langsame Clients werden getrennt.
+- Nachrichten erreichen ihren Empfänger auch außerhalb seines Filters; Clients ohne gültigen Passcode dürfen nur empfangen.
+- Ports nur nach Einschalten (*Open the APRS-IS ports*) und nur mit gesetzter **Server-ID** (Rufzeichen).
+
+### 🌍 Uplink & Downlink – wählbar
+- **APRS-IS** (Vorgabe `euro.aprs2.net:14580`), **CB-APRS** (`eu.cbaprs.net:27235`, eigenes Login und Passcode oder `-1`)
+  oder **manuell**: beliebig viele eigene Server, jeder mit Login, Passcode, Downlink-Filter und Richtung
+  (⇅ hoch & runter, ↑ nur hoch, ↓ nur runter).
+- Gesendet wird nur über verifizierte Verbindungen; was aus einem Netz kommt, geht nie in ein anderes zurück.
+- Änderungen wirken sofort: Server und Verbindungen starten von selbst neu.
+
+### 📍 DMR → APRS
+- Rufzeichen aus der ID-Liste (FreeRadioID.net/radioid.net), **SSID** (Vorgabe 7), **Symbol**, **Kommentar** mit
+  Platzhaltern (`{tg}`, `{repeater}`, `{dmrid}`, `{slot}`, `{server}`), Tabelle **pro DMR-ID** (eigenes Rufzeichen, SSID,
+  Symbol, Kommentar oder abschalten).
+- Höchstens eine Position pro Station und Minute ins Netz (einstellbar); **Gäste** (FreeRadioID-Gastzugang) nur auf der lokalen Karte.
+- **Repeater als APRS-Objekte** aus den Login-Daten (Frequenz, Ablage, Colour Code); Hotspots möglich, aber aus
+  (Wohnadressen); Objekte verlassener Repeater werden gelöscht gemeldet.
+
+### 🗺️ APRS-Karte
+- Leaflet-Karte im N8-Design (folgt dem Farbprofil, dunkle Karte bei dunklen Profilen) mit Stationsliste, Suche,
+  Filtern (DMR, Repeater, Clients, APRS-IS/CB-APRS, Wetter), APRS-Symbolen, Detailfenster (QTH-Locator, DMR-ID,
+  Talkgroup, Hotspot/Repeater, Art der GPS-Meldung, Avatar, Wetter, Rohpakete), Spuren und Live-Paketliste per WebSocket.
+- Unter `/aprs`, als Tab **🗺️ APRS** im Dashboard und unter **bis zu drei eigenen Domains** – jede mit eigenem Titel,
+  Untertitel und Logo; dort steht unter `/` die Karte, das Dashboard unter `/dashboard`. Am Smartphone als Bottom-Sheet.
+- Öffentlich oder nur mit Login – unabhängig vom Dashboard. Kartenstile: automatisch, dunkel, OpenStreetMap, OpenTopoMap, eigener Kachelserver.
+
+### 🔒 Let's Encrypt für die APRS-Domains
+- Domains mit *HTTPS* kommen als zusätzliche Namen in das Zertifikat des Dashboards – nur wenn sie per DNS auf diesen
+  Server zeigen (sonst eine Logzeile statt eines kaputten Zertifikats). Fehlende Namen werden im Hintergrund nachgeholt
+  und ohne Neustart geladen; HTTP leitet auf HTTPS derselben Domain um. Die Übersicht zeigt den Status jeder Domain.
+
+### 💾 Speicherung
+- Eigene SQLite-Datenbank `dashboard/data/aprs.db` (Stationen, Spuren, Rohpakete), Schreiben gebündelt im Hintergrund,
+  **höchstens 90 Tage** (Vorgabe: Stationen/Spuren 30 Tage, Rohpakete 7 Tage), stündliche Bereinigung.
+
+### ⚙️ Adminbereich und Installation
+- Neuer Bereich **📡 APRS**: Übersicht (Ports, Server-ID mit Passcode, jede Verbindung mit Zustand und Zählern, DAPRS,
+  Stationen, Zertifikatsstatus, Passcode-Rechner, Clients mit **Disconnect**), Server, Uplink & Downlink, DAPRS-Erkennung,
+  DMR → APRS, Karte, Domains.
+- `scripts/setup.sh` hat einen neuen Schritt **APRS** (Vorgabe aus): Server-ID, Karten-Domains, Ports, Netz; öffnet bei
+  Bedarf TCP 14580/10152 in ufw. `scripts/check.sh` zeigt die APRS-Ports.
+
+### Technik
+- Neue Dateien: `hblink4/daprs.py`, `dashboard/aprs/` (`packet.py`, `filters.py`, `store.py`, `service.py`),
+  `dashboard/static/aprs.html`, Leaflet 1.9.4 (`dashboard/static/vendor/leaflet/`, BSD-2) und die APRS-Symbole von
+  hessu/aprs-symbols (`dashboard/static/aprs-symbols/`, Lizenzen in `COPYRIGHT.md`), `scripts/e2e_daprs.py`.
+- Keine neuen Python-Abhängigkeiten. Neue Tests: `tests/test_daprs.py`, `tests/test_aprs.py`; insgesamt 323.
+
+### Wichtig beim Update
+- Nichts zu tun: APRS bleibt aus. Zum Einschalten: Adminbereich → **📡 APRS** oder `sudo ./scripts/setup.sh` erneut ausführen.
+- Für APRS-Apps die Ports TCP 14580 (und 10152) in der Firewall öffnen; für eigene Karten-Domains DNS-Einträge anlegen.
+
 ## [1.1.1] – 2026-11-22
 
 - Link-Site-Icons werden um Mitternacht neu geladen; im Admin-Linkmenü gibt es zusätzlich **Refresh site icons now**.

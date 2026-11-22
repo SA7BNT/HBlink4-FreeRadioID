@@ -1,6 +1,6 @@
 # 🧭 Anleitungen
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · **Anleitungen** · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · **Anleitungen** · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -15,6 +15,8 @@ Schritt für Schritt durch die häufigsten Aufgaben. Für alles im Adminbereich 
 | [5. Link-Menü anlegen](#5-link-menü-anlegen) | Sysops |
 | [6. Ankündigung anzeigen](#6-ankündigung-anzeigen) | Sysops |
 | [7. Weitere Admins anlegen](#7-weitere-admins-anlegen) | Superadmin |
+| [8. APRS-Karte unter eigener Domain mit DMR-Positionen](#8-aprs-karte-unter-eigener-domain-mit-dmr-positionen) | Sysops |
+| [9. GPS am DMR-Funkgerät für APRS](#9-gps-am-dmr-funkgerät-für-aprs) | Funkamateure |
 
 ---
 
@@ -141,6 +143,25 @@ Beispiel: Trunk zum Funkerportal (`freedmr.funkerportal.de`).
 2. Benutzername, Anzeigename, DMR-ID (für den Avatar) und ein Passwort mit mindestens 8 Zeichen eintragen.
 3. Rolle wählen: **Admin** sieht IP-Adressen und Ports und darf alles einstellen; **User** sieht nur das Dashboard. Admins anlegen darf nur der Superadmin.
 4. **+ Add user** klicken.
+
+## 8. APRS-Karte unter eigener Domain mit DMR-Positionen
+
+<p align="center"><img src="../images/admin-aprs-domains.png" alt="Domains" width="75%"></p>
+
+1. Beim DNS-Anbieter für `aprs.example.org` (und ggf. `map.example.org`) einen A-Eintrag auf die IP-Adresse des Servers anlegen.
+2. **⚙️ Admin area → 📡 APRS → Server**: *APRS* einschalten, **Server ID** = dein Rufzeichen mit SSID (z. B. `DB0ABC-10`), **💾 Save**.
+3. **🌐 Domains**: `aprs.example.org` als Domain 1 eintragen, Titel und Logo nach Wunsch, *HTTPS with Let's Encrypt* an, **💾 Save**, dann im Banner **Restart now**.
+4. **🌍 Uplink & downlink**: einschalten, Netz **APRS-IS** wählen (Amateurfunk) – oder **CB-APRS** bzw. **Manual** –, Downlink-Filter z. B. `r/52.3/8.9/150`, **💾 Save**.
+5. In der **📊 Overview** prüfen: Uplink *verified*, Domain *🔒 in certificate*. Die Karte steht unter `https://aprs.example.org/`.
+6. Optional für APRS-Apps: unter **📡 Server** *Open the APRS-IS ports* an und `sudo ufw allow 14580/tcp`.
+
+## 9. GPS am DMR-Funkgerät für APRS
+
+1. Im Funkgerät GPS einschalten.
+2. Entweder **GPS in Sprachrufen** senden (Embedded GPS; z. B. Motorola, Hytera) – dann reicht es, zu sprechen –
+3. oder die **GPS-/APRS-Meldung als Datenruf** einschalten (z. B. „Digital APRS“) und als Ziel die ID eintragen, die der Sysop vorgibt (z. B. `900999` als Privatruf), **Rate ½**, Format **NMEA**.
+4. Dein Rufzeichen kommt aus der ID-Liste (FreeRadioID.net/radioid.net). SSID, Symbol und Kommentar stellt der Sysop ein, auf Wunsch auch nur für deine ID.
+5. Deine Position erscheint auf der APRS-Karte und – wenn der Uplink an ist – bei aprs.fi als `DEINCALL-7`.
 
 ---
 

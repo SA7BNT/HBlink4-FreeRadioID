@@ -1,6 +1,6 @@
 # 📦 Installation
 
-[← Übersicht](../../readme.md) · **Installation** · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · **Installation** · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -23,7 +23,7 @@ git clone https://github.com/dhartmann1979/HBlink4-FreeRadioID /opt/HBlink4
 sudo /opt/HBlink4/scripts/setup.sh
 ```
 
-Das Skript arbeitet neun Schritte ab. Jede Frage zeigt eine Vorgabe in `[Klammern]`; mit **Enter** übernimmst du sie.
+Das Skript arbeitet zehn Schritte ab. Jede Frage zeigt eine Vorgabe in `[Klammern]`; mit **Enter** übernimmst du sie.
 
 <p align="center"><img src="../images/setup-1.png" alt="setup.sh – Schritte 1 bis 5" width="80%"></p>
 
@@ -36,8 +36,9 @@ Das Skript arbeitet neun Schritte ab. Jede Frage zeigt eine Vorgabe in `[Klammer
 | 5 Zugang | FreeRadioID Secure Login an/aus, Standard-Passwort, Gast-Talkgroups | Mit FreeRadioID ist das Standard-Passwort der **Gastzugang**. |
 | 6 Dashboard | Titel, Beschreibung, Web-Port, öffentlich ja/nein, **Superadmin** mit Passwort | Das Passwort wird nur als Hash gespeichert. |
 | 7 HTTPS | Domain und E-Mail für Let's Encrypt; installiert certbot | nur, wenn die Domain schon auf den Server zeigt |
-| 8 Zusammenfassung | zeigt alles an und fragt nach der Bestätigung | Erst danach wird etwas geändert. Alte Configs werden als `*.bak` gesichert. |
-| 9 Abschluss | Firewall (ufw), Rechte, systemd-Dienste, Start, `check.sh` | – |
+| 8 APRS | APRS ein/aus (Vorgabe: **aus**), Server-ID, bis zu drei Karten-Domains, APRS-Ports öffnen, Uplink & Downlink: keiner, APRS-IS, CB-APRS oder manuell | siehe [APRS](aprs.md); alles lässt sich später im Adminbereich ändern |
+| 9 Zusammenfassung | zeigt alles an und fragt nach der Bestätigung | Erst danach wird etwas geändert. Alte Configs werden als `*.bak` gesichert. |
+| 10 Abschluss | Firewall (ufw, mit APRS-Ports TCP 14580/10152), Rechte, systemd-Dienste, Start, `check.sh` | – |
 
 <p align="center"><img src="../images/setup-2.png" alt="setup.sh – Schritte 6 bis 9" width="80%"></p>
 
@@ -73,6 +74,7 @@ Am einfachsten richtest du HTTPS gleich in Schritt 7 des Skripts ein. Später ge
 - **Port 8080** leitet ebenfalls um.
 - **Erneuerung:** Das Zertifikat wird automatisch erneuert und ohne Neustart geladen.
 - **Ohne root:** certbot läuft als Dienst-Benutzer und speichert alles in `dashboard/data/letsencrypt/`.
+- **APRS-Domains:** Karten-Domains aus **📡 APRS → Domains** kommen als zusätzliche Namen ins selbe Zertifikat, sobald sie per DNS auf den Server zeigen ([APRS → Eigene Domains](aprs.md#eigene-domains-mit-lets-encrypt)).
 - **Wenn es nicht klappt:** Das Dashboard bleibt per HTTP erreichbar, und der Grund steht im Log (`journalctl -u hblink4-dash`).
 
 ## Aktualisieren

@@ -1,6 +1,6 @@
 # 🛡️ FreeRadioID
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · **FreeRadioID** · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · [Konfiguration](konfiguration.md) · **FreeRadioID** · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 

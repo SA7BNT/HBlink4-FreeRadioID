@@ -1414,6 +1414,26 @@
         .form-error { color: #ff9f97; font-size: 13px; }
         .small { font-size: 12px; }
 
+        /* APRS map tab (the map page in a frame) */
+        .aprs-frame-wrap { position: relative; height: calc(100vh - 130px); min-height: 420px; border-radius: var(--radius-lg); overflow: hidden;
+                           border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); background: rgba(0, 0, 0, 0.2); }
+        .aprs-frame-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+        .aprs-full { position: absolute; right: 12px; bottom: 26px; z-index: 5; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+                     color: var(--text); text-decoration: none; background: rgba(16, 22, 40, 0.75); border: 1px solid var(--glass-border); }
+        @media (max-width: 760px) { .aprs-frame-wrap { height: calc(100vh - 150px); } }
+
+        /* APRS admin tab */
+        .aprs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+        .aprs-st { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--glass-border); white-space: nowrap; }
+        .aprs-st.ok { color: #7ef0a0; border-color: rgba(48, 209, 88, 0.45); background: rgba(48, 209, 88, 0.14); }
+        .aprs-st.warn { color: #ffe36a; border-color: rgba(255, 214, 10, 0.4); background: rgba(255, 214, 10, 0.12); }
+        .aprs-st.off { color: #ff9f97; border-color: rgba(255, 69, 58, 0.45); background: rgba(255, 69, 58, 0.12); }
+        .aprs-ov { width: 100%; overflow-x: auto; }
+        .aprs-ov-table input:not([type=checkbox]), .aprs-ov-table select { width: 100%; min-width: 60px; padding: 6px 8px; border-radius: 8px; font: inherit; font-size: 13px;
+                                                    color: var(--text); background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); }
+        .aprs-ov-table td { padding: 4px 4px; }
+        .aprs-ov > .btn-s { margin-top: 6px; }
+
         /* Admin area */
         .modal-content.admin { width: min(1180px, 100%); max-width: 1180px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
         .admin-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px 20px; }
@@ -2312,6 +2332,7 @@
                 <button type="button" role="tab" data-tab="stats" id="mainTabStats" style="display: none;">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span> <span class="tab-count" id="tgStatsCount"></span></button>
                 <button type="button" role="tab" data-tab="obp" id="mainTabObp" style="display: none;">↔️ <span class="t-long">OpenBridge</span><span class="t-short">OBP</span> <span class="tab-count" id="obpTabCount"></span></button>
                 <button type="button" role="tab" data-tab="tgdir" id="mainTabTg">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
+                <button type="button" role="tab" data-tab="aprs" id="mainTabAprs" style="display: none;">🗺️ <span class="t-long">APRS</span><span class="t-short">APRS</span></button>
                 <button type="button" role="tab" data-tab="config" id="mainTabConfig" style="display: none;">🛠️ <span class="t-long">Configuration</span><span class="t-short">Setup</span></button>
             </nav>
             <div class="status-badges">
@@ -2492,6 +2513,11 @@
             <div class="tgs-seg obp-trunks" id="obpTrunkSel" role="tablist" aria-label="Trunk" style="display: none;"></div>
             <div id="obpBody"><div class="card"><div class="tgs-empty">Loading …</div></div></div>
         </div><!-- /tabObp -->
+
+        <div class="tab-pane" id="tabAprs" style="display: none;">
+            <div class="aprs-frame-wrap"><iframe id="aprsFrame" title="APRS map" loading="lazy"></iframe>
+                <a class="aprs-full" href="/aprs" target="_blank" rel="noopener" title="Open the map on its own page">⤢ Full screen</a></div>
+        </div><!-- /tabAprs -->
 
         <div class="tab-pane" id="tabConfig" style="display: none;">
             <div id="cfBody"><div class="tgs-empty">Loading …</div></div>
@@ -2967,7 +2993,7 @@
 
         // ---------- Admin area ----------
         const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['appearance', '🎨 Appearance'],
-                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
+                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['aprs', '📡 APRS'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
 
         // One line on top of the tabs that have no own heading
@@ -3005,7 +3031,7 @@
                 const intro = ADMIN_INTRO[tab] ? `<div class="tab-intro"><h3 class="set-panel-title">${ADMIN_INTRO[tab][0]}</h3>
                     <p class="set-panel-help">${ADMIN_INTRO[tab][1]}</p></div>` : '';
                 body.innerHTML = intro + await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
-                                          links: adminLinks, obp: adminObp, import: adminImport, sessions: adminSessions,
+                                          links: adminLinks, obp: adminObp, aprs: adminAprs, import: adminImport, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
         }
@@ -3130,7 +3156,7 @@
 
         // ================= Settings: sub navigation, dependencies, advanced options =================
         // Sections with their own admin tab are not listed here.
-        const SET_CUSTOM = new Set(['appearance', 'links', 'dmr_obp']);
+        const SET_CUSTOM = new Set(['appearance', 'links', 'dmr_obp', 'aprs_server', 'aprs_uplink', 'aprs_daprs', 'dmr_daprs', 'aprs_map', 'aprs_sites']);
         const setUi = { sections: null, current: null, advanced: false };
 
         function setIcon(title) { const m = title.match(/^(\S+)\s/); return m ? m[1] : '•'; }
@@ -3313,6 +3339,216 @@
             loadConfig();
         }
 
+        // ================= APRS: server, APRS-IS uplink, DAPRS, map, domains =================
+        const aprsUi = { view: 'overview', status: null };
+        const APRS_VIEWS = [['overview', '📊 Overview'], ['aprs_server', '📡 Server'], ['aprs_uplink', '🌍 Uplink & downlink'],
+                            ['dmr_daprs', '🛰️ DAPRS decoding'], ['aprs_daprs', '📍 DMR → APRS'], ['aprs_map', '🗺️ Map'], ['aprs_sites', '🌐 Domains']];
+
+        function afterCustomSaved(j) { if (document.getElementById('aprsPanel')) setTimeout(() => aprsShow(aprsUi.view), 300); }
+
+        async function adminAprs() {
+            const [sys, st] = await Promise.all([loadSettingsData(), api('GET', '/api/admin/aprs')]);
+            aprsUi.status = st;
+            setTimeout(() => aprsShow(aprsUi.view));
+            return `${adminBanners(sys)}
+                <div class="tab-intro"><h3 class="set-panel-title">📡 APRS</h3>
+                <p class="set-panel-help">APRS server in Python, uplink &amp; downlink to APRS-IS, CB-APRS or your own servers, DAPRS (GPS positions
+                of DMR radios become APRS positions) and the map – also under up to three own domains with Let's Encrypt.</p></div>
+                <div class="set-layout"><nav class="set-nav">${APRS_VIEWS.map(([k, l]) =>
+                    `<button type="button" data-av="${k}" onclick="aprsShow('${k}')"><span class="ic">${setIcon(l)}</span>${escapeHtml(setName(l))}</button>`).join('')}</nav>
+                <label class="set-nav-select">Section <select onchange="aprsShow(this.value)">${APRS_VIEWS.map(([k, l]) =>
+                    `<option value="${k}">${escapeHtml(l)}</option>`).join('')}</select></label>
+                <div class="set-panel" id="aprsPanel"></div></div>`;
+        }
+
+        async function aprsShow(view) {
+            aprsUi.view = view;
+            document.querySelectorAll('.set-nav button[data-av]').forEach(b => b.classList.toggle('active', b.dataset.av === view));
+            const sel = document.querySelector('#adminBody .set-nav-select select'); if (sel) sel.value = view;
+            const panel = document.getElementById('aprsPanel'); if (!panel) return;
+            if (view === 'overview') {
+                try { aprsUi.status = await api('GET', '/api/admin/aprs'); } catch (e) { }
+                panel.innerHTML = aprsOverviewHtml(aprsUi.status || {});
+                return;
+            }
+            const sec = (setUi.sections || []).find(x => x.id === view);
+            if (!sec) { panel.innerHTML = '<div class="muted">Unknown section</div>'; return; }
+            panel.innerHTML = settingsSectionHtml(sec) + (sec.dmr
+                ? '<p class="muted small">Sent to the DMR server on save and used at once.</p>'
+                : '<p class="muted small">Takes effect immediately (server and uplink restart by themselves). Domains: after a dashboard restart.</p>');
+            const form = panel.querySelector('form');
+            // logos as image pickers (upload like in Appearance)
+            ['aprs.site1.logo', 'aprs.site2.logo', 'aprs.site3.logo'].forEach(k => {
+                const el = form.querySelector(`[name="${k}"]`); if (!el) return;
+                const row = el.closest('.set-row'); const f = setField(k);
+                row.outerHTML = imagePicker(f, k);
+            });
+            const ov = form.querySelector('[name="daprs.overrides"]');
+            if (ov) aprsOverridesEditor(ov);
+            const ml = form.querySelector('[name="aprs.uplink.manual"]');
+            if (ml) aprsLinksEditor(ml);
+            setWatch(form);
+            aprsUplinkModes(form);
+        }
+
+        function aprsChip(ok, warn, text) {
+            return `<span class="aprs-st ${ok ? 'ok' : warn ? 'warn' : 'off'}">${text}</span>`;
+        }
+        function aprsOverviewHtml(st) {
+            const s = st.stats || {}, c = st.counts || {}, https = st.https || {};
+            const doms = (st.domains || []).map(d => {
+                const inCert = (https.cert_names || []).includes(d);
+                const st_ = !https.enabled || !(st.https_domains || []).includes(d) ? aprsChip(false, true, 'HTTP only') : inCert ? aprsChip(true, false, '🔒 in certificate')
+                    : aprsChip(false, true, '⏳ not in certificate yet');
+                return `<div class="info-row"><span class="info-label"><a href="//${escapeHtml(d)}/" target="_blank" rel="noopener">${escapeHtml(d)}</a></span><span class="info-value">${st_}</span></div>`;
+            }).join('') || '<div class="muted">No domain set (section 🌐 Domains). The map is always at <a href="/aprs" target="_blank">/aprs</a>.</div>';
+            const clients = (st.client_list || []);
+            const errs = (st.errors || []).slice(-5).reverse();
+            return `
+            <div class="aprs-grid">
+                <div class="tile"><h3>📡 Server</h3>
+                    <div class="info-row"><span class="info-label">State</span><span class="info-value">${!st.enabled ? aprsChip(false, false, 'APRS off')
+                        : !st.server_enabled ? aprsChip(false, true, 'ports closed (map only)') : st.listening && st.listening.length ? aprsChip(true, false, 'listening') : aprsChip(false, false, 'not running')}</span></div>
+                    <div class="info-row"><span class="info-label">Server ID</span><span class="info-value"><b>${escapeHtml(st.server_id || '— not set —')}</b>${st.passcode != null ? ` <small class="muted">passcode ${st.passcode}</small>` : ''}</span></div>
+                    <div class="info-row"><span class="info-label">Ports</span><span class="info-value">${(st.listening || []).map(escapeHtml).join('<br>') || '—'}</span></div>
+                    <div class="info-row"><span class="info-label">Clients</span><span class="info-value"><b>${st.clients || 0}</b></span></div>
+                </div>
+                <div class="tile"><h3>🌍 Uplink &amp; downlink <small>${escapeHtml(st.network || '')}</small></h3>
+                    ${!st.uplink_enabled ? `<div class="info-row"><span class="info-label">State</span><span class="info-value">${aprsChip(false, true, 'off')}</span></div>`
+                    : (st.links || []).map(l => `<div class="info-row"><span class="info-label"><b>${escapeHtml(l.name)}</b>
+                        <small class="muted">${{ both: '⇅', up: '↑', down: '↓' }[l.direction] || ''} ${escapeHtml(l.server)}</small></span>
+                        <span class="info-value">${l.state === 'connected' && (l.verified || l.direction === 'down') ? aprsChip(true, false, l.verified ? 'verified' : 'receiving')
+                            : l.state === 'connected' ? aprsChip(false, true, 'not verified') : aprsChip(false, false, escapeHtml(l.state))}
+                        <br><small class="muted">${l.rx} in / ${l.tx} out${l.server_name ? ' · ' + escapeHtml(l.server_name) : ''}${l.error ? ' · ' + escapeHtml(l.error) : ''}</small></span></div>`).join('')
+                      || '<div class="muted">No link configured.</div>'}
+                </div>
+                <div class="tile"><h3>🛰️ DAPRS</h3>
+                    <div class="info-row"><span class="info-label">Positions from DMR</span><span class="info-value"><b>${s.daprs_positions || 0}</b></span></div>
+                    <div class="info-row"><span class="info-label">Sent up</span><span class="info-value">${s.daprs_gated || 0}</span></div>
+                    <div class="info-row"><span class="info-label">ID without callsign</span><span class="info-value">${s.daprs_unknown || 0}</span></div>
+                    <div class="info-row"><span class="info-label">Repeater objects</span><span class="info-value">${(st.objects || []).map(escapeHtml).join(', ') || '—'}</span></div>
+                </div>
+                <div class="tile"><h3>🗺️ Stations</h3>
+                    <div class="info-row"><span class="info-label">Active (1 h)</span><span class="info-value"><b>${c.active_1h || 0}</b></span></div>
+                    <div class="info-row"><span class="info-label">DMR · repeaters · clients · ${escapeHtml(st.network || 'downlink')}</span><span class="info-value">${c.active_dmr || 0} · ${c.active_rpt || 0} · ${c.active_local || 0} · ${c.active_aprsis || 0}</span></div>
+                    <div class="info-row"><span class="info-label">In the database</span><span class="info-value">${c.stations || 0}</span></div>
+                    <div class="info-row"><span class="info-label">Packets (in / to clients / dupes)</span><span class="info-value">${s.rx || 0} / ${s.tx || 0} / ${s.dupes || 0}</span></div>
+                </div>
+                <div class="tile"><h3>🌐 Domains</h3>${doms}
+                    ${https.missing && https.missing.length && https.enabled ? '<p class="muted small" style="margin-top:8px">Missing names are requested automatically when they point to this server (DNS A/AAAA record), at the latest after a dashboard restart.</p>' : ''}</div>
+                <div class="tile"><h3>🔑 Passcode for a callsign</h3>
+                    <form class="inline-form" onsubmit="event.preventDefault(); aprsPasscode(this)">
+                        <input name="call" placeholder="Callsign, e.g. DL1ABC" autocomplete="off" style="text-transform:uppercase">
+                        <button class="btn-s btn-primary" type="submit">Compute</button></form>
+                    <p class="muted small" id="aprsPcOut" style="margin-top:8px">APRS apps need it to send. Give it only to licensed amateurs.</p></div>
+            </div>
+            <div class="set-actions" style="justify-content:flex-start;margin:10px 0 4px">
+                <button class="btn-s btn-primary" onclick="aprsReload(this)">↻ Restart APRS server</button>
+                <button class="btn-s" onclick="aprsObjects(this)">📡 Send repeater objects now</button>
+                <a class="btn-s" href="/aprs" target="_blank" rel="noopener" style="text-decoration:none">🗺️ Open map</a>
+            </div>
+            <div class="tile" style="margin-top:10px"><h3>🖥️ Connected clients <small>${clients.length}</small></h3>
+                ${clients.length ? `<table class="admin-table"><thead><tr><th>Login</th><th>Port</th><th>Software</th><th>Filter</th><th>IP</th><th>Since</th><th>In / out</th><th></th></tr></thead><tbody>
+                ${clients.map(cl => `<tr><td><b>${escapeHtml(cl.login || '…')}</b> ${cl.verified ? '<span class="role-tag role-admin">verified</span>' : '<span class="role-tag">read only</span>'}</td>
+                    <td>${escapeHtml(cl.port)}</td><td><small>${escapeHtml(cl.software || '')}</small></td><td><code>${escapeHtml(cl.filter || '—')}</code></td>
+                    <td><code>${escapeHtml(cl.ip)}</code></td><td>${fmtTime(cl.connected)}</td><td>${cl.rx} / ${cl.tx}</td>
+                    <td class="actions"><button class="btn-s danger" onclick="aprsKick(${cl.id}, this)">Disconnect</button></td></tr>`).join('')}
+                </tbody></table>` : '<div class="muted">No APRS client connected.</div>'}
+            </div>
+            ${errs.length ? `<div class="tile" style="margin-top:10px"><h3>⚠️ Recent problems</h3>${errs.map(e =>
+                `<div class="info-row"><span class="info-label">${fmtTime(e.ts)}</span><span class="info-value">${escapeHtml(e.text)}</span></div>`).join('')}</div>` : ''}`;
+        }
+        async function aprsReload(btn) {
+            btn.disabled = true;
+            try { await api('POST', '/api/admin/aprs/reload'); toast('APRS server restarted', 'ok'); setTimeout(() => aprsShow('overview'), 800); }
+            catch (e) { toast(e.message, 'err'); } finally { btn.disabled = false; }
+        }
+        async function aprsObjects(btn) {
+            try { const j = await api('POST', '/api/admin/aprs/objects'); toast(`${j.sent} object(s) sent`, 'ok'); aprsShow('overview'); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+        async function aprsKick(id, btn) {
+            try { await api('POST', `/api/admin/aprs/kick/${id}`); toast('Client disconnected', 'ok'); setTimeout(() => aprsShow('overview'), 300); }
+            catch (e) { toast(e.message, 'err'); }
+        }
+        async function aprsPasscode(form) {
+            try { const j = await api('GET', `/api/admin/aprs/passcode?call=${encodeURIComponent(form.call.value.trim())}`);
+                  document.getElementById('aprsPcOut').innerHTML = `Passcode for <b>${escapeHtml(j.call)}</b>: <b style="color:var(--accent);font-size:16px">${j.passcode}</b>`; }
+            catch (e) { toast(e.message, 'err'); }
+        }
+
+        // Tables instead of raw JSON (they write into the hidden JSON field of the setting)
+        function aprsTableEditor(ta, cols, addLabel, normalize) {
+            let rows = []; try { rows = JSON.parse(ta.value || '[]'); } catch (e) { rows = []; }
+            ta.style.display = 'none';
+            const box = document.createElement('div'); box.className = 'aprs-ov';
+            ta.after(box);
+            const sync = () => {
+                const out = [...box.querySelectorAll('tbody tr')].map(tr => {
+                    const o = {};
+                    cols.forEach(c => {
+                        const el = tr.querySelector(`[data-f="${c.f}"]`);
+                        if (c.type === 'check') { if (el.checked !== !!c.def) o[c.f] = el.checked; }
+                        else { const v = el.value.trim(); if (v !== '') o[c.f] = c.upper ? v.toUpperCase() : v; }
+                    });
+                    return o;
+                }).filter(normalize);
+                ta.value = JSON.stringify(out); ta.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            const cell = (c, o) => {
+                const v = o[c.f];
+                if (c.type === 'check') return `<td style="text-align:center"><input type="checkbox" data-f="${c.f}" ${(v === undefined ? c.def : v) ? 'checked' : ''} title="${escapeHtml(c.title || '')}"></td>`;
+                if (c.type === 'select') return `<td><select data-f="${c.f}">${c.opts.map(([k, l]) => `<option value="${k}" ${(v || c.opts[0][0]) === k ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('')}</select></td>`;
+                return `<td><input data-f="${c.f}" ${c.num ? 'inputmode="numeric"' : ''} ${c.max ? `maxlength="${c.max}"` : ''} placeholder="${escapeHtml(c.ph || '')}"
+                         value="${escapeHtml(v ?? '')}" ${c.upper ? 'style="text-transform:uppercase"' : ''}></td>`;
+            };
+            const row = o => `<tr>${cols.map(c => cell(c, o)).join('')}<td><button type="button" class="btn-s danger" data-del>✕</button></td></tr>`;
+            box.innerHTML = `<table class="admin-table aprs-ov-table"><thead><tr>${cols.map(c => `<th>${escapeHtml(c.label)}</th>`).join('')}<th></th></tr></thead>
+                <tbody>${rows.map(row).join('')}</tbody></table>
+                <button type="button" class="btn-s" data-add>＋ ${escapeHtml(addLabel)}</button>`;
+            const mark = () => box.querySelectorAll('[data-f]').forEach(i => i.dataset.skip = '1');
+            box.addEventListener('input', e => { if (e.target.dataset.f) { e.stopPropagation(); sync(); } });
+            box.addEventListener('change', e => { if (e.target.dataset.f) { e.stopPropagation(); sync(); } });
+            box.addEventListener('click', e => {
+                if (e.target.dataset.add !== undefined) { box.querySelector('tbody').insertAdjacentHTML('beforeend', row({})); mark(); }
+                if (e.target.dataset.del !== undefined) { e.target.closest('tr').remove(); sync(); }
+            });
+            mark();
+        }
+        function aprsOverridesEditor(ta) {
+            aprsTableEditor(ta, [
+                { f: 'dmr_id', label: 'DMR ID', ph: '2621234', num: true },
+                { f: 'callsign', label: 'Callsign', ph: 'from list', upper: true },
+                { f: 'ssid', label: 'SSID', ph: String(setField('daprs.ssid')?.value ?? 7), num: true },
+                { f: 'symbol', label: 'Symbol', ph: setField('daprs.symbol')?.value || '/[', max: 2 },
+                { f: 'comment', label: 'Comment', ph: 'default' },
+                { f: 'off', label: 'Off', type: 'check', def: false, title: 'Do not use positions of this ID' },
+            ], 'Add DMR ID', o => o.dmr_id);
+        }
+        function aprsLinksEditor(ta) {
+            aprsTableEditor(ta, [
+                { f: 'name', label: 'Name', ph: 'e.g. Own T2' },
+                { f: 'host', label: 'Server', ph: 'aprs.example.org' },
+                { f: 'port', label: 'Port', ph: '14580', num: true },
+                { f: 'login', label: 'Login', ph: 'server ID', upper: true },
+                { f: 'passcode', label: 'Passcode', ph: 'auto', num: true },
+                { f: 'filter', label: 'Downlink filter', ph: 'r/52.3/8.9/100' },
+                { f: 'direction', label: 'Direction', type: 'select', opts: [['both', '⇅ up & down'], ['up', '↑ up only'], ['down', '↓ down only']] },
+                { f: 'enabled', label: 'On', type: 'check', def: true },
+            ], 'Add link', o => o.host);
+        }
+        // Uplink: only the fields of the chosen network
+        function aprsUplinkModes(form) {
+            const sel = form.querySelector('[name="aprs.uplink.mode"]'); if (!sel) return;
+            const apply = () => {
+                const on = form.querySelector('[name="aprs.uplink.enabled"]');
+                ['aprsis', 'cbaprs', 'manual'].forEach(m => form.querySelectorAll(`[name^="aprs.uplink.${m}"]`).forEach(el => {
+                    const r = el.closest('.set-row'); if (r) r.hidden = !(on && on.checked) || sel.value !== m;
+                }));
+            };
+            form.addEventListener('change', () => setTimeout(apply)); apply();
+        }
+
         // ================= Appearance: colour profiles, titles, logos =================
         const hexRgb = h => { const n = parseInt((h || '#000000').slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
         const mixHex = (h, w, t) => { const a = hexRgb(h), b = hexRgb(w); return '#' + a.map((x, i) => Math.round(x + (b[i] - x) * t).toString(16).padStart(2, '0')).join(''); };
@@ -3368,7 +3604,7 @@
                         <label class="btn-s btn-primary file-btn">⬆️ Upload image
                             <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml,image/x-icon,.ico,.svg" hidden
                                    onchange="uploadBranding('${kind}', this)"></label>
-                        <button type="button" class="btn-s" onclick="removeBranding('${kind}')" ${v ? '' : 'disabled'}>↺ N8 logo</button>
+                        <button type="button" class="btn-s" onclick="removeBranding('${kind}')" ${v ? '' : 'disabled'}>${kind.startsWith('aprs.') ? '↺ Default' : '↺ N8 logo'}</button>
                         <small class="muted">${escapeHtml(f.help || '')} · PNG, JPEG, WebP, GIF, SVG${kind === 'favicon' ? ', ICO' : ''} · max. 1 MB</small>
                         <input class="img-url" data-skip="1" placeholder="…or address of an image (https://… or /static/…)" value="${escapeHtml(v.startsWith('/branding/') ? '' : v)}"
                                onchange="const h=this.closest('.img-pick').querySelector('input[type=hidden]'); h.value=this.value.trim(); this.closest('.img-pick').querySelector('img').src = h.value || '/static/n8schicht-icon.svg'; h.dispatchEvent(new Event('input', {bubbles:true}))">
@@ -3383,13 +3619,13 @@
             const data = await new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(file); });
             try {
                 const j = await api('POST', `/api/admin/branding/${kind}`, { data });
-                toast(kind === 'logo' ? 'Logo replaced' : 'Browser icon replaced', 'ok');
-                await loadSettingsData(); adminTab('appearance'); loadConfig();
+                toast(kind === 'favicon' ? 'Browser icon replaced' : 'Logo replaced', 'ok');
+                await loadSettingsData(); adminTab(kind.startsWith('aprs.') ? 'aprs' : 'appearance'); loadConfig();
             } catch (e) { toast(e.message, 'err'); }
         }
         async function removeBranding(kind) {
             try { await api('DELETE', `/api/admin/branding/${kind}`); toast('Back to the N8schicht logo', 'ok');
-                  await loadSettingsData(); adminTab('appearance'); loadConfig(); }
+                  await loadSettingsData(); adminTab(kind.startsWith('aprs.') ? 'aprs' : 'appearance'); loadConfig(); }
             catch (e) { toast(e.message, 'err'); }
         }
 
@@ -6367,12 +6603,14 @@ PROTO_VER: ${fd ? 5 : 1}`;
             if (location.hash === '#config' && cfAllowed()) return 'config';
             if (location.hash === '#talkgroups') return 'tgdir';
             if (location.hash === '#openbridge' && obpList().length) return 'obp';
+            if (location.hash === '#aprs' && aprsAllowed()) return 'aprs';
             return 'live';
         }
         function showTab(tab, push) {
             if (tab === 'stats' && !tgsAllowed()) tab = 'live';
             if (tab === 'config' && !cfAllowed()) tab = 'live';
             if (tab === 'obp' && !obpList().length) tab = 'live';
+            if (tab === 'aprs' && !aprsAllowed()) tab = 'live';
             document.querySelectorAll('#mainTabs button').forEach(b => {
                 b.classList.toggle('active', b.dataset.tab === tab);
                 b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
@@ -6382,6 +6620,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
             document.getElementById('tabConfig').style.display = tab === 'config' ? '' : 'none';
             document.getElementById('tabTgDir').style.display = tab === 'tgdir' ? '' : 'none';
             document.getElementById('tabObp').style.display = tab === 'obp' ? '' : 'none';
+            document.getElementById('tabAprs').style.display = tab === 'aprs' ? '' : 'none';
+            if (tab === 'aprs') { const fr = document.getElementById('aprsFrame'); if (!fr.src) fr.src = '/aprs?embed=1'; }
             tgs.visible = tab === 'stats';
             const obpWas = obp.visible;
             obp.visible = tab === 'obp';
@@ -6401,6 +6641,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const show = tgsAllowed();
             document.getElementById('mainTabStats').style.display = show ? '' : 'none';
             document.getElementById('mainTabConfig').style.display = cfAllowed() ? '' : 'none';
+            document.getElementById('mainTabAprs').style.display = aprsAllowed() ? '' : 'none';
             showTab(currentTab(), false);
             if (show && !tgs.data && !tgs.visible) loadTgStats();   // fills the count on the tab
         }
@@ -6709,6 +6950,10 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
         // ================= Configuration tab (how to connect) =================
         const cf = { data: null, sw: 'pistar' };
+        function aprsAllowed() {
+            const c = (state.config && state.config.aprs) || {};
+            return !!c.tab;
+        }
         function cfAllowed() {
             const c = (state.config && state.config.connect) || { enabled: true };
             return !!c.enabled;

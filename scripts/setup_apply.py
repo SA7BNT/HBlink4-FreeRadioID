@@ -78,6 +78,13 @@ def current() -> dict:
         "https": bool(val("https.enabled", dash_cfg, "https.enabled", False)),
         "domain": val("https.domain", dash_cfg, "https.domain", "") or "",
         "email": val("https.email", dash_cfg, "https.email", "") or "",
+        "aprs": bool(stored.get("aprs.enabled", False)),
+        "aprs_id": stored.get("aprs.server_id", "") or "",
+        "aprs_domains": ", ".join(d for d in (stored.get(f"aprs.site{n}.domain", "") for n in (1, 2, 3)) if d),
+        "aprs_ports": bool(stored.get("aprs.server.enabled", False)),
+        "aprs_uplink": (0 if not stored.get("aprs.uplink.enabled") else
+                        {"aprsis": 1, "cbaprs": 2, "manual": 3}.get(stored.get("aprs.uplink.mode", "aprsis"), 1)),
+        "aprs_cb_login": stored.get("aprs.uplink.cbaprs.login", "") or "",
     }
 
 
@@ -140,12 +147,38 @@ def write(answers: dict) -> None:
         "dmr.freeradioid.enabled": a["frid"],
         "dmr.freeradioid.guest_talkgroups": a["guest_tgs"],
     }
+    if "aprs" in a:
+        values.update(aprs_values(a))
+    from dashboard.settings import _check_aprs
     for key, raw in values.items():
         try:
-            db.write(key, validate(FIELD_BY_KEY[key], raw), "setup.sh")
+            clean = {key: validate(FIELD_BY_KEY[key], raw)}
+            _check_aprs(clean)
+            db.write(key, clean[key], "setup.sh")
         except SettingsError as e:
             print(f"✗ {e}", file=sys.stderr)
             sys.exit(2)
+
+
+def aprs_values(a: dict) -> dict:
+    """APRS answers of setup.sh → settings (APRS is off unless switched on here or in the admin area)."""
+    on = bool(a.get("aprs"))
+    out = {"aprs.enabled": on, "dmr.daprs.enabled": on}
+    if not on:
+        return out
+    domains = [d.strip().lower() for d in str(a.get("aprs_domains") or "").replace(";", ",").split(",") if d.strip()]
+    for n in (1, 2, 3):
+        out[f"aprs.site{n}.domain"] = domains[n - 1] if len(domains) >= n else ""
+    sid = str(a.get("aprs_id") or "").strip().upper()
+    out["aprs.server_id"] = sid
+    out["aprs.server.enabled"] = bool(sid and a.get("aprs_ports"))
+    mode = {"1": "aprsis", "2": "cbaprs", "3": "manual"}.get(str(a.get("aprs_uplink") or "0"))
+    out["aprs.uplink.enabled"] = bool(sid and mode)
+    if mode:
+        out["aprs.uplink.mode"] = mode
+    if mode == "cbaprs":
+        out["aprs.uplink.cbaprs.login"] = str(a.get("aprs_cb_login") or "").strip().upper()
+    return out
 
 
 def main() -> None:

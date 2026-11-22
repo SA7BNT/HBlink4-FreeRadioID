@@ -7,3 +7,5 @@ dashboard.db*
 letsencrypt/
 freeradioid_users.json
 avatars/
+# APRS stations, tracks and raw packets
+aprs.db*

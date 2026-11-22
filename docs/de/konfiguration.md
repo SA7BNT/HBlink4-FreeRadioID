@@ -1,6 +1,6 @@
 # 🧾 Konfiguration
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [Anleitungen](anleitungen.md) · **Konfiguration** · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Dashboard](dashboard.md) · [Adminbereich](adminbereich.md) · [APRS](aprs.md) · [Anleitungen](anleitungen.md) · **Konfiguration** · [FreeRadioID](freeradioid.md) · [Betrieb & Fehlersuche](betrieb.md)
 
 ---
 
@@ -91,6 +91,9 @@ Kommst du von einem anderen Server, übernimmt der [📥 Import](adminbereich.md
 | 🛡️ FreeRadioID login | `freeradioid.enabled`, `freeradioid.guest_talkgroups`, `freeradioid.timeout` | **an**, 26501–26503, 3,0 s |
 | 🧩 Patterns, blacklist & links | `repeater_configurations.patterns`, `blacklist.patterns`, `outbound_connections` 🔄 | leer |
 | ↔️ OpenBridge | `openbridge_connections` 🔄 (im Adminbereich als Formular), `openbridge_transit` (Gespräche zwischen Trunks weiterreichen) | leer, `true` |
+| 🛰️ DAPRS – GPS from radios | `daprs.enabled`, `daprs.embedded_gps`, `daprs.data_gps`, `daprs.data_ids` | folgt APRS (aus), an, an, alle Ziele |
+
+**APRS** (Server, Uplink & Downlink, DAPRS, Karte, Domains) hat einen eigenen Bereich im Adminbereich; alle Schlüssel stehen in [APRS → Alle Einstellungen](aprs.md#alle-einstellungen).
 
 🔄 = wirkt erst nach einem Neustart (Knopf im Adminbereich).
 
