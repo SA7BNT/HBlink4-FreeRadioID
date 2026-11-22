@@ -466,6 +466,23 @@ class TestMapApi(unittest.TestCase):
         for k, v in self.saved.items():
             self.server.dashboard_config[k] = v
 
+    def test_map_sends_an_origin_referrer_to_tile_servers(self):
+        from fastapi.testclient import TestClient
+        # All map entry points must permit an origin Referer to OSM. HTTPS
+        # alone cannot fix a same-origin policy, which suppresses it entirely.
+        for scheme in ("http", "https"):
+            client = TestClient(self.server.app, base_url=f"{scheme}://dmr.example.org")
+            for path, host in (("/aprs", "dmr.example.org"),
+                               ("/aprs?embed=1", "dmr.example.org"),
+                               ("/", "aprs.example.org")):
+                with self.subTest(scheme=scheme, path=path, host=host):
+                    response = client.get(path, headers={"host": host})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.headers["referrer-policy"],
+                                     "strict-origin-when-cross-origin")
+            # Other dashboard pages retain their existing policy.
+            self.assertEqual(client.get("/dashboard").headers["referrer-policy"], "same-origin")
+
     def test_map_page_on_aprs_domain_and_api(self):
         self.assertIn("<title>DMR Die N8schicht</title>", self.client.get("/").text)
         page = self.client.get("/", headers={"host": "aprs.auf-der-nachtschicht.de"}).text
