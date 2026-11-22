@@ -367,6 +367,7 @@ function initMap() {
     const dark = c.dark === 'dark' || (c.dark === 'auto' && document.documentElement.dataset.themeMode !== 'light');
     document.getElementById('map').classList.toggle('tiles-dark', dark);
     L.tileLayer(c.tiles, { maxZoom: 19, subdomains: 'abc', crossOrigin: true,
+        referrerPolicy: 'strict-origin-when-cross-origin',
         attribution: c.attribution }).addTo(map);
     map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     const Locate = L.Control.extend({ options: { position: 'topright' }, onAdd() {

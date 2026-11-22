@@ -2506,7 +2506,10 @@ def _aprs_sources() -> Optional[set]:
 def _aprs_page() -> HTMLResponse:
     if not _APRS_HTML.exists():
         return HTMLResponse("<h1>APRS map not found</h1>", status_code=404)
-    return HTMLResponse(_APRS_HTML.read_text(encoding="utf-8"))
+    # OSM tiles require a Referer. The dashboard's same-origin default hides
+    # it from external tile servers even when the map itself uses HTTPS.
+    return HTMLResponse(_APRS_HTML.read_text(encoding="utf-8"),
+                        headers={"Referrer-Policy": "strict-origin-when-cross-origin"})
 
 
 @app.get("/aprs", response_class=HTMLResponse)
