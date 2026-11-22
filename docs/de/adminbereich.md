@@ -153,7 +153,7 @@ Eigene Links für alle Besucher, auch ohne Login: Webseite, Chat-Gruppe, Wiki, K
 
 **🌐 Site-Icons.** Für Web-Links (`https://`, `http://`) holt das Dashboard das Favicon der verlinkten Seite – aus
 `<link rel="icon">` der Startseite oder `/favicon.ico` – und legt es in seiner SQLite-Datenbank ab (Tabelle `link_icons`,
-30 Tage gültig; fehlt eins, wird es nach einer Stunde neu versucht). Abgerufen wird beim Start und nach jedem Speichern der Links.
+30 Tage gültig; fehlt eins, wird es nach einer Stunde neu versucht). Abgerufen wird beim Start, nach jedem Speichern der Links und täglich um Mitternacht. **Refresh site icons now** lädt alle Icons sofort erneut und zeigt, wie viele Treffer es gab.
 Der Browser holt das Bild dann vom Dashboard (`/api/link-icon/…`), nicht von der fremden Seite – Besucher hinterlassen dort also
 keine Spuren. Gibt es kein Icon oder ist die Seite nicht erreichbar, steht das Emoji da. Für `mailto:`, `/pfad` und `#tab` ist der
 Schalter grau.
@@ -277,7 +277,7 @@ Die genaue Umsetzung steht in [Anleitungen → Umziehen](anleitungen.md#2-von-hb
 <p align="center"><img src="../images/update-banner.png" alt="Update-Hinweis" width="90%"></p>
 <p align="center"><img src="../images/admin-system-update.png" alt="Version im Tab System" width="50%"></p>
 
-Der Server fragt **jede Stunde** bei GitHub nach, auch wenn niemand eingeloggt ist; eine neue Version steht dann auch im Log. Gibt es eine, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
+Der Server fragt **zu jeder vollen Stunde** bei GitHub nach (bei einem eingestellten Intervall über einer Stunde an den passenden vollen Stunden), auch wenn niemand eingeloggt ist; eine neue Version steht dann auch im Log. Gibt es eine, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
 
 #### ⬇️ Update now
 

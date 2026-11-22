@@ -3539,8 +3539,19 @@
                     </div>
                 </div>
                 <details class="set-adv"><summary>Advanced options <span class="muted">(single extra button)</span></summary>${adv}</details>
-                <div class="set-actions"><button type="submit" class="btn-s btn-primary">💾 Save links</button></div>
+                <div class="set-actions"><button type="submit" class="btn-s btn-primary">💾 Save links</button>
+                    <button type="button" class="btn-s" onclick="refreshSiteIcons(this)">↻ Refresh site icons now</button></div>
             </form>`;
+        }
+
+        async function refreshSiteIcons(button) {
+            const label = button.textContent;
+            button.disabled = true; button.textContent = 'Refreshing…';
+            try {
+                const r = await api('POST', '/api/admin/link-icons/refresh');
+                toast(`Site icons refreshed: ${r.cached}/${r.total} cached${r.unavailable ? `, ${r.unavailable} unavailable` : ''}.`, r.unavailable ? 'warn' : 'ok');
+            } catch (e) { toast(e.message, 'err'); }
+            finally { button.disabled = false; button.textContent = label; }
         }
 
         async function saveLinks(form) {
@@ -4121,6 +4132,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                              user_created: '➕ User created', user_updated: '✏️ User changed', user_deleted: '🗑 User deleted',
                              password_changed: '🔑 Password changed', session_revoked: '🔑 Session revoked',
                              settings_changed: '⚙️ Settings changed', settings_reset: '↺ Settings reset',
+                             site_icons_refresh: '🌐 Site icons refreshed',
                              userdb_refresh: '📘 Callsign DB refresh', restart: '🔄 Dashboard restart',
                              dmr_restart: '🛰️ DMR server restart' };
             if (!audit.length) return '<div class="muted">Nothing logged yet.</div>';

@@ -1387,9 +1387,14 @@ def _may_install(user: dict) -> bool:
 
 
 async def _update_loop() -> None:
-    """Ask GitHub once per interval (default: every hour), also when nobody is logged in."""
+    """Ask GitHub on clock-hour boundaries, also when nobody is logged in."""
     await asyncio.sleep(60)
     while True:
+        now = datetime.now()
+        next_check = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        hours = _update_hours()
+        while next_check.hour % hours:
+            next_check += timedelta(hours=1)
         try:
             if _update_cfg().get("enabled", True) is not False:
                 res = await _update_check(force=True)
@@ -1398,7 +1403,7 @@ async def _update_loop() -> None:
                                 f"({res['local'].get('short')} → {(res.get('latest') or {}).get('short')})")
         except Exception as e:
             logger.debug(f"update check failed: {e}")
-        await asyncio.sleep(_update_hours() * 3600)
+        await asyncio.sleep(max(1, (next_check - datetime.now()).total_seconds()))
 
 
 _update_lock = asyncio.Lock()
@@ -1870,6 +1875,23 @@ async def link_icon(key: str):
     return Response(icon["data"], media_type=icon["content_type"], headers={
         "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:"})
+
+
+@app.post("/api/admin/link-icons/refresh")
+async def admin_refresh_link_icons(request: Request):
+    actor = _require_admin(request)
+    urls = _link_icon_urls()
+    try:
+        await asyncio.to_thread(state.icons.refresh_many, urls, True)
+    except Exception as e:
+        logger.exception("Manual site icon refresh failed")
+        raise _HTTPError(502, f"Site icon refresh failed: {e}")
+    statuses = [state.icons.status(_siteicons.key_for(url)) for url in urls]
+    cached = sum(bool(item and item["ok"]) for item in statuses)
+    failed = len(urls) - cached
+    state.auth.audit("site_icons_refresh", actor["username"], f"{cached} cached, {failed} unavailable",
+                     _client_ip(request))
+    return {"ok": True, "total": len(urls), "cached": cached, "unavailable": failed}
 
 
 @app.get("/api/repeaters")
@@ -2455,9 +2477,11 @@ async def midnight_reset_task():
             _purge_tg_stats()
             # Send stats update to all WebSocket clients
             await send_stats_update()
+            await _refresh_link_icons(force=True)
 
-        # Check every 60 seconds
-        await asyncio.sleep(60)
+        tomorrow = date.today() + timedelta(days=1)
+        midnight = time.mktime((tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0, -1, -1, -1))
+        await asyncio.sleep(max(1, midnight - time.time()))
 
 
 async def user_db_refresh_task():

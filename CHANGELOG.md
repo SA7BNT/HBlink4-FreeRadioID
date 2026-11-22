@@ -4,6 +4,11 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.1.1] – 2026-11-22
+
+- Link-Site-Icons werden um Mitternacht neu geladen; im Admin-Linkmenü gibt es zusätzlich **Refresh site icons now**.
+- Der automatische GitHub-Updatecheck läuft zu vollen Stunden (bei Intervallen über einer Stunde an den passenden vollen Stunden).
+
 ## [1.1.0] – 2026-11-22
 
 Frei einstellbare Farben mit hellem Profil und Favicons im Link-Menü. Das Farbsystem (**N8 Theme**) ist jetzt in allen
