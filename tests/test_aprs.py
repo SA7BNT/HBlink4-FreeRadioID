@@ -497,6 +497,21 @@ class TestMapApi(unittest.TestCase):
         self.assertEqual(calls, {"DL1ABC-7"})
         self.assertEqual(self.client.get("/api/aprs/station/DO1RF").status_code, 404)
 
+    def test_configuration_tab_explains_daprs(self):
+        st = self.server.state.settings
+        old = st.dmr_values()["dmr.daprs.enabled"], st.dmr_values()["dmr.daprs.data_ids"]
+        try:
+            st.db.write("dmr.daprs.enabled", True, "t")
+            st.db.write("dmr.daprs.data_ids", [900999], "t")
+            d = self.client.get("/api/connect").json()["daprs"]
+            self.assertEqual((d["data_ids"], d["ssid"], d["embedded"], d["data"]), ([900999], 7, True, True))
+            self.assertEqual(d["map_url"], "http://aprs.example.org/")
+            self.server.dashboard_config["aprs"]["enabled"] = False
+            self.assertIsNone(self.client.get("/api/connect").json()["daprs"])
+        finally:
+            st.db.write("dmr.daprs.enabled", old[0], "t")
+            st.db.write("dmr.daprs.data_ids", old[1], "t")
+
     def test_switched_off_and_private(self):
         self.server.dashboard_config["aprs"]["enabled"] = False
         self.assertEqual(self.client.get("/aprs").status_code, 404)

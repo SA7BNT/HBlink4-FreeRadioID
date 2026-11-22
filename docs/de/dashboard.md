@@ -12,30 +12,44 @@
 
 Das Dashboard zeigt live, was auf dem DMR-Server passiert. Es ist für Desktop und Smartphone gebaut; auf dem Handy rücken die Spalten zusammen und unwichtige Spalten verschwinden.
 
-## Kopfzeile mit Menü
+## Kopfzeile mit Menü und Statusleiste
 
-<p align="center"><img src="../images/header-desktop.png" alt="Kopfzeile mit Menü" width="95%"></p>
+<p align="center"><img src="../images/header-desktop.png" alt="Kopfzeile mit Menü und Statusleiste" width="95%"></p>
 
-Die Kopfzeile bleibt beim Scrollen oben stehen. Das **Menü** (Live, Statistics, OpenBridge, Talkgroups, Configuration) ist Teil dieser festen Leiste: links Logo und Titel, in der Mitte das Menü, rechts die Status-Knöpfe. So wechselst du von überall die Ansicht, ohne nach oben zu scrollen.
+Oben gibt es nur noch **ein** Menü: links Logo und Titel, in der Mitte die Reiter, rechts 🔗 Links und ganz rechts **🔐 Login**.
+Direkt darunter hängt eine schmale **Statusleiste** – deutlich niedriger als das Menü –, die nur zeigt, wie es den Diensten geht.
+Beides bleibt beim Scrollen oben stehen, du wechselst also von überall die Ansicht.
+
+Nach dem Login wird **⚙️ Admin** ein eigener Menüpunkt (gestrichelt umrandet). Rechts stehen dann dein Avatar mit Namen
+(Klick = Passwort ändern) und **⏻** zum Abmelden – ein Aufklappmenü gibt es nicht mehr.
+
+<p align="center"><img src="../images/header-login.png" alt="Kopfzeile nach dem Login" width="95%"></p>
 
 - **Ab 1500 Pixel Breite:** Menü mit vollen Namen und den Zählern (z. B. *Statistics 8*).
 - **1100–1500 Pixel:** kurze Namen (Stats, OBP, TGs, Setup); ab 1280 abwärts zeigt der Login-Knopf nur noch den Avatar.
-- **Tablet:** Das Menü steht als eigene Zeile in derselben festen Leiste und nutzt die ganze Breite.
-- **Smartphone:** nur eine Zeile plus Menü. Logo und Titel links, rechts 🔗, zwei **Statuspunkte** (Live und DMR: grün = verbunden, gelb = DMR-Server fehlt, rot = Verbindung weg), 🔇/🔊 und dein Avatar. So bleibt mehr Platz für den Inhalt.
-
-Die Status-Knöpfe sind kurz gehalten: **✓ Live**, **✓ DMR**, 🔇/🔊. Der ausführliche Text steht im Tooltip.
+- **Tablet und Smartphone:** Das Menü steht als eigene Zeile in derselben festen Leiste und nutzt die ganze Breite; die Statusleiste
+  bleibt eine Zeile mit kurzen Texten (*Live*, *DMR*, *APRS*).
 
 <p align="center"><img src="../images/header-mobile.png" alt="Kopfzeile am Smartphone" width="40%"></p>
+
+**Menü**
 
 | Element | Bedeutung |
 |---|---|
 | Logo, Titel, Untertitel, Farben | einstellbar im Adminbereich unter [🎨 Appearance](adminbereich.md#-appearance) |
-| **Menü** | 🎙️ Live · 📈 Statistics · ↔️ OpenBridge · 🗂️ Talkgroups · 🛠️ Configuration |
-| **✓ Live** | Der Browser ist mit dem Dashboard verbunden (Live-Daten). Ein Klick verbindet neu. |
-| **✓ DMR** | HBlink4, der DMR-Server, ist mit dem Dashboard verbunden. |
-| **🔇 / 🔊** | Töne bei Verbindungen und Gesprächen an/aus |
+| **Reiter** | 🎙️ Live · 📈 Statistics · ↔️ OpenBridge · 🗂️ Talkgroups · 🗺️ APRS · 🛠️ Configuration (OpenBridge und APRS nur, wenn eingerichtet) |
+| **⚙️ Admin** | nach dem Login als Admin; öffnet den [Adminbereich](adminbereich.md) |
 | **🔗 Links** | eigenes Link-Menü, wenn im [Adminbereich](adminbereich.md#-links) eingerichtet; alternativ als Knopfreihe unter der Kopfzeile |
-| **🔐 Login** bzw. Name | Anmelden; danach das Menü mit Adminbereich, Passwort und Abmelden |
+| **🔐 Login** bzw. Avatar + Name, **⏻** | Anmelden; angemeldet: Klick auf den Namen ändert das Passwort, ⏻ meldet ab |
+
+**Statusleiste** – der farbige Punkt sagt den Zustand: grün = verbunden, gelb = wartet, rot = Verbindung weg.
+
+| Anzeige | Bedeutung |
+|---|---|
+| **Live data** | Der Browser bekommt Live-Daten. Rot: *Offline – click to reconnect*; ein Klick verbindet neu. |
+| **DMR server** | HBlink4, der DMR-Server, ist mit dem Dashboard verbunden; rot: *DMR server offline*. |
+| **APRS online · n stations** | nur bei eingeschaltetem APRS: Server läuft, Zahl der Stationen der letzten Stunde (alle 60 s aktualisiert) |
+| **🔇 / 🔊 Notifications** (rechts) | Töne bei Verbindungen und Gesprächen an/aus |
 
 ## Statistik
 
@@ -136,7 +150,26 @@ Der Tab erklärt mit dem N8schicht-Logo in drei Schritten, wie ein Hotspot oder 
 | **② Login** | 🛡️ **FreeRadioID** (empfohlen): eigene DMR-ID und persönliches Passwort von FreeRadioID.net, volle Rechte, mit Link zur Registrierung · 👤 **Gast**: das Standard-Passwort, senden nur auf die Gast-Talkgroups. Ohne FreeRadioID-Login steht hier nur das Passwort. |
 | **③ Talkgroups** | TS1, TS2 und die Gast-Talkgroups als Kacheln, mit den Namen aus dem Adminbereich |
 | **🧰 Ready-made settings** | fertige Zeile für Pi-Star/WPSD (`/root/DMR_Hosts.txt`) und der Abschnitt `[DMR Network]` für MMDVMHost, je zum Kopieren |
+| **📍 APRS – show your position on the map (DAPRS)** | nur wenn APRS und die DAPRS-Dekodierung an sind – siehe unten |
 | **📌 Note from the sysop** | freier Text aus dem Adminbereich, z. B. Regeln und Kontakt; Links werden klickbar |
+
+### 📍 DAPRS: so sendest du deine Position
+
+<p align="center"><img src="../images/config-daprs.png" alt="Karte DAPRS im Tab Configuration" width="90%"></p>
+
+Sind im Adminbereich unter *APRS → DAPRS decoding* die Dekodierung und mindestens ein Weg eingeschaltet, erklärt die Karte,
+wie Funkgeräte ihre GPS-Position schicken. Die Karte zeigt nur die Wege, die der Server auch annimmt:
+
+- **A · GPS im Sprachruf** (*Decode embedded GPS* an): Geräte mit eingebautem GPS, die die Position bei jedem Durchgang mitschicken
+  (Embedded GPS, z. B. Motorola, Hytera, andere ETSI-Geräte). GPS im Gerät einschalten und Senden der Position erlauben – sonst nichts.
+- **B · GPS-Report als Datenruf** (*Decode GPS data calls* an): Geräte mit „Digital APRS“ bzw. GPS-Report (AnyTone, TYT/Retevis,
+  MD-380-GPS-Firmware, Motorola LRRP). Die Karte nennt die **Ziel-ID** aus *Accept GPS data sent to* (z. B. `900999`, mit Kopier-Knopf),
+  **Private call**, Format **NMEA oder LRRP, unbestätigt, Rate ½** und das kürzeste sinnvolle **Intervall**.
+- **Wo du erscheinst:** Link zur Karte (erste eigene Domain, sonst `/aprs`) und – wenn der Uplink an ist – im APRS-Netz (APRS-IS bzw. CB-APRS).
+- **Wer geht ins APRS-Netz:** Stationen mit FreeRadioID-Login; Gäste nur auf der lokalen Karte (wenn so eingestellt).
+- **Hotspot-Hinweis:** Pi-Star/WPSD/MMDVMHost reichen GPS-Daten selbst durch; mit DMRGateway und mehreren Netzen muss die Ziel-ID zu diesem Server geroutet werden.
+
+SSID, Symbol und Kommentar kommen aus den DAPRS-Einstellungen; eigene Werte pro ID legt der Sysop fest. Details: [APRS & DAPRS](aprs.md).
 
 <p align="center"><img src="../images/config-mmdvm.png" alt="Fertige Einstellungen für MMDVMHost" width="80%"></p>
 

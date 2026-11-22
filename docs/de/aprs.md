@@ -59,7 +59,7 @@ Fertig: Die Karte ist unter `https://aprs.example.org/`, `https://map.example.or
 
 <p align="center"><img src="../images/aprs-station.jpg" alt="Station mit Detailfenster und Spur" width="90%"></p>
 
-- **Kopfzeile** wie im Dashboard: Logo, Titel und Untertitel der Domain, **Live**-Status, Zahl der Stationen und der DMR-Stationen, Zustand der Verbindung zum APRS-Netz (APRS-IS bzw. CB-APRS) und der Knopf **📊 Dashboard**.
+- **Kopfzeile** wie im Dashboard: Logo, Titel und Untertitel der Domain und ein Menü mit **🗺️ APRS map** und **📊 Dashboard**. Darunter die schmale **Statusleiste**: **Live**-Status, Verbindung zum APRS-Netz (APRS-IS bzw. CB-APRS) und rechts die Zahl der Stationen und der DMR-Stationen. Am Smartphone zeigt das Menü nur die Symbole.
 - **Stationsliste** links (am Smartphone als Leiste unten mit der Zahl der Stationen und DMR-Stationen; antippen klappt die Liste auf und zu): neueste zuerst, mit APRS-Symbol, Herkunft, Kommentar, Alter und Geschwindigkeit. Ein Klick zeigt die Station auf der Karte.
 - **Suche** nach Rufzeichen, DMR-ID, Name oder Kommentar.
 - **Filter** in einer Zeile (seitlich wischen): 📻 DMR · 📡 Repeater · 🖥️ Clients (Apps an deinem Server) · 🌍 APRS-IS bzw. CB-APRS (Downlink) · 🌦️ Wetter.
@@ -126,6 +126,14 @@ Im Log des DMR-Servers steht jede gefundene Position:
 ```
 📍 DAPRS embedded position from 2621234 via 2629001 (DO1XYZ) TS2: 52.28970, 8.91610
 ```
+
+**Im Dashboard erklärt:** Der Tab **🛠️ Configuration** bekommt die Karte **📍 APRS – show your position on the map (DAPRS)**, sobald
+APRS und die DAPRS-Dekodierung an sind. Sie richtet sich nach den Einstellungen unter *DAPRS decoding*: Weg **A** (GPS im Sprachruf)
+erscheint nur bei *Decode embedded GPS*, Weg **B** (Datenruf) nur bei *Decode GPS data calls* – mit der Ziel-ID aus *Accept GPS data
+sent to* (z. B. `900999`, mit Kopier-Knopf), *Private call*, NMEA/LRRP unbestätigt Rate ½ und dem Mindestintervall. Dazu: Link zur
+Karte, ob die Position ins APRS-Netz geht, dass Gäste nur lokal erscheinen und ein Hinweis für Hotspots mit DMRGateway.
+
+<p align="center"><img src="../images/config-daprs.png" alt="DAPRS-Anleitung im Tab Configuration" width="90%"></p>
 
 <p align="center">
   <img src="../images/admin-aprs-decoding.png" alt="DAPRS-Erkennung" width="49%">
@@ -209,7 +217,7 @@ Ohne HTTPS ist die Karte unter jeder Domain per HTTP auf dem Web-Port des Dashbo
 
 | Bereich | Inhalt |
 |---|---|
-| 📊 **Overview** | Server (Ports, Server-ID mit Passcode, Clients), jede Uplink-/Downlink-Verbindung mit Zustand und Zählern, DAPRS (Positionen, gesendet, IDs ohne Rufzeichen, Repeater-Objekte), Stationen, Domains mit Zertifikatsstatus, Passcode-Rechner, verbundene Clients mit **Disconnect**, letzte Probleme; Knöpfe **↻ Restart APRS server**, **📡 Send repeater objects now**, **🗺️ Open map** |
+| 📊 **Overview** | Oben fünf Kennzahlen (Stationen der letzten Stunde, DMR-Positionen, Clients, Pakete rein mit verworfenen Duplikaten, gesendet). Darunter Karten: **Server** (Status, Server-ID, Passcode, Ports, Version), **Uplink & downlink** (jede Verbindung mit Zustand, Richtung, Zählern ↓/↑, Login, Gegenstelle, seit wann), **Stations by source** (Balken DMR/Repeater/Clients/APRS-IS), **DAPRS** (Positionen, gesendet, IDs ohne Rufzeichen, Repeater-Objekte), **Domains** mit Zertifikatsstatus und **Passcode**-Rechner; verbundene Clients mit **Disconnect** und letzte Probleme als eigene Karten; Knöpfe **↻ Restart APRS server**, **📡 Send repeater objects now**, **🗺️ Open map** |
 | 📡 **Server** | APRS ein/aus, Server-ID, Ports, Listen-Adresse, max. Clients, Duplikatfenster |
 | 🌍 **Uplink & downlink** | Netz (APRS-IS, CB-APRS, manuell) mit Server, Port, Login, Passcode, Filter, Richtung |
 | 🛰️ **DAPRS decoding** | was der DMR-Server erkennt (Embedded GPS, Datenrufe, erlaubte Ziele) |

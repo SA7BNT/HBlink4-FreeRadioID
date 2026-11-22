@@ -4,6 +4,51 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.3.0] – 2026-11-22
+
+Neue Kopfzeile mit **einem Menü** und einer schmalen **Statusleiste** darunter (gleicher Aufbau wie in frn_adn und N8-HotSpot),
+eine aufgeräumte **APRS-Übersicht** im Adminbereich und eine Anleitung zum **Senden von DAPRS-Positionen** im Tab Configuration.
+
+### 🧭 Ein Menü in der Kopfzeile
+- Die Kopfzeile enthält nur noch Logo/Titel, die Reiter und rechts 🔗 Links und Anmeldung. Status-Chips stehen nicht mehr darin.
+- **⚙️ Admin** ist nach dem Login ein eigener, gestrichelt umrandeter Menüpunkt; das Aufklappmenü unter dem Namen entfällt.
+- **🔐 Login** steht ganz rechts. Angemeldet zeigt der Platz Avatar + Namen (Klick = Passwort ändern) und **⏻ Abmelden** daneben.
+
+### 🟢 Statusleiste unter dem Menü
+- Neue, 22 px niedrige Leiste direkt unter der Kopfzeile, kleiner als das Menü: **Live data**, **DMR server** und – bei eingeschaltetem APRS –
+  **APRS online · n stations** (alle 60 s aus `/api/aprs/status`); rechts **🔇/🔊 Notifications**.
+- Zustand als farbiger Punkt (grün, gelb, rot), Texte kurz und ohne ✓/✕: *Offline – click to reconnect*, *DMR server offline*.
+  Ein Klick auf *Live data* verbindet weiterhin neu.
+- Am Smartphone eine Zeile mit kurzen Texten (*Live*, *DMR*, *APRS*); die Statuspunkte in der Kopfzeile entfallen.
+
+### 🗺️ APRS-Karte
+- Die Kopfzeile der Karte folgt demselben Muster: Menü mit **🗺️ APRS map** und **📊 Dashboard**, darunter die Statusleiste mit Live,
+  APRS-IS/CB-APRS und rechts Stationen und DMR-Stationen. Panel und Kartenknöpfe sitzen automatisch unter der Leiste (`--below-head`);
+  in der eingebetteten Ansicht (Dashboard-Tab) entfällt die Leiste.
+
+### 📡 APRS-Übersicht im Adminbereich
+- Neu aufgebaut: oben fünf **Kennzahlen** (Stationen der letzten Stunde, DMR-Positionen, Clients, Pakete rein mit verworfenen Duplikaten,
+  gesendet), darunter ein Raster aus Karten: **Server** (Status, Server-ID, Passcode, Ports, Version), **Uplink & downlink** (jede
+  Verbindung mit Zustand, Richtung, ↓/↑-Zählern, Login, Gegenstelle, seit wann), **Stations by source** (Balken DMR/Repeater/Clients/
+  APRS-IS), **DAPRS** (Positionen, gesendet, IDs ohne Rufzeichen, Repeater-Objekte), **Domains** mit Zertifikatsstatus und
+  **Passcode**-Rechner; Clients und letzte Probleme als eigene Karten, die Knöpfe als Leiste darunter.
+
+### 📍 DAPRS im Tab Configuration
+- Neue Karte **📍 APRS – show your position on the map (DAPRS)**, nur wenn APRS, DAPRS und die Dekodierung im DMR-Server an sind.
+- Sie richtet sich nach *DAPRS decoding*: **A · GPS im Sprachruf** (Embedded GPS) nur bei *Decode embedded GPS*; **B · GPS-Report als
+  Datenruf** nur bei *Decode GPS data calls*, mit Ziel-ID aus *Accept GPS data sent to* (z. B. `900999`, Kopier-Knopf; weitere erlaubte
+  Ziele werden aufgelistet), *Private call*, NMEA/LRRP unbestätigt Rate ½ und Mindestintervall.
+- Dazu: wie du auf der Karte erscheinst (Rufzeichen-SSID, Symbol, Link zur Karte), ob die Position ins APRS-Netz geht, dass Gäste nur
+  lokal erscheinen, und ein Hinweis für Hotspots mit DMRGateway.
+- `/api/connect` liefert dafür das neue Feld `daprs` (oder `null`).
+
+### 📚 Doku
+- *Dashboard*: Abschnitt **Kopfzeile mit Menü und Statusleiste** neu (Menü- und Statustabelle, Screenshots `header-desktop`, `header-login`,
+  `header-mobile`) und neuer Abschnitt **📍 DAPRS: so sendest du deine Position** mit `config-daprs.png`.
+- *APRS*: Anleitung im Tab Configuration, neue Beschreibung der Übersicht und der Kartenkopfzeile; alle Karten-Screenshots neu.
+- *Adminbereich*, *Anleitungen*, *Betrieb*: Login, ⚙️ Admin und Statusleiste statt Benutzermenü und ✓-Chips. `user-menu.png` entfällt.
+- Screenshots neu: Dashboard (Desktop/Smartphone), Statistik, Talkgroups, OpenBridge, Configuration, APRS-Übersicht.
+
 ## [1.2.1] – 2026-11-22
 
 Eigenes **Logo und Icon für die APRS-Karte** im N8schicht-Design und eine aufgeräumtere Karte – besonders am Smartphone

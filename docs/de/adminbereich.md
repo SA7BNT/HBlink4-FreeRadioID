@@ -11,10 +11,10 @@ Im Adminbereich stellst du **Dashboard und DMR-Server** ein, ohne SSH und ohne C
 <p align="center">
   <img src="../images/login.png" alt="Login" width="30%">
   &nbsp;
-  <img src="../images/user-menu.png" alt="Benutzermenü" width="62%">
+  <img src="../images/header-login.png" alt="Kopfzeile nach dem Login" width="62%">
 </p>
 
-**🔐 Login** oben rechts. Mit *Angemeldet bleiben* gilt die Anmeldung 30 Tage, sonst 12 Stunden; beides ist einstellbar. Nach 5 Fehlversuchen ist der Login für 15 Minuten gesperrt.
+**🔐 Login** ganz rechts in der Kopfzeile. Danach erscheint im Menü der Punkt **⚙️ Admin**; rechts stehen dein Name (Passwort ändern) und **⏻** zum Abmelden. Mit *Angemeldet bleiben* gilt die Anmeldung 30 Tage, sonst 12 Stunden; beides ist einstellbar. Nach 5 Fehlversuchen ist der Login für 15 Minuten gesperrt.
 
 ## Rollen
 
@@ -237,7 +237,7 @@ Unter dem Feld steht danach, welcher Trunk geändert oder angelegt wurde, und wa
 
 APRS-Server, **Uplink & Downlink** (APRS-IS, CB-APRS oder eigene Server), **DAPRS** (GPS-Positionen von DMR-Funkgeräten werden APRS-Positionen), die Karte und bis zu drei eigene Domains mit Let's Encrypt – alles in einem Bereich mit Seitennavigation: **📊 Overview · 📡 Server · 🌍 Uplink & downlink · 🛰️ DAPRS decoding · 📍 DMR → APRS · 🗺️ Map · 🌐 Domains**. APRS ist nach der Installation **aus**.
 
-Die Übersicht zeigt Ports, Server-ID mit Passcode, jede Verbindung ins APRS-Netz mit Zustand, DAPRS-Zähler, Stationen, den Zertifikatsstatus jeder Domain, einen Passcode-Rechner und die verbundenen APRS-Clients (mit **Disconnect**). Änderungen wirken sofort; nur neue Domains brauchen einen Neustart des Dashboards.
+Die Übersicht beginnt mit fünf Kennzahlen (Stationen, DMR-Positionen, Clients, Pakete rein, gesendet) und ordnet darunter alles in Karten: Server, jede Verbindung ins APRS-Netz mit Zustand und Zählern, Stationen nach Herkunft, DAPRS, Domains mit Zertifikatsstatus, Passcode-Rechner sowie verbundene APRS-Clients (mit **Disconnect**) und letzte Probleme. Änderungen wirken sofort; nur neue Domains brauchen einen Neustart des Dashboards.
 
 ➡️ Alles dazu: **[📡 APRS, DAPRS und Karte](aprs.md)**
 

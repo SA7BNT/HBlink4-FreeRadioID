@@ -90,7 +90,7 @@ sudo systemctl restart hblink4 hblink4-dash
 
 Für **Update now** gibt es zwei Wege, die Dienste neu zu starten. Das Dashboard nimmt automatisch den, der funktioniert; unter **🖥️ System → Restart after update** steht, welcher es ist.
 
-**Weg A – ohne sudo (empfohlen, nichts einzurichten):** Die mitgelieferten Dienste haben `Restart=always`. Nach dem Update beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie nach 10 Sekunden wieder. Dafür braucht das Dashboard keinerlei Root-Rechte, und die Härtung der Dienste (`NoNewPrivileges=true`, `CapabilityBoundingSet=`) bleibt an. Einzige Bedingung: HBlink4 muss in dem Moment mit dem Dashboard verbunden sein (im Kopf steht **✓ DMR**), sonst startet nur das Dashboard neu; der Dialog sagt das dann.
+**Weg A – ohne sudo (empfohlen, nichts einzurichten):** Die mitgelieferten Dienste haben `Restart=always`. Nach dem Update beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie nach 10 Sekunden wieder. Dafür braucht das Dashboard keinerlei Root-Rechte, und die Härtung der Dienste (`NoNewPrivileges=true`, `CapabilityBoundingSet=`) bleibt an. Einzige Bedingung: HBlink4 muss in dem Moment mit dem Dashboard verbunden sein (in der Statusleiste hat **DMR server** einen grünen Punkt), sonst startet nur das Dashboard neu; der Dialog sagt das dann.
 
 **Weg B – `systemctl` über sudo:** Wer lieber ein echtes `systemctl restart` will (z. B. weil `Restart=always` geändert wurde), erlaubt dem Dienst-Benutzer genau **einen** Befehl ohne Passwort. Im Beispiel heißt der Benutzer `hblink`; nimm den aus `User=` in `/etc/systemd/system/hblink4-dash.service`.
 

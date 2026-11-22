@@ -49,7 +49,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.2.1")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.3.0")
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -2148,6 +2148,30 @@ async def get_connect_info():
         "unit_calls": bool(d.get(p + "default_unit_calls", False)),
         "tg_names": {str(k): v for k, v in names.items() if k in wanted},
         "note": con.get("note") or "",
+        "daprs": _connect_daprs(d),
+    }
+
+
+def _connect_daprs(d: dict) -> Optional[dict]:
+    """How to send GPS positions (DAPRS) – only when APRS and the decoding in the DMR server are on."""
+    a = state.aprs
+    if not (a.enabled and a.c("daprs.enabled", True) and d.get("dmr.daprs.enabled")):
+        return None
+    https_cfg = dashboard_config.get("https") or {}
+    doms = _aprs_domains()
+    scheme = "https" if https_cfg.get("enabled") else "http"
+    map_url = f"{scheme}://{doms[0]}/" if doms else "/aprs"
+    up = a.c("aprs.uplink.enabled", False) and a.c("daprs.to_aprsis", True)
+    return {
+        "embedded": bool(d.get("dmr.daprs.embedded_gps", True)),
+        "data": bool(d.get("dmr.daprs.data_gps", True)),
+        "data_ids": d.get("dmr.daprs.data_ids"),            # None = any destination
+        "ssid": int(a.c("daprs.ssid", 7) or 0),
+        "symbol": a.c("daprs.symbol", "/[") or "/[",
+        "interval": int(a.c("daprs.min_interval", 60) or 60),
+        "uplink": bool(up), "network": a.network_label if up else "",
+        "guests_local": bool(a.c("daprs.block_guests", True)),
+        "map_url": map_url,
     }
 
 

@@ -40,6 +40,7 @@ Ein DMR-Server für Repeater, Hotspots und Apps wie Z3DMR (HomeBrew-Protokoll, z
 | 🎙️ **Live-Dashboard** | Wer gerade spricht, steht immer ganz oben (**ON AIR**). Last Heard zeigt Avatare und FreeRadioID-Profile. Die Darstellung ist für Smartphone und Desktop optimiert. |
 | 🎨 **Eigenes Aussehen** | N8 Theme: 7 Farbprofile inkl. hellem **Daylight**, jede Farbe frei wählbar (Akzente, Hintergrund, Leuchtfarben, Text, Karten), Rundung, Lesbarkeitsprüfung; Logo und Favicon hochladen, Titel und Browser-Tab, alles mit Live-Vorschau. Dieselbe Engine wie in der FRN-Oberfläche und im N8-Hotspot. |
 | 📥 **Konfigurations-Konverter** | Umzug von HBlink3, FreeDMR/FDMR+, ADN oder einem anderen HBlink4: Datei laden, Vorschläge prüfen, übernehmen |
+| 🧭 **Ein Menü + Statusleiste** | Kopfzeile mit Logo, Reitern, Links und Login ganz rechts (ohne Aufklappmenü, **⚙️ Admin** nach dem Login als Menüpunkt); darunter eine schmale Statusleiste für Live-Daten, DMR-Server und APRS |
 | 🔗 **Link-Menü** | eigene Links (Webseite, Chat, Kontakt …) als Menü oder Knopfreihe in der Kopfzeile, mit den **Favicons der verlinkten Seiten** (im Dashboard in SQLite zwischengespeichert) |
 | ⚙️ **Adminbereich statt Config-Dateien** | Alle Einstellungen von Dashboard **und** DMR-Server liegen in SQLite und werden im Browser geändert. Änderungen am DMR-Server wirken sofort, ohne SSH. |
 | 👥 **Benutzer & Rechte** | Superadmin, Admins und Benutzer. **IP-Adressen und Ports sehen nur Admins.** Dazu Sitzungen und ein Protokoll aller Änderungen. |
@@ -81,7 +82,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 </tr>
 <tr>
 <td><img src="docs/images/tg-stats.png" alt="Talkgroup-Statistik"><br><b>Tab 📈 Statistics</b>: Top-Talkgroups, Verlauf pro Stunde oder Tag, Tabelle mit aktivster Station.</td>
-<td><img src="docs/images/config-tab.png" alt="Configuration"><br><b>Tab 🛠️ Configuration</b>: alles zum Verbinden, mit N8schicht-Logo und Kopier-Knöpfen.</td>
+<td><img src="docs/images/config-tab.png" alt="Configuration"><br><b>Tab 🛠️ Configuration</b>: alles zum Verbinden, mit N8schicht-Logo und Kopier-Knöpfen – auch, wie Funkgeräte ihre Position per DAPRS senden.</td>
 </tr>
 <tr>
 <td><img src="docs/images/openbridge-tab.png" alt="OpenBridge"><br><b>Tab ↔️ OpenBridge</b>: Trunk-Status, Verkehr empfangen/gesendet, Top-Talkgroups und alle Talkgroups des Trunks.</td>
