@@ -4,6 +4,15 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## Noch nicht veröffentlicht
+
+### Backup beim Initial Setup wiederherstellen
+
+- Neue Auswahl zu Beginn von `scripts/setup.sh`: neu einrichten oder eine vorhandene vollständige Sicherung übernehmen.
+- Archivprüfung und Vorschau vor Konfigurations-/Datenänderungen; Bestätigung mit `RESTORE`, Anmeldung nachher mit dem Quellkonto.
+- Frische Ziele bekommen Python-Umgebung, zunächst gestoppte Dienste und den vorhandenen Wiederherstellungshelfer automatisch eingerichtet. HTTPS übernimmt bei Bedarf die certbot-Voraussetzung.
+- Vorhandene Installationen behalten ihr Dienstkonto und die automatische Rücknahme; ein fehlgeschlagener Erstaufbau bleibt gestoppt und deaktiviert. Der Wiederherstellungsdienst läuft unabhängig von der Setup-Konsole.
+
 ## [1.4.0] – 2026-11-23
 
 ### 💾 Vollständige Backups und Wiederherstellung

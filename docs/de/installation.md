@@ -23,7 +23,47 @@ git clone https://github.com/dhartmann1979/HBlink4-FreeRadioID /opt/HBlink4
 sudo /opt/HBlink4/scripts/setup.sh
 ```
 
-Das Skript arbeitet zehn Schritte ab. Jede Frage zeigt eine Vorgabe in `[Klammern]`; mit **Enter** übernimmst du sie.
+Am Anfang wählst du **Neu einrichten** oder **Backup wiederherstellen**. Mit Enter bleibt
+**Neu einrichten** ausgewählt; anschließend folgen die bisherigen zehn Schritte.
+Jede Frage zeigt eine Vorgabe in `[Klammern]`; mit **Enter** übernimmst du sie.
+
+### Vorhandenes Backup beim Initial Setup einspielen
+
+Ein Backup ab Version 1.4.0 lässt sich direkt beim Einrichten übernehmen. Ein vorheriger
+Dashboard-Login oder das Anlegen neuer DMR-, APRS- und Superadmin-Einstellungen entfällt.
+
+1. Dieses Repository auf dem Zielserver unter einem rootgeschützten Verzeichnis bereitstellen,
+   beispielsweise `/opt/HBlink4`. Die `.tar.gz`-Sicherung außerhalb dieses Verzeichnisses ablegen,
+   beispielsweise `/home/sa7bnt/HBlink4-Backup.tar.gz`.
+2. `sudo /opt/HBlink4/scripts/setup.sh` starten und **Vorhandenes HBlink4-Backup wiederherstellen?**
+   mit `j` beantworten. Den vollständigen Pfad zur Sicherung eingeben.
+3. Das Setup installiert bei Bedarf die Grundpakete und prüft anschließend das ganze Archiv:
+   Dateipfade, Prüfsummen, Datenbanken, Größenlimits und Python-Version. Quelle und Ziel benötigen
+   dieselbe Python-Haupt-/Nebenversion. Bei einer frischen Installation das Dienstkonto auswählen.
+4. Datum, Version, Zielverzeichnis und Quellkonto in der Vorschau prüfen. Erst **RESTORE** bestätigt
+   die Änderungen an der Zielinstallation. Enter bricht ab. Bis hier werden weder Konfigurationen
+   und Daten ersetzt noch Dienste umgestellt; eventuell angeforderte Grundpakete können bereits installiert sein.
+5. Das Setup bereitet auf einem frischen Ziel die Python-Umgebung und zunächst gestoppte Dienste vor,
+   installiert den Wiederherstellungshelfer und wartet auf dessen Ergebnis. Nach Erfolg laufen beide Dienste
+   mit den Einstellungen und Konten aus dem Backup und sind für den Systemstart aktiviert.
+
+Bereits eingerichtete Dienste im selben Installationsverzeichnis behalten ihr Dienstkonto und
+ihre systemd-Konfiguration. Vor dem Ersetzen entsteht ein automatisches Ziel-Backup. Bei Fehlern
+wird die vorhandene Installation wiederhergestellt und gestartet; auf einem frischen Ziel bleibt
+die zurückgespielte Bootstrap-Installation gestoppt und deaktiviert. Das Setup kann danach erneut
+mit der Backup-Auswahl gestartet werden.
+
+Der unabhängige Dienst läuft auch nach einem SSH-Abbruch weiter. Der Status ist über
+`sudo systemctl status hblink4-restore.service` und `sudo journalctl -u hblink4-restore.service`
+abrufbar. Firewall und DNS werden im Wiederherstellungsmodus nicht automatisch umgestellt.
+Wenn das Backup automatisches HTTPS nutzt, wird `certbot` bei Bedarf installiert;
+mit `SKIP_APT=1` muss es bereits vorhanden sein. `SKIP_SERVICES=1` ist in diesem Modus nicht möglich.
+
+Die Wiederherstellung übernimmt auch den Programmstand des Backups. Nach dem Einspielen eines
+älteren Stands kann daher eine erneute Installation des Diensthelfers nötig sein; das Setup weist
+darauf hin. Die vollständigen Voraussetzungen stehen unter [Backup und Klonen](backup.md).
+
+### Neu einrichten
 
 <p align="center"><img src="../images/setup-1.png" alt="setup.sh – Schritte 1 bis 5" width="80%"></p>
 

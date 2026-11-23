@@ -16,6 +16,8 @@
 #
 #   sudo DESTDIR=/tmp/preview ./scripts/install_services.sh
 #
+# ENABLE_SERVICES=0 / START_SERVICES=0 install without enabling or starting
+# the units (used while initial setup prepares a backup restoration).
 
 set -euo pipefail
 
@@ -295,12 +297,14 @@ ok "systemctl daemon-reload"
 # ------------------------------------------------------------- enable and start
 
 echo
-ask DO_ENABLE "Enable services at boot? [y/N]: " "y"
+if [ "${ENABLE_SERVICES:-1}" = 0 ]; then DO_ENABLE=n
+else ask DO_ENABLE "Enable services at boot? [y/N]: " "y"; fi
 case "$DO_ENABLE" in
     [yY]|[yY][eE][sS]) systemctl enable "${UNITS[@]}" >/dev/null && ok "enabled at boot" ;;
 esac
 
-ask DO_START "Start (or restart) the services now? [y/N]: " "y"
+if [ "${START_SERVICES:-1}" = 0 ]; then DO_START=n
+else ask DO_START "Start (or restart) the services now? [y/N]: " "y"; fi
 case "$DO_START" in
     [yY]|[yY][eE][sS])
         systemctl restart "${UNITS[@]}"

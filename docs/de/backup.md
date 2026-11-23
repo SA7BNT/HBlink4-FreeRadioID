@@ -6,6 +6,11 @@
 Erstellen, Herunterladen, Prüfen und Wiederherstellen sind dem **Superadmin** vorbehalten,
 weil das Archiv sämtliche Zugangsdaten und privaten Schlüssel enthalten kann.
 
+Auf einem neuen Server kann die Sicherung außerdem direkt über **`sudo ./scripts/setup.sh` →
+Vorhandenes HBlink4-Backup wiederherstellen** eingespielt werden. Dabei übernimmt das Setup
+die Vorbereitung von Python-Umgebung, Diensten und Diensthelfer; ein vorheriger Dashboard-Login
+ist nicht erforderlich. Siehe [Wiederherstellung beim Initial Setup](installation.md#vorhandenes-backup-beim-initial-setup-einspielen).
+
 ## Was gesichert wird
 
 | Bestandteil | Verhalten |
