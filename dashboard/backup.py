@@ -456,6 +456,7 @@ def restore_worker(cfg):
             if not stat.S_ISREG(info.st_mode) or info.st_uid != int(cfg["uid"]) or info.st_size > 16384:
                 raise BackupError("Invalid restore request file.")
             request = json.load(request_file)
+        initial_setup = request.get("initial_setup") is True
         token = request.get("token", "")
         if not re.fullmatch(r"[a-f0-9]{32}", token):
             raise BackupError("Invalid restore request.")
@@ -544,6 +545,11 @@ def restore_worker(cfg):
                         restarts = command(["systemctl", "show", unit, "-p", "NRestarts", "--value"])
                         if int(restarts or "0"):
                             raise BackupError(f"{unit} restarted unexpectedly after restore.")
+                if initial_setup:
+                    command(["systemctl", "enable", *UNITS])
+                    _as_owner(cfg, [sys.executable, "-I", "-c",
+                                    "from pathlib import Path; import sys; Path(sys.argv[1]).unlink(missing_ok=True)",
+                                    str(control / "setup-bootstrap.json")])
                 status("complete", "Backup restored. Sign in with the source installation's account.",
                        recovery=rollback_archive.name, backup=summary(manifest))
                 archive.unlink(missing_ok=True)
@@ -553,7 +559,12 @@ def restore_worker(cfg):
                     if stopped:
                         command(["systemctl", "stop", *UNITS], timeout=120)
                         swap.rollback()
-                        command(["systemctl", "start", *UNITS], timeout=120)
+                        if initial_setup:
+                            # A fresh setup's recovery point is a stopped
+                            # bootstrap, not a configured public DMR server.
+                            command(["systemctl", "disable", *UNITS])
+                        else:
+                            command(["systemctl", "start", *UNITS], timeout=120)
                 except Exception as secondary:
                     recovery_error = f" Automatic rollback needs attention: {secondary}"
                 if recovery_error:

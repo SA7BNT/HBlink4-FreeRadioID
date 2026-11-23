@@ -266,7 +266,9 @@ class TestRestoreWorker(BackupFixture):
 
     def run_worker(self, cfg, *, fail_start=False, restart_loop=False):
         starts = []
+        self.system_commands = []
         def commands(args, **kw):
+            self.system_commands.append(args)
             if args[:2] == ["systemctl", "start"]:
                 starts.append(args)
                 if fail_start and len(starts) == 1:
@@ -275,6 +277,9 @@ class TestRestoreWorker(BackupFixture):
                 return "1"
             return ""
         def owner_commands(cfg, args, **kw):
+            if args[-1].endswith("setup-bootstrap.json"):
+                Path(args[-1]).unlink(missing_ok=True)
+                return ""
             if "--write-status" in args:
                 backup.atomic_json(self.control / "restore-status.json", json.loads(kw["input"]))
                 return ""
@@ -341,6 +346,29 @@ class TestRestoreWorker(BackupFixture):
             self.run_worker(cfg, restart_loop=True)
         self.assertEqual((self.root / "hblink4/hblink.py").read_text(), "# destination before restore\n")
         self.assertTrue((self.root / "venv/excluded").exists())
+
+    def test_initial_setup_enables_units_only_after_successful_restore(self):
+        cfg = self.prepare_request()
+        backup.atomic_json(self.control / "setup-bootstrap.json", {"fresh": True})
+        request_path = self.control / "restore-request.json"
+        request = json.loads(request_path.read_text())
+        request["initial_setup"] = True
+        backup.atomic_json(request_path, request)
+        self.run_worker(cfg)
+        self.assertIn(["systemctl", "enable", *backup.UNITS], self.system_commands)
+        self.assertFalse((self.control / "setup-bootstrap.json").exists())
+
+    def test_initial_setup_failure_leaves_bootstrap_stopped_and_disabled(self):
+        cfg = self.prepare_request()
+        request_path = self.control / "restore-request.json"
+        request = json.loads(request_path.read_text())
+        request["initial_setup"] = True
+        backup.atomic_json(request_path, request)
+        with self.assertRaises(backup.BackupError):
+            self.run_worker(cfg, fail_start=True)
+        self.assertEqual(sum(cmd[:2] == ["systemctl", "start"] for cmd in self.system_commands), 1)
+        self.assertIn(["systemctl", "disable", *backup.UNITS], self.system_commands)
+        self.assertEqual((self.root / "hblink4/hblink.py").read_text(), "# destination before restore\n")
 
 
 _real_backup_command = backup.command
