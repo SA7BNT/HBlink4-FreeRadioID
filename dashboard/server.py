@@ -1856,6 +1856,37 @@ async def admin_backup_download(name: str, request: Request):
                         headers={"Cache-Control": "no-store"})
 
 
+@app.delete("/api/admin/backup/{name}")
+async def admin_backup_delete(name: str, request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    if not _BACKUP_NAME.fullmatch(name):
+        raise _HTTPError(404, "Backup nicht gefunden.")
+    if body.get("confirmation") != name:
+        raise _HTTPError(400, "Das Löschen dieses Backups muss bestätigt werden.")
+    async with _backup_lock:
+        path = _backup_dir() / name
+        if path.is_symlink() or not path.is_file():
+            raise _HTTPError(404, "Backup nicht gefunden.")
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            raise _HTTPError(404, "Backup nicht gefunden.") from None
+        except OSError:
+            raise _HTTPError(409, "Backup konnte nicht gelöscht werden. Dateirechte auf dem Server prüfen.") from None
+        if _autobackup.AUTO_NAME.fullmatch(name):
+            service = _auto_service()
+            auto_state = service.state()
+            entry = auto_state.get("catalog", {}).get(name)
+            if entry:
+                entry["local"] = False
+                if not entry.get("targets"):
+                    del auto_state["catalog"][name]
+                service.state_write(auto_state)
+        state.auth.audit("backup_deleted", actor["username"], name, _client_ip(request))
+    return {"ok": True}
+
+
 @app.post("/api/admin/backup/inspect")
 async def admin_backup_inspect(request: Request):
     """Stream the upload to disk, then validate it without touching live data."""

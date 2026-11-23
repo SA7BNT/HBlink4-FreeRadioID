@@ -47,7 +47,11 @@ nicht die Herkunft einer Datei.
 
 Die Archive liegen in `dashboard/data/.hblink4-backup/`, bei einem abweichenden
 `HBLINK4_DASH_DATA_DIR` entsprechend dort. Das Backup-Verzeichnis wird nicht öffentlich ausgeliefert.
-Manuelle Archive bleiben bis zur manuellen Bereinigung erhalten; AutoBackup hat eine eigene
+Neben jedem gespeicherten Archiv steht **Löschen**. Nach Bestätigung wird ausschließlich
+die lokale Datei entfernt; Kopien auf SFTP oder Google Drive bleiben erhalten. Das gilt
+auch für verschlüsselte AutoBackups und Sicherungen vor einer Wiederherstellung.
+Während einer laufenden Sicherung, Wiederherstellung oder Aktualisierung ist Löschen gesperrt.
+Manuelle Archive bleiben bis zum Löschen erhalten; AutoBackup hat zusätzlich eine eigene
 Aufbewahrung. Auf ausreichend freien Speicher achten.
 Grenzen: **2 GiB komprimiert, 8 GiB entpackt, 100.000 Dateien**.
 

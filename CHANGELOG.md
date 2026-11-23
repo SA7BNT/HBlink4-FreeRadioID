@@ -6,6 +6,11 @@ Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
 ## Noch nicht veröffentlicht
 
+### Gespeicherte Backups löschen
+
+- Admin → Backup bietet für jede gespeicherte Sicherung eine Löschschaltfläche mit Bestätigung.
+- Löschen betrifft nur lokale Archive; SFTP-/Drive-Kopien bleiben erhalten. Nur Superadmins dürfen löschen, laufende Sicherungen, Wiederherstellungen und Updates sind geschützt.
+
 ### Verschlüsseltes AutoBackup
 
 - Admin → Backup: tägliche/wöchentliche vollständige Sicherungen mit Zeitzone, Aufbewahrung, Verlauf und manuellem Start; Ziele SFTP und Google Drive.
