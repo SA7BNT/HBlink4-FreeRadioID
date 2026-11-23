@@ -3174,7 +3174,10 @@
                     <p id="backupCreateProgress" role="status" aria-live="polite"></p></div>
                 <div class="ap-card"><h3>Gespeicherte Backups</h3>
                     ${st.archives.length ? '<ul>' + st.archives.map(a => `<li>${escapeHtml(new Date(a.created_at * 1000).toLocaleString())} · ${backupSize(a.size)} ·
-                        <a href="/api/admin/backup/download/${encodeURIComponent(a.name)}" download>${escapeHtml(a.name.startsWith('before-restore-') ? 'Automatische Sicherung vor Wiederherstellung' : 'Backup herunterladen')}</a></li>`).join('') + '</ul>' : '<p>Noch keine Backups vorhanden.</p>'}
+                        <a href="/api/admin/backup/download/${encodeURIComponent(a.name)}" download>${escapeHtml(a.name.startsWith('before-restore-') ? 'Automatische Sicherung vor Wiederherstellung' : a.name.endsWith('.age') ? 'Verschlüsseltes AutoBackup herunterladen' : 'Backup herunterladen')}</a>
+                        <button type="button" class="btn-s" data-backup-name="${escapeHtml(a.name)}" aria-label="${escapeHtml('Lokales Backup löschen: ' + a.name)}"
+                            onclick="deleteFullBackup(this)" ${busy ? 'disabled' : ''}>Löschen</button></li>`).join('') + '</ul>' : '<p>Noch keine Backups vorhanden.</p>'}
+                    <p>Löschen entfernt nur die lokale Backup-Datei. Kopien auf SFTP oder Google Drive bleiben erhalten.</p>
                 </div>
                 ${autoBackupHtml(auto)}
                 <div class="ap-card"><h3>Backup wiederherstellen</h3>
@@ -3199,6 +3202,16 @@
                     <p id="backupRestoreProgress" role="status" aria-live="polite">${escapeHtml(st.restore.message || '')}</p>
                     <button class="btn-s" onclick="adminTab('backup')">⟳ Aktualisieren</button>
                 </div></div>`;
+        }
+        async function deleteFullBackup(btn) {
+            const name = btn.dataset.backupName;
+            if (!window.confirm(`Lokales Backup endgültig löschen?\n\n${name}\n\nKopien auf SFTP oder Google Drive bleiben erhalten.`)) return;
+            btn.disabled = true;
+            try {
+                await api('DELETE', '/api/admin/backup/' + encodeURIComponent(name), {confirmation: name});
+                toast('Lokales Backup gelöscht.', 'ok');
+                adminTab('backup');
+            } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
         }
         async function createFullBackup(btn) {
             btn.disabled = true;

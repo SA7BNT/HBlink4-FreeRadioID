@@ -382,9 +382,11 @@ class TestBackupApi(BackupFixture):
         self.server = server
         self.saved_auth = server.state.auth
         self.saved_dir = server.state._data_dir
+        self.saved_auto = server._auto_cache
         server.state.auth, server.state._data_dir = self.auth, self.data
         self.addCleanup(setattr, server.state, "auth", self.saved_auth)
         self.addCleanup(setattr, server.state, "_data_dir", self.saved_dir)
+        self.addCleanup(setattr, server, "_auto_cache", self.saved_auto)
         self.client = TestClient(server.app)
         self.addCleanup(self.client.close)
         self.headers = {"X-Dashboard": "1"}
@@ -396,15 +398,93 @@ class TestBackupApi(BackupFixture):
     def test_all_backup_routes_deny_anonymous_and_regular_admin(self):
         urls = [("GET", "/api/admin/backup"), ("POST", "/api/admin/backup/create"),
                 ("GET", "/api/admin/backup/download/anything"), ("POST", "/api/admin/backup/inspect"),
-                ("POST", "/api/admin/backup/restore")]
+                ("POST", "/api/admin/backup/restore"), ("DELETE", "/api/admin/backup/anything")]
         for method, url in urls:
-            response = self.client.request(method, url, json={} if method == "POST" else None, headers=self.headers)
+            response = self.client.request(method, url, json={} if method in ("POST", "DELETE") else None, headers=self.headers)
             self.assertEqual(response.status_code, 401, url)
         self.auth.create_user(self.actor, "ordinary", "password1", "admin")
         self.client.post("/api/auth/login", json={"username": "ordinary", "password": "password1"}, headers=self.headers)
         for method, url in urls:
-            response = self.client.request(method, url, json={} if method == "POST" else None, headers=self.headers)
+            response = self.client.request(method, url, json={} if method in ("POST", "DELETE") else None, headers=self.headers)
             self.assertEqual(response.status_code, 403, url)
+
+    def test_delete_requires_csrf_and_confirmation_then_removes_only_chosen_file(self):
+        self.login()
+        name = 'backup-20261124T010203-' + 'a' * 32 + '.tar.gz'
+        path = self.control / name
+        path.write_bytes(b'archive')
+        url = '/api/admin/backup/' + name
+        self.assertEqual(self.client.request('DELETE', url, json={'confirmation': name}).status_code, 403)
+        self.assertEqual(self.client.request('DELETE', url, json={}, headers=self.headers).status_code, 400)
+        self.assertTrue(path.exists())
+        result = self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertFalse(path.exists())
+        self.assertTrue((self.control / 'old-backup.tar.gz').exists())
+        self.assertNotIn(name, [item['name'] for item in self.client.get('/api/admin/backup').json()['archives']])
+        self.assertEqual(self.client.get('/api/admin/backup/download/' + name).status_code, 404)
+        self.assertEqual(self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers).status_code, 404)
+
+    def test_delete_recovery_and_auto_archives_preserves_remote_catalog(self):
+        self.login()
+        recovery = 'before-restore-20261124010203.tar.gz'
+        remote_name = 'auto-20261124T010203Z-' + 'b' * 32 + '.tar.gz.age'
+        local_name = 'auto-20261124T010204Z-' + 'c' * 32 + '.tar.gz.age'
+        remote_copy = self.base / remote_name
+        remote_copy.write_bytes(b'remote copy')
+        service = self.server._auto_service()
+        service.state_write({'status': 'idle', 'history': [], 'catalog': {
+            remote_name: {'name': remote_name, 'local': True, 'targets': ['target-1'], 'created': time.time()},
+            local_name: {'name': local_name, 'local': True, 'targets': [], 'created': time.time()}}})
+        for name in (recovery, remote_name, local_name):
+            with self.subTest(name=name):
+                (self.control / name).write_bytes(b'archive')
+                result = self.client.request('DELETE', '/api/admin/backup/' + name,
+                                             json={'confirmation': name}, headers=self.headers)
+                self.assertEqual(result.status_code, 200, result.text)
+                self.assertFalse((self.control / name).exists())
+        catalog = service.state()['catalog']
+        self.assertFalse(catalog[remote_name]['local'])
+        self.assertEqual(catalog[remote_name]['targets'], ['target-1'])
+        self.assertNotIn(local_name, catalog)
+        self.assertEqual(remote_copy.read_bytes(), b'remote copy')
+
+    def test_delete_rejects_unknown_paths_symlinks_and_directories(self):
+        self.login()
+        victim = self.base / 'keep.txt'
+        victim.write_text('keep')
+        link = self.control / ('backup-20261124T010203-' + 'd' * 32 + '.tar.gz')
+        link.symlink_to(victim)
+        directory = self.control / ('backup-20261124T010203-' + 'e' * 32 + '.tar.gz')
+        directory.mkdir()
+        for name in ('dashboard.db', '..%2Fkeep.txt', link.name, directory.name):
+            with self.subTest(name=name):
+                result = self.client.request('DELETE', '/api/admin/backup/' + name,
+                                             json={'confirmation': name}, headers=self.headers)
+                self.assertEqual(result.status_code, 404, result.text)
+        self.assertEqual(victim.read_text(), 'keep')
+        self.assertTrue(link.is_symlink())
+        self.assertTrue(directory.is_dir())
+
+    def test_delete_blocks_running_restore_and_reports_permission_failure(self):
+        self.login()
+        name = 'backup-20261124T010203-' + 'f' * 32 + '.tar.gz'
+        path = self.control / name
+        path.write_bytes(b'archive')
+        url = '/api/admin/backup/' + name
+        backup.atomic_json(self.control / 'restore-status.json', {'state': 'running', 'updated_at': time.time()})
+        self.assertEqual(self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers).status_code, 409)
+        self.assertTrue(path.exists())
+        backup.atomic_json(self.control / 'restore-status.json', {'state': 'idle'})
+        with patch.object(self.server._backup_lock, '_locked', True):
+            self.assertEqual(self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers).status_code, 409)
+        with patch.object(self.server._update_lock, '_locked', True):
+            self.assertEqual(self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers).status_code, 409)
+        with patch.object(Path, 'unlink', side_effect=PermissionError()):
+            result = self.client.request('DELETE', url, json={'confirmation': name}, headers=self.headers)
+        self.assertEqual(result.status_code, 409)
+        self.assertIn('Dateirechte', result.json()['error'])
+        self.assertTrue(path.exists())
 
     def test_create_download_inspect_and_password_gate(self):
         self.login()
