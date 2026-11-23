@@ -47,6 +47,10 @@ ein automatisches Backup vor dem Überschreiben schützen den Zielzustand. Für 
 wird einmalig `sudo ./scripts/install_backup_helper.sh` auf dem Zielserver ausgeführt.
 Siehe [Backup und Klonen](backup.md) für Inhalt, Voraussetzungen und Wiederherstellung.
 
+**AutoBackup** im selben Menü ergänzt verschlüsselte tägliche/wöchentliche Sicherungen
+nach SFTP oder Google Drive, Schlüsselexport, Zieltest und Aufbewahrung.
+Einrichtung: [Automatische Backups](autobackup.md).
+
 Schritt-für-Schritt-Anleitungen für die häufigsten Aufgaben stehen in [🧭 Anleitungen](anleitungen.md).
 
 Für alle Bereiche gilt:

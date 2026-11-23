@@ -85,8 +85,8 @@ if [ "${SKIP_APT:-0}" = 1 ]; then
     info "übersprungen (SKIP_APT=1)"
 elif command -v apt-get >/dev/null 2>&1; then
     apt-get update -qq >/dev/null 2>&1
-    if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-venv python3-pip git iproute2 >/dev/null 2>&1; then
-        ok "python3, venv, pip, git, iproute2"
+    if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-venv python3-pip git iproute2 age >/dev/null 2>&1; then
+        ok "python3, venv, pip, git, iproute2, age"
     else
         fail "apt-get konnte die Pakete nicht installieren"
     fi

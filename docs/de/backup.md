@@ -30,7 +30,9 @@ Backup-Archive werden nicht rekursiv mitgesichert. Stattdessen werden Git-Commit
 Andere externe Symlinks oder lokale/editierbare Python-Abhängigkeiten führen zu einer klaren
 Fehlermeldung, statt eine unvollständige Sicherung als vollständig auszugeben.
 
-**Archive sind nicht verschlüsselt.** Sicher herunterladen, geschützt aufbewahren und nicht
+**Manuelle Archive sind nicht verschlüsselt.** [AutoBackup](autobackup.md) ergänzt
+tägliche/wöchentliche, verschlüsselte Sicherungen nach SFTP oder Google Drive.
+Manuelle Archive sicher herunterladen, geschützt aufbewahren und nicht
 öffentlich teilen oder in Git einchecken. Nur vertrauenswürdige eigene Backups wiederherstellen:
 Sie enthalten ausführbaren HBlink4-Programmcode. SHA-256 erkennt Beschädigungen, bestätigt aber
 nicht die Herkunft einer Datei.
@@ -45,7 +47,8 @@ nicht die Herkunft einer Datei.
 
 Die Archive liegen in `dashboard/data/.hblink4-backup/`, bei einem abweichenden
 `HBLINK4_DASH_DATA_DIR` entsprechend dort. Das Backup-Verzeichnis wird nicht öffentlich ausgeliefert.
-Archive bleiben bis zur manuellen Bereinigung erhalten; auf ausreichend freien Speicher achten.
+Manuelle Archive bleiben bis zur manuellen Bereinigung erhalten; AutoBackup hat eine eigene
+Aufbewahrung. Auf ausreichend freien Speicher achten.
 Grenzen: **2 GiB komprimiert, 8 GiB entpackt, 100.000 Dateien**.
 
 ## Zielserver vorbereiten
@@ -83,7 +86,8 @@ als Referenz gesichert, aber aus einem hochgeladenen Archiv niemals als root aus
 ## Wiederherstellen
 
 1. Auf dem **Zielserver** als dessen bisheriger Superadmin **Admin → Backup** öffnen.
-2. Archiv auswählen und **Datei hochladen und prüfen** anklicken. Dateipfade, Dateitypen,
+2. Archiv auswählen, bei `.tar.gz.age` zusätzlich den separaten Wiederherstellungsschlüssel
+   angeben und **Datei hochladen und prüfen** anklicken. Dateipfade, Dateitypen,
    Prüfsummen, Größen, Konfigurationen, Datenbanken und Python-Version werden geprüft.
 3. Version, Datum und Dateianzahl in der Vorschau kontrollieren. Das aktuelle Passwort des
    **Zielservers** eingeben, `RESTORE` eintragen und die Wiederherstellung starten.

@@ -60,7 +60,7 @@ class SetupRestore:
             raise SetupError("Das übergeordnete Installationsverzeichnis muss root gehören und geschützt sein, z. B. /opt/HBlink4.")
         if any(c.isspace() or c in '$%\\"' for c in str(self.root)):
             raise SetupError("Der Installationspfad darf keine Leerzeichen, $, %, Backslash oder Anführungszeichen enthalten.")
-        if not self.archive.is_file() or self.archive.stat().st_size > backup.MAX_UPLOAD:
+        if not self.archive.is_file() or self.archive.stat().st_size > backup.MAX_ENCRYPTED_UPLOAD:
             raise SetupError("Backup-Datei fehlt oder ist größer als 2 GiB.")
         if self.archive.is_relative_to(self.root) and backup.CONTROL not in self.archive.relative_to(self.root).parts:
             raise SetupError("Bitte die Backup-Datei außerhalb des Installationsverzeichnisses ablegen, z. B. unter /home.")
@@ -220,6 +220,11 @@ b['atomic_json'](folder / 'restore-request.json', {'token':token,'sha256':sha,'i
             work = Path(tmp)
             snapshot = work / "backup.tar.gz"
             shutil.copyfile(self.archive, snapshot)
+            if backup.encrypted(snapshot):
+                key = Path(self.ask("Pfad zum separaten Wiederherstellungsschlüssel (.agekey): ").strip()).expanduser().resolve()
+                plain = work / "decrypted.tar.gz"
+                backup.plain_archive(snapshot, plain, key)
+                snapshot = plain
             stage = work / "inspect"
             stage.mkdir()
             self.say("Backup wird vollständig geprüft …")

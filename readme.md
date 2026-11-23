@@ -120,7 +120,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 | 🧭 [Anleitungen](docs/de/anleitungen.md) | Schritt für Schritt: Hotspot verbinden, Umzug mit dem Import, OpenBridge zu FreeDMR, Logo und Farben, Link-Menü, Ankündigung, Admins |
 | 📡 [APRS](docs/de/aprs.md) | APRS-Server, Uplink & Downlink (APRS-IS, CB-APRS, manuell), DAPRS, Karte, eigene Domains mit Let's Encrypt, Fehlersuche |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Backup, Import, Sitzungen, Protokoll, System |
-| 💾 [Backup und Klonen](docs/de/backup.md) | Vollständige Sicherung, Download, Archivprüfung und Wiederherstellung auf einem anderen HBlink4-Server |
+| 💾 [Backup und Klonen](docs/de/backup.md) | Vollständige Sicherung, Download, Archivprüfung und Wiederherstellung auf einem anderen HBlink4-Server; [verschlüsselte AutoBackups](docs/de/autobackup.md) nach SFTP/Google Drive |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |
 | 🩺 [Betrieb & Fehlersuche](docs/de/betrieb.md) | Dienste, `check.sh`, typische Fehlermeldungen, Sicherung, Aktualisieren |

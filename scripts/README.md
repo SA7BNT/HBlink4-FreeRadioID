@@ -10,9 +10,21 @@ and enables the cloned services. Existing installations keep their service
 account and use the normal recovery backup/rollback. A failed fresh restore
 leaves its bootstrap stopped and disabled.
 
+Encrypted `.tar.gz.age` archives are accepted too; setup asks for the separate
+recovery key before validating or changing the target. With `SKIP_APT=1`, install `age` first.
+
 See **[Initial setup](../docs/de/installation.md#vorhandenes-backup-beim-initial-setup-einspielen)**.
 The archive should be outside the checkout. `SKIP_SERVICES=1` is incompatible
 with restore; `SKIP_APT=1` requires Python/venv/git and any needed certbot already installed.
+
+## install_autobackup.sh
+
+`sudo ./scripts/install_autobackup.sh` prepares age/rclone, refreshes the isolated
+restore helper and creates a private identity outside the installation/data tree.
+It preserves existing keys, does not restart HBlink4 and does not contact a destination.
+With `SKIP_APT=1`, age/age-keygen/rclone must already be installed.
+Then export the recovery key and configure SFTP/Google Drive under Admin → Backup.
+See **[AutoBackup](../docs/de/autobackup.md)** for OAuth, SSH host keys and recovery.
 
 ## install_services.sh
 

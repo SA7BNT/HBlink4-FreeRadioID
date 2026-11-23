@@ -6,6 +6,14 @@ Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
 ## Noch nicht veröffentlicht
 
+### Verschlüsseltes AutoBackup
+
+- Admin → Backup: tägliche/wöchentliche vollständige Sicherungen mit Zeitzone, Aufbewahrung, Verlauf und manuellem Start; Ziele SFTP und Google Drive.
+- age verschlüsselt Archive und gespeicherte Zugangsdaten. Exportierbarer Wiederherstellungsschlüssel außerhalb des Backups; SFTP mit SSH-Hostschlüsselprüfung, Drive mit eigenem OAuth-Client und erneuerten Tokens.
+- Inhaltsprüfung vor dem Upload und vollständiges Rücklesen danach. Bereinigung nur katalogisierter AutoBackups nach Erfolg auf allen aktivierten Zielen; Wiederholungen bei Fehlern.
+- Verschlüsselte Archive im Adminbereich und beim Initial Setup wiederherstellbar. Klone können übernommene Zugangsdaten mit dem alten Schlüssel entsperren und den Zeitplan bewusst neu aktivieren.
+- Vorbereitung mit `sudo ./scripts/install_autobackup.sh`; Anleitung: [AutoBackup](docs/de/autobackup.md).
+
 ### Backup beim Initial Setup wiederherstellen
 
 - Neue Auswahl zu Beginn von `scripts/setup.sh`: neu einrichten oder eine vorhandene vollständige Sicherung übernehmen.
