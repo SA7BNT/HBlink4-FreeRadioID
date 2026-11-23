@@ -17,6 +17,7 @@
   <a href="docs/de/installation.md">Installation</a> ·
   <a href="docs/de/dashboard.md">Dashboard</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
+  <a href="docs/de/backup.md">Backup</a> ·
   <a href="docs/de/aprs.md">APRS</a> ·
   <a href="docs/de/konfiguration.md">Konfiguration</a> ·
   <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
@@ -118,7 +119,8 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 | 🎙️ [Dashboard](docs/de/dashboard.md) | Tabs Live/Statistics/OpenBridge/Talkgroups/Configuration, ON AIR, Talkgroup-Statistik, Last Heard, Karten, Detailansicht, Login-Arten |
 | 🧭 [Anleitungen](docs/de/anleitungen.md) | Schritt für Schritt: Hotspot verbinden, Umzug mit dem Import, OpenBridge zu FreeDMR, Logo und Farben, Link-Menü, Ankündigung, Admins |
 | 📡 [APRS](docs/de/aprs.md) | APRS-Server, Uplink & Downlink (APRS-IS, CB-APRS, manuell), DAPRS, Karte, eigene Domains mit Let's Encrypt, Fehlersuche |
-| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Import, Sitzungen, Protokoll, System |
+| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Anmelden, Rollen, Benutzer, Einstellungen, Aussehen, Link-Menü, OpenBridge-Editor, Backup, Import, Sitzungen, Protokoll, System |
+| 💾 [Backup und Klonen](docs/de/backup.md) | Vollständige Sicherung, Download, Archivprüfung und Wiederherstellung auf einem anderen HBlink4-Server |
 | 🧾 [Konfiguration](docs/de/konfiguration.md) | Was in den Dateien steht und was in SQLite, alle Einstellungen im Überblick, Patterns |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Secure Login, Gastzugang, Avatare, Profile, ID-Listen |
 | 🩺 [Betrieb & Fehlersuche](docs/de/betrieb.md) | Dienste, `check.sh`, typische Fehlermeldungen, Sicherung, Aktualisieren |

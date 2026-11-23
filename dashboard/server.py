@@ -41,6 +41,7 @@ from .obpstats import OBPStats
 from .talkgroups import Talkgroups
 from . import version as _version
 from . import siteicons as _siteicons
+from . import backup as _backup
 from .aprs.service import AprsService
 from .aprs.store import public as _aprs_public
 from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_call
@@ -49,7 +50,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.3.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.4.0")
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -1243,6 +1244,13 @@ def _require_admin(request: Request) -> dict:
     return user
 
 
+def _require_backup_owner(request: Request) -> dict:
+    user = _require_admin(request)
+    if user.get("role") != "superadmin":
+        raise _HTTPError(403, "Full backups contain all credentials. Superadmin access is required.")
+    return user
+
+
 class _HTTPError(Exception):
     def __init__(self, status: int, message: str):
         self.status, self.message = status, message
@@ -1455,6 +1463,7 @@ async def api_admin_update_install(request: Request, body: dict = Body(...)):
     """Update now: password again, fast-forward to the shown commit, then restart both services."""
     global _update_last_try
     user = _require_admin(request)
+    _backup_idle()
     ip = _client_ip(request)
     if not _may_install(user):
         raise _HTTPError(403, "You may not install updates (Settings → ⬆️ Updates → Who may press “Update now”).")
@@ -1720,6 +1729,158 @@ async def admin_restart(request: Request):
     import signal as _signal
     asyncio.get_running_loop().call_later(0.5, os.kill, os.getpid(), _signal.SIGTERM)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- full backups
+_backup_lock = asyncio.Lock()
+_BACKUP_NAME = re.compile(r"(?:backup-[0-9T-]+-[a-f0-9]{32}|before-restore-[0-9-]+)\.tar\.gz\Z")
+
+
+def _backup_dir() -> Path:
+    path = state._data_dir / _backup.CONTROL
+    if path.is_symlink():
+        raise _HTTPError(409, "The backup directory must not be a symlink.")
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return path
+
+
+def _restore_status() -> dict:
+    path = _backup_dir() / "restore-status.json"
+    try:
+        status = json.loads(path.read_text())
+        if status.get("state") in ("queued", "running") and time.time() - status.get("updated_at", 0) > 60:
+            import subprocess
+            try:
+                live = subprocess.run(["systemctl", "show", "hblink4-restore.service", "-p", "ActiveState", "--value"],
+                                      capture_output=True, text=True, timeout=5)
+                if live.returncode == 0 and live.stdout.strip() in ("inactive", "failed"):
+                    status = {"state": "failed", "message": "Restore helper stopped unexpectedly. Check journalctl -u hblink4-restore before retrying.", "updated_at": time.time()}
+                    _backup.atomic_json(path, status)
+            except (OSError, subprocess.SubprocessError):
+                pass
+        return status
+    except (OSError, ValueError):
+        return {"state": "idle"}
+
+
+def _backup_idle():
+    if _update_lock.locked() or _backup_lock.locked() or _restore_status().get("state") in ("queued", "running"):
+        raise _HTTPError(409, "A backup or restore is already running.")
+
+
+@app.exception_handler(_backup.BackupError)
+async def _backup_error_handler(request: Request, exc: _backup.BackupError):
+    return JSONResponse({"error": str(exc)}, status_code=400)
+
+
+@app.get("/api/admin/backup")
+async def admin_backup_status(request: Request):
+    _require_backup_owner(request)
+    folder = _backup_dir()
+    archives = [{"name": p.name, "size": p.stat().st_size, "created_at": p.stat().st_mtime}
+                for p in folder.iterdir() if _BACKUP_NAME.fullmatch(p.name) and p.is_file() and not p.is_symlink()]
+    archives.sort(key=lambda x: x["created_at"], reverse=True)
+    return {"archives": archives, "busy": _backup_lock.locked(), "restore": _restore_status(),
+            "can_restore": await asyncio.to_thread(_backup.helper_available, _version.REPO_ROOT, state._data_dir),
+            "max_upload_bytes": _backup.MAX_UPLOAD, "version": _version.local_version(),
+            "install_command": "sudo ./scripts/install_backup_helper.sh"}
+
+
+@app.post("/api/admin/backup/create")
+async def admin_backup_create(request: Request):
+    import uuid
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    async with _backup_lock:
+        name = "backup-" + datetime.now().strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex + ".tar.gz"
+        path = _backup_dir() / name
+        # Flush in-memory state in the event loop before the SQLite snapshots.
+        state.save_all_data()
+        await asyncio.to_thread(state.aprs.store.flush)
+        try:
+            units = await asyncio.to_thread(_backup.collect_units)
+            manifest = await asyncio.to_thread(_backup.create_archive, _version.REPO_ROOT, state._data_dir, path,
+                                               version=_version.local_version(), system_units=units)
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
+        state.auth.audit("backup_created", actor["username"], name, _client_ip(request))
+        return {"ok": True, "name": name, "size": path.stat().st_size, "backup": _backup.summary(manifest)}
+
+
+@app.get("/api/admin/backup/download/{name}")
+async def admin_backup_download(name: str, request: Request):
+    from fastapi.responses import FileResponse
+    actor = _require_backup_owner(request)
+    path = _backup_dir() / name
+    if not _BACKUP_NAME.fullmatch(name) or path.is_symlink() or not path.is_file():
+        raise _HTTPError(404, "Backup not found.")
+    state.auth.audit("backup_downloaded", actor["username"], name, _client_ip(request))
+    return FileResponse(path, media_type="application/gzip", filename=name,
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/admin/backup/inspect")
+async def admin_backup_inspect(request: Request):
+    """Stream the upload to disk, then validate it without touching live data."""
+    import tempfile
+    import uuid
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    async with _backup_lock:
+        folder = _backup_dir()
+        token = uuid.uuid4().hex
+        path = folder / (token + ".tar.gz")
+        total = 0
+        try:
+            with open(path, "xb") as out:
+                os.chmod(path, 0o600)
+                async for chunk in request.stream():
+                    total += len(chunk)
+                    if total > _backup.MAX_UPLOAD:
+                        raise _HTTPError(413, "Backup exceeds the 2 GiB upload limit.")
+                    out.write(chunk)
+            with tempfile.TemporaryDirectory(prefix="inspect-", dir=folder) as tmp:
+                manifest = await asyncio.to_thread(_backup.unpack_archive, path, Path(tmp))
+            sha = await asyncio.to_thread(_backup.digest, path)
+            _backup.atomic_json(folder / (token + ".json"), {"token": token, "sha256": sha,
+                                "actor_id": actor["id"], "created_at": time.time(), "backup": _backup.summary(manifest)})
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
+        state.auth.audit("backup_checked", actor["username"], token, _client_ip(request))
+        return {"ok": True, "token": token, "sha256": sha, "backup": _backup.summary(manifest)}
+
+
+@app.post("/api/admin/backup/restore")
+async def admin_backup_restore(request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    if body.get("confirmation") != "RESTORE":
+        raise _HTTPError(400, "Type RESTORE to confirm replacement of this installation.")
+    await asyncio.to_thread(state.auth.confirm_password, actor, str(body.get("password") or ""), _client_ip(request))
+    token = str(body.get("token") or "")
+    if not re.fullmatch(r"[a-f0-9]{32}", token):
+        raise _HTTPError(400, "Upload and check a backup first.")
+    async with _backup_lock:
+        folder = _backup_dir()
+        try:
+            preview = json.loads((folder / (token + ".json")).read_text())
+        except (OSError, ValueError):
+            raise _HTTPError(400, "Upload and check a backup first.")
+        if preview.get("actor_id") != actor["id"] or time.time() - preview.get("created_at", 0) > 3600:
+            raise _HTTPError(400, "The preview expired or belongs to another account. Upload it again.")
+        if not await asyncio.to_thread(_backup.helper_available, _version.REPO_ROOT, state._data_dir):
+            raise _HTTPError(409, "Install the restore helper first: sudo ./scripts/install_backup_helper.sh")
+        if await asyncio.to_thread(_backup.digest, folder / (token + ".tar.gz")) != preview["sha256"]:
+            raise _HTTPError(409, "The backup changed after validation. Upload it again.")
+        _backup.atomic_json(folder / "restore-status.json", {"state": "queued", "updated_at": time.time(),
+                                                           "message": "Restore queued; services will restart."})
+        state.auth.audit("backup_restore_requested", actor["username"], token, _client_ip(request))
+        # The root-owned systemd path unit observes this atomic rename. No sudo
+        # from the dashboard: its NoNewPrivileges hardening stays enabled.
+        _backup.atomic_json(folder / "restore-request.json", {"token": token, "sha256": preview["sha256"]})
+        return {"ok": True, "state": "queued", "message": "Restore started. Both services will restart; sign in with the source account afterwards."}
 
 
 # ---------------------------------------------------------------- branding

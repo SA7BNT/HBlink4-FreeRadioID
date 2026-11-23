@@ -37,7 +37,15 @@ Im Adminbereich stellst du **Dashboard und DMR-Server** ein, ohne SSH und ohne C
 
 ## Aufbau
 
-Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 📡 APRS · 📥 Import · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste. Das Fenster ist immer gleich groß, egal welcher Bereich offen ist; nur der Inhalt rollt. Jeder Bereich beginnt mit einem Satz, worum es geht.
+Oben wählst du den Bereich: **👥 Users · ⚙️ Settings · 🎨 Appearance · 🔗 Links · ↔️ OpenBridge · 📡 APRS · 💾 Backup · 📥 Import · 🔑 Sessions · 📜 Log · 🖥️ System**. Am Smartphone ist das eine Auswahlliste. Das Fenster ist immer gleich groß, egal welcher Bereich offen ist; nur der Inhalt rollt. Jeder Bereich beginnt mit einem Satz, worum es geht.
+
+## 💾 Backup
+
+Der Superadmin kann die vollständige HBlink4-Installation sichern, herunterladen und auf einer
+vorbereiteten anderen Installation wiederherstellen. Archivvorschau, Passwortbestätigung und
+ein automatisches Backup vor dem Überschreiben schützen den Zielzustand. Für die Wiederherstellung
+wird einmalig `sudo ./scripts/install_backup_helper.sh` auf dem Zielserver ausgeführt.
+Siehe [Backup und Klonen](backup.md) für Inhalt, Voraussetzungen und Wiederherstellung.
 
 Schritt-für-Schritt-Anleitungen für die häufigsten Aufgaben stehen in [🧭 Anleitungen](anleitungen.md).
 

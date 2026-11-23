@@ -4,6 +4,17 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.4.0] – 2026-11-23
+
+### 💾 Vollständige Backups und Wiederherstellung
+
+- Neuer Menüpunkt **Admin → Backup** für den Superadmin: vollständiges Archiv erstellen, herunterladen und vor der Wiederherstellung prüfen.
+- Enthalten sind Programmcode, lokale Änderungen, Git-Versionsstand, Konfigurationen, Benutzer und Zugangsdaten, SQLite-Datenbanken einschließlich WAL-Inhalten, APRS-Daten, Statistiken, Bilder, Zertifikate und eigene Dateien. Python-Paketversionen und installierte systemd-Dienste werden dokumentiert.
+- Wiederherstellung auf einer vorbereiteten Linux/systemd-Installation mit gleicher Python-Haupt-/Nebenversion. Installationspfade werden angepasst; Zielserver-Dienstkonto und systemd-Einrichtung bleiben erhalten. Die Python-Umgebung wird mit den gesicherten Paketversionen neu erstellt.
+- Separater, einmalig installierter Diensthelfer stoppt beide Dienste, erstellt ein automatisches Wiederherstellungsbackup und startet die geklonte Installation. Fehler beim Einspielen oder Dienststart führen zur Rücknahme einschließlich der ursprünglichen Python-Umgebung.
+- Archivprüfung mit SHA-256, Größenlimits, SQLite-Prüfung und Schutz vor fremden Dateipfaden, Links und doppelten Einträgen. Wiederherstellen erfordert Archivvorschau, erneute Passwortbestätigung und `RESTORE`; importierte Sitzungen werden beendet.
+- Anleitung: [Backup und Klonen](docs/de/backup.md). Betriebssystem, Firewall, DNS und externe Dienste sind nicht Bestandteil eines HBlink4-Klons.
+
 ## [1.3.0] – 2026-11-22
 
 Neue Kopfzeile mit **einem Menü** und einer schmalen **Statusleiste** darunter (gleicher Aufbau wie in frn_adn und N8-HotSpot),

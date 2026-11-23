@@ -1432,6 +1432,20 @@
         .ap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .ap-card { border-radius: var(--radius-md); padding: 12px 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); min-width: 0; }
         .ap-card.wide { margin-top: 10px; }
+        .backup-panel { display: grid; gap: 12px; }
+        .backup-panel .tab-intro { margin-bottom: 0; }
+        .backup-panel .ap-card h3 { margin: 0 0 10px; font-size: 16px; }
+        .backup-panel .ap-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.55; }
+        .backup-panel .ap-card p:empty { display: none; }
+        .backup-panel .ap-card ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+        .backup-panel .ap-card pre { max-width: 100%; overflow-x: auto; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.18); }
+        .backup-panel label { display: grid; gap: 6px; font-size: 13px; margin: 0 0 12px; }
+        .backup-panel input { width: 100%; max-width: 440px; box-sizing: border-box; padding: 9px 11px;
+            border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255,255,255,.05); color: inherit; }
+        .backup-panel input[type=file] { max-width: 100%; }
+        .backup-panel button:disabled { opacity: .45; cursor: not-allowed; }
+        .backup-panel #backupPreview:not(:empty) { padding: 10px; margin: 12px 0; border-left: 3px solid var(--accent);
+            background: rgba(255,255,255,.04); font-size: 13px; line-height: 1.55; }
         .ap-card.warn { border-color: rgba(255,159,10,.45); background: rgba(255,159,10,.06); }
         .ap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-height: 24px; }
         .ap-head h3 { margin: 0; font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); flex: 1 1 auto; }
@@ -3091,7 +3105,7 @@
 
         // ---------- Admin area ----------
         const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['appearance', '🎨 Appearance'],
-                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['aprs', '📡 APRS'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
+                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['aprs', '📡 APRS'], ['backup', '💾 Backup'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
 
         // One line on top of the tabs that have no own heading
@@ -3129,9 +3143,102 @@
                 const intro = ADMIN_INTRO[tab] ? `<div class="tab-intro"><h3 class="set-panel-title">${ADMIN_INTRO[tab][0]}</h3>
                     <p class="set-panel-help">${ADMIN_INTRO[tab][1]}</p></div>` : '';
                 body.innerHTML = intro + await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
-                                          links: adminLinks, obp: adminObp, aprs: adminAprs, import: adminImport, sessions: adminSessions,
+                                          links: adminLinks, obp: adminObp, aprs: adminAprs, backup: adminBackup, import: adminImport, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
+        }
+
+        let backupPreview = null;
+        function backupSize(bytes) {
+            return bytes >= 1024 ** 3 ? (bytes / 1024 ** 3).toFixed(2) + ' GiB'
+                : (bytes / 1024 ** 2).toFixed(2) + ' MiB';
+        }
+        async function adminBackup() {
+            backupPreview = null;
+            if (state.me.role !== 'superadmin') return '<p>Vollständige Backups enthalten alle Zugangsdaten. Dieser Bereich ist dem Superadmin vorbehalten.</p>';
+            const st = await api('GET', '/api/admin/backup');
+            const busy = st.busy || ['queued', 'running'].includes(st.restore.state);
+            return `<div class="backup-panel"><div class="tab-intro"><h3 class="set-panel-title">💾 Backup</h3>
+                <p class="set-panel-help">Sichere deine HBlink4-Installation und übertrage sie auf einen anderen HBlink4-Server.
+                Enthalten sind Programmcode, Konfigurationen, Benutzer, Zugangsdaten, Datenbanken, APRS-Daten und eigene Dateien.</p></div>
+                <div class="ap-card"><h3>Backup erstellen</h3>
+                    <p>Das Archiv enthält vertrauliche Daten und ist nicht verschlüsselt. Bewahre es sicher auf.
+                    Python-Umgebungen werden auf dem Ziel neu erstellt. Betriebssystem, Firewall und DNS gehören nicht zum Backup.</p>
+                    <button class="btn-s btn-primary" onclick="createFullBackup(this)" ${busy ? 'disabled' : ''}>💾 Backup erstellen und herunterladen</button>
+                    <p id="backupCreateProgress" role="status" aria-live="polite"></p></div>
+                <div class="ap-card"><h3>Gespeicherte Backups</h3>
+                    ${st.archives.length ? '<ul>' + st.archives.map(a => `<li>${escapeHtml(new Date(a.created_at * 1000).toLocaleString())} · ${backupSize(a.size)} ·
+                        <a href="/api/admin/backup/download/${encodeURIComponent(a.name)}" download>${escapeHtml(a.name.startsWith('before-restore-') ? 'Automatische Sicherung vor Wiederherstellung' : 'Backup herunterladen')}</a></li>`).join('') + '</ul>' : '<p>Noch keine Backups vorhanden.</p>'}
+                </div>
+                <div class="ap-card"><h3>Backup wiederherstellen</h3>
+                    <p>Die Wiederherstellung ersetzt diese HBlink4-Installation. Vorher wird automatisch ein Backup des aktuellen Zustands erstellt.
+                    Bei einem Fehler wird der vorherige Zustand zurückgespielt. Anschließend meldest du dich mit dem Benutzerkonto des Quellservers an.</p>
+                    <p>Der Zielserver benötigt Linux mit systemd und dieselbe Python-Haupt-/Nebenversion wie der Quellserver.
+                    Beide Dienste werden während der Wiederherstellung unterbrochen. Das kann durch die Installation der Python-Pakete mehrere Minuten dauern.</p>
+                    ${st.can_restore ? '' : `<p class="form-error">Der Diensthelfer fehlt. Einmal im HBlink4-Verzeichnis auf dem Zielserver ausführen:</p>
+                        <pre><code>${escapeHtml(st.install_command)}</code></pre><p>Danach diesen Bereich aktualisieren.</p>`}
+                    <label>Backup-Datei (.tar.gz, maximal ${backupSize(st.max_upload_bytes)})
+                        <input type="file" accept=".tar.gz,application/gzip" id="backupUpload" ${busy ? 'disabled' : ''}></label>
+                    <button class="btn-s" onclick="inspectFullBackup(this)" ${busy ? 'disabled' : ''}>Datei hochladen und prüfen</button>
+                    <p id="backupUploadProgress" role="status" aria-live="polite"></p>
+                    <div id="backupPreview"></div>
+                    <form onsubmit="event.preventDefault(); restoreFullBackup(this)">
+                        <p><label>Dein aktuelles Superadmin-Passwort <input name="password" type="password" autocomplete="current-password" required ${busy ? 'disabled' : ''}></label></p>
+                        <p><label>Zur Bestätigung RESTORE eingeben <input name="confirmation" autocomplete="off" pattern="RESTORE" required ${busy ? 'disabled' : ''}></label></p>
+                        <button class="btn-s btn-primary" id="backupRestoreButton" disabled data-helper="${st.can_restore ? 'yes' : 'no'}">Geprüftes Backup wiederherstellen</button>
+                    </form>
+                    <p id="backupRestoreProgress" role="status" aria-live="polite">${escapeHtml(st.restore.message || '')}</p>
+                    <button class="btn-s" onclick="adminTab('backup')">⟳ Aktualisieren</button>
+                </div></div>`;
+        }
+        async function createFullBackup(btn) {
+            btn.disabled = true;
+            const progress = document.getElementById('backupCreateProgress');
+            progress.textContent = 'Backup wird erstellt. Dieses Fenster geöffnet lassen.';
+            try {
+                const result = await api('POST', '/api/admin/backup/create', {});
+                progress.textContent = `Backup erstellt (${backupSize(result.size)}). Download wird gestartet.`;
+                const link = document.createElement('a');
+                link.href = '/api/admin/backup/download/' + encodeURIComponent(result.name);
+                link.download = result.name;
+                link.textContent = 'Backup erneut herunterladen';
+                progress.append(' ', link);
+                link.click();
+            } catch (e) { progress.textContent = e.message; }
+            finally { btn.disabled = false; }
+        }
+        async function inspectFullBackup(btn) {
+            const file = document.getElementById('backupUpload').files[0];
+            if (!file) { toast('Wähle zuerst eine Backup-Datei.', 'err'); return; }
+            if (file.size > 2 * 1024 ** 3) { toast('Die Datei ist größer als 2 GiB.', 'err'); return; }
+            backupPreview = null;
+            const restoreBtn = document.getElementById('backupRestoreButton');
+            restoreBtn.disabled = true;
+            btn.disabled = true;
+            document.getElementById('backupPreview').textContent = '';
+            const progress = document.getElementById('backupUploadProgress');
+            progress.textContent = 'Archiv wird hochgeladen und vollständig geprüft …';
+            try {
+                backupPreview = await api('POST', '/api/admin/backup/inspect', undefined, file);
+                const b = backupPreview.backup;
+                document.getElementById('backupPreview').textContent = `Geprüft: ${new Date(b.created_at).toLocaleString()} · Version ${b.version.version || b.version.label || 'unbekannt'} · Python ${b.python} · ${b.files} Dateien · ${backupSize(b.unpacked_bytes)} entpackt`;
+                progress.textContent = 'Prüfsummen, Dateipfade und Datenbanken sind gültig. Es wurde noch nichts wiederhergestellt.';
+                restoreBtn.disabled = restoreBtn.dataset.helper !== 'yes';
+            } catch (e) { progress.textContent = e.message; }
+            finally { btn.disabled = false; }
+        }
+        async function restoreFullBackup(form) {
+            if (!backupPreview) return;
+            const progress = document.getElementById('backupRestoreProgress');
+            const btn = document.getElementById('backupRestoreButton');
+            btn.disabled = true;
+            try {
+                await api('POST', '/api/admin/backup/restore', {token: backupPreview.token,
+                    password: form.elements.password.value, confirmation: form.elements.confirmation.value});
+                form.elements.password.value = '';
+                form.querySelectorAll('input').forEach(el => el.disabled = true);
+                progress.textContent = 'Wiederherstellung gestartet. Beide Dienste werden neu gestartet. Lade die Seite nach Abschluss neu und melde dich mit dem Konto des Quellservers an. Bei einem Fehler startet der vorherige Zustand wieder; die Meldung steht nach der Anmeldung hier.';
+            } catch (e) { progress.textContent = e.message; btn.disabled = false; }
         }
 
         async function adminUsers() {
