@@ -27,6 +27,7 @@ from pathlib import Path, PurePosixPath
 FORMAT = "hblink4-clone"
 SCHEMA = 1
 MAX_UPLOAD = 2 * 1024**3
+MAX_ENCRYPTED_UPLOAD = MAX_UPLOAD + 1024**2
 MAX_UNPACKED = 8 * 1024**3
 MAX_FILES = 100000
 CONTROL = ".hblink4-backup"
@@ -42,6 +43,69 @@ REQUIRED = {"app/hblink4/hblink.py", "app/dashboard/server.py", "app/config/conf
 
 class BackupError(Exception):
     pass
+
+
+def encrypted(path):
+    with open(path, "rb") as src:
+        return src.read(22).startswith(b"age-encryption.org/v1\n")
+
+
+def identity_recipient(path):
+    if not shutil.which("age-keygen"):
+        raise BackupError("age-keygen fehlt. Bitte das Paket age installieren.")
+    try:
+        if not Path(path).is_file() or Path(path).stat().st_size > 4096:
+            raise ValueError()
+        raw = Path(path).read_text()
+        keys = [line.strip() for line in raw.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+        if len(raw) > 4096 or len(keys) != 1 or not re.fullmatch(r"AGE-SECRET-KEY-1[0-9A-Z]+", keys[0]):
+            raise ValueError()
+    except (OSError, UnicodeError, ValueError):
+        raise BackupError("Ein einzelner nativer age-Wiederherstellungsschlüssel wird benötigt.") from None
+    try:
+        value = command(["age-keygen", "-y", str(path)], timeout=15)
+    except Exception:
+        raise BackupError("Der Wiederherstellungsschlüssel ist ungültig oder nicht lesbar.") from None
+    if not re.fullmatch(r"age1[0-9a-z]{58}", value):
+        raise BackupError("Ein einzelner nativer age-Wiederherstellungsschlüssel wird benötigt.")
+    return value
+
+
+def encrypt_archive(source, target, recipient):
+    if not shutil.which("age"):
+        raise BackupError("age fehlt. Bitte das Paket age installieren.")
+    try:
+        command(["age", "--encrypt", "--recipient", recipient, "--output", str(target), str(source)], timeout=900)
+        os.chmod(target, 0o600)
+    except Exception:
+        Path(target).unlink(missing_ok=True)
+        raise BackupError("Die Verschlüsselung ist fehlgeschlagen.") from None
+
+
+def plain_archive(source, target, identity=None):
+    """Decrypt an age archive to a private file, or copy a legacy plaintext one."""
+    if not encrypted(source):
+        if Path(source).stat().st_size > MAX_UPLOAD:
+            raise BackupError("Backup exceeds 2 GiB.")
+        shutil.copyfile(source, target)
+        os.chmod(target, 0o600)
+        return False
+    if Path(source).stat().st_size > MAX_ENCRYPTED_UPLOAD:
+        raise BackupError("Encrypted backup exceeds the upload limit.")
+    if identity is None:
+        raise BackupError("Verschlüsseltes Backup: bitte den separaten Wiederherstellungsschlüssel auswählen.")
+    identity_recipient(identity)
+    if not shutil.which("age"):
+        raise BackupError("age fehlt. Bitte das Paket age installieren.")
+    try:
+        command(["age", "--decrypt", "--identity", str(identity), "--output", str(target), str(source)], timeout=900)
+        os.chmod(target, 0o600)
+        if Path(target).stat().st_size > MAX_UPLOAD:
+            raise BackupError("Decrypted backup exceeds 2 GiB.")
+    except Exception:
+        Path(target).unlink(missing_ok=True)
+        raise BackupError("Entschlüsseln fehlgeschlagen: Schlüssel passt nicht oder das Backup ist beschädigt.") from None
+    return True
 
 
 def digest(path):

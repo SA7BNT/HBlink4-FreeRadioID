@@ -34,7 +34,9 @@ Dashboard-Login oder das Anlegen neuer DMR-, APRS- und Superadmin-Einstellungen 
 
 1. Dieses Repository auf dem Zielserver unter einem rootgeschützten Verzeichnis bereitstellen,
    beispielsweise `/opt/HBlink4`. Die `.tar.gz`-Sicherung außerhalb dieses Verzeichnisses ablegen,
-   beispielsweise `/home/sa7bnt/HBlink4-Backup.tar.gz`.
+   beispielsweise `/home/sa7bnt/HBlink4-Backup.tar.gz`. Verschlüsselte AutoBackups
+   (`.tar.gz.age`) werden ebenfalls unterstützt; das Setup fragt nach dem lokalen
+   Pfad zum separaten Wiederherstellungsschlüssel (`.agekey`).
 2. `sudo /opt/HBlink4/scripts/setup.sh` starten und **Vorhandenes HBlink4-Backup wiederherstellen?**
    mit `j` beantworten. Den vollständigen Pfad zur Sicherung eingeben.
 3. Das Setup installiert bei Bedarf die Grundpakete und prüft anschließend das ganze Archiv:

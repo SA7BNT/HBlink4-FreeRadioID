@@ -74,6 +74,25 @@ class TestSetupRestore(BackupFixture):
         self.job.run.assert_not_called()
         self.assertFalse(list(self.target.iterdir()))
 
+    @unittest.skipUnless(shutil.which('age') and shutil.which('age-keygen'), 'age required')
+    def test_encrypted_archive_is_decrypted_before_setup_or_enqueue(self):
+        identity=self.base/'recovery.agekey'
+        subprocess.run(['age-keygen','-o',str(identity)],check=True,capture_output=True)
+        cipher=self.base/'encrypted.tar.gz.age'
+        backup.encrypt_archive(self.archive,cipher,backup.identity_recipient(identity))
+        self.job.archive=cipher
+        self.job.ask=Mock(side_effect=[str(identity),self.user,'RESTORE'])
+        self.job.prepare_fresh=Mock(side_effect=self.prepare_stub)
+        def checked_queue(cfg,path,digest):
+            self.assertFalse(backup.encrypted(path))
+            self.assertEqual(digest,backup.digest(self.archive))
+        self.job.enqueue=Mock(side_effect=checked_queue)
+        with patch.object(backup,'_host_config',return_value=self.cfg):
+            self.assertTrue(self.job.execute())
+        self.job.enqueue.assert_called_once()
+        self.assertTrue(cipher.exists())
+        self.assertTrue(identity.exists())
+
     def test_existing_target_keeps_account_and_does_not_write_bootstrap(self):
         self.job.show = Mock(side_effect=lambda unit, prop: {
             "LoadState": "loaded", "WorkingDirectory": str(self.target), "User": self.user,

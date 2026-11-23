@@ -42,6 +42,7 @@ from .talkgroups import Talkgroups
 from . import version as _version
 from . import siteicons as _siteicons
 from . import backup as _backup
+from . import autobackup as _autobackup
 from .aprs.service import AprsService
 from .aprs.store import public as _aprs_public
 from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_call
@@ -1471,6 +1472,7 @@ async def api_admin_update_install(request: Request, body: dict = Body(...)):
         await asyncio.to_thread(state.auth.confirm_password, user, str(body.get("password") or ""), ip)
     except AuthError as e:
         raise _HTTPError(403, str(e))
+    _backup_idle()
     if _update_lock.locked() or time.time() - _update_last_try < 30:
         raise _HTTPError(429, "An update is already running – please wait a moment.")
     async with _update_lock:
@@ -1733,7 +1735,38 @@ async def admin_restart(request: Request):
 
 # ---------------------------------------------------------------- full backups
 _backup_lock = asyncio.Lock()
-_BACKUP_NAME = re.compile(r"(?:backup-[0-9T-]+-[a-f0-9]{32}|before-restore-[0-9-]+)\.tar\.gz\Z")
+_BACKUP_NAME = re.compile(r"(?:(?:backup-[0-9T-]+-[a-f0-9]{32}|before-restore-[0-9-]+)\.tar\.gz|auto-\d{8}T\d{6}Z-[a-f0-9]{32}\.tar\.gz\.age)\Z")
+_auto_cache = None
+_auto_loop_task = None
+
+
+async def _create_backup_snapshot(path):
+    state.save_all_data()
+    await asyncio.to_thread(state.aprs.store.flush)
+    units = await asyncio.to_thread(_backup.collect_units)
+    return await asyncio.to_thread(_backup.create_archive, _version.REPO_ROOT, state._data_dir, path,
+                                   version=_version.local_version(), system_units=units)
+
+
+def _auto_service():
+    global _auto_cache
+    key = (str(_version.REPO_ROOT.resolve()), str(state._data_dir.resolve()))
+    if _auto_cache is None or _auto_cache[0] != key:
+        _auto_cache = (key, _autobackup.AutoBackup(_version.REPO_ROOT, state._data_dir,
+                                                _create_backup_snapshot, _backup_lock, _backup_idle))
+    return _auto_cache[1]
+
+
+def _secure_backup_transport(request):
+    if request.url.scheme != "https" and (request.client is None or request.client.host not in ("127.0.0.1", "::1", "testclient")):
+        raise _HTTPError(400, "Zugangsdaten und Schlüssel nur über HTTPS oder einen lokalen SSH-Tunnel übertragen.")
+
+
+def _cleanup_recovery_keys():
+    folder = _backup_dir()
+    for path in folder.iterdir():
+        if re.fullmatch(r"recovery-[a-f0-9]{32}\.(?:key|json)", path.name) and time.time() - path.lstat().st_mtime > 3600:
+            path.unlink(missing_ok=True)
 
 
 def _backup_dir() -> Path:
@@ -1764,6 +1797,13 @@ def _restore_status() -> dict:
 
 
 def _backup_idle():
+    if _auto_cache and _auto_cache[1].task and not _auto_cache[1].task.done():
+        try:
+            own_task = asyncio.current_task()
+        except RuntimeError:
+            own_task = None
+        if _auto_cache[1].task is not own_task:
+            raise _HTTPError(409, "AutoBackup wurde bereits gestartet.")
     if _update_lock.locked() or _backup_lock.locked() or _restore_status().get("state") in ("queued", "running"):
         raise _HTTPError(409, "A backup or restore is already running.")
 
@@ -1795,12 +1835,8 @@ async def admin_backup_create(request: Request):
         name = "backup-" + datetime.now().strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex + ".tar.gz"
         path = _backup_dir() / name
         # Flush in-memory state in the event loop before the SQLite snapshots.
-        state.save_all_data()
-        await asyncio.to_thread(state.aprs.store.flush)
         try:
-            units = await asyncio.to_thread(_backup.collect_units)
-            manifest = await asyncio.to_thread(_backup.create_archive, _version.REPO_ROOT, state._data_dir, path,
-                                               version=_version.local_version(), system_units=units)
+            manifest = await _create_backup_snapshot(path)
         except Exception:
             path.unlink(missing_ok=True)
             raise
@@ -1826,6 +1862,7 @@ async def admin_backup_inspect(request: Request):
     import tempfile
     import uuid
     actor = _require_backup_owner(request)
+    _cleanup_recovery_keys()
     _backup_idle()
     async with _backup_lock:
         folder = _backup_dir()
@@ -1837,9 +1874,38 @@ async def admin_backup_inspect(request: Request):
                 os.chmod(path, 0o600)
                 async for chunk in request.stream():
                     total += len(chunk)
-                    if total > _backup.MAX_UPLOAD:
+                    if total > _backup.MAX_ENCRYPTED_UPLOAD:
                         raise _HTTPError(413, "Backup exceeds the 2 GiB upload limit.")
                     out.write(chunk)
+            if _backup.encrypted(path):
+                key_token = request.headers.get("x-backup-key", "")
+                identity = None
+                uploaded_identity = None
+                if re.fullmatch(r"[a-f0-9]{32}", key_token):
+                    try:
+                        info = json.loads((folder / ("recovery-" + key_token + ".json")).read_text())
+                    except (OSError, ValueError):
+                        info = {}
+                    if info.get("actor_id") != actor["id"] or time.time() - info.get("created_at", 0) > 3600:
+                        raise _HTTPError(400, "Wiederherstellungsschlüssel erneut auswählen.")
+                    identity = folder / ("recovery-" + key_token + ".key")
+                    uploaded_identity = identity
+                else:
+                    try:
+                        identity = _auto_service().vault.host()["identity"]
+                    except _autobackup.AutoError:
+                        pass
+                plain = folder / (token + ".plain.tar.gz")
+                try:
+                    await asyncio.to_thread(_backup.plain_archive, path, plain, identity)
+                    os.replace(plain, path)
+                finally:
+                    plain.unlink(missing_ok=True)
+                    if uploaded_identity:
+                        uploaded_identity.unlink(missing_ok=True)
+                        uploaded_identity.with_suffix(".json").unlink(missing_ok=True)
+            elif total > _backup.MAX_UPLOAD:
+                raise _HTTPError(413, "Backup exceeds 2 GiB.")
             with tempfile.TemporaryDirectory(prefix="inspect-", dir=folder) as tmp:
                 manifest = await asyncio.to_thread(_backup.unpack_archive, path, Path(tmp))
             sha = await asyncio.to_thread(_backup.digest, path)
@@ -1850,6 +1916,137 @@ async def admin_backup_inspect(request: Request):
             raise
         state.auth.audit("backup_checked", actor["username"], token, _client_ip(request))
         return {"ok": True, "token": token, "sha256": sha, "backup": _backup.summary(manifest)}
+
+
+@app.post("/api/admin/backup/recovery-key")
+async def admin_backup_recovery_key(request: Request):
+    import uuid
+    actor = _require_backup_owner(request)
+    _secure_backup_transport(request)
+    _cleanup_recovery_keys()
+    token = uuid.uuid4().hex
+    path = _backup_dir() / ("recovery-" + token + ".key")
+    content = bytearray()
+    async for chunk in request.stream():
+        content.extend(chunk)
+        if len(content) > 4096:
+            raise _HTTPError(413, "Wiederherstellungsschlüssel ist zu groß.")
+    _autobackup._atomic_bytes(path, bytes(content))
+    try:
+        await asyncio.to_thread(_backup.identity_recipient, path)
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
+    _backup.atomic_json(path.with_suffix(".json"), {"actor_id": actor["id"], "created_at": time.time()})
+    return {"token": token}
+
+
+@app.get("/api/admin/autobackup")
+async def admin_autobackup(request: Request):
+    _require_backup_owner(request)
+    return await asyncio.to_thread(_auto_service().status)
+
+
+@app.post("/api/admin/autobackup/config")
+async def admin_autobackup_save(request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _secure_backup_transport(request)
+    _backup_idle()
+    async with _backup_lock:
+        service = _auto_service()
+        old = await asyncio.to_thread(service.vault.read)
+        cfg = _autobackup.validate(body, old)
+        await asyncio.to_thread(service.vault.write, cfg)
+        state.auth.audit("autobackup_configured", actor["username"], "Zeitplan und Ziele gespeichert", _client_ip(request))
+    return {"ok": True, **await asyncio.to_thread(service.status)}
+
+
+@app.post("/api/admin/autobackup/key")
+async def admin_autobackup_key(request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _secure_backup_transport(request)
+    _backup_idle()
+    await asyncio.to_thread(state.auth.confirm_password, actor, str(body.get("password") or ""), _client_ip(request))
+    _backup_idle()
+    async with _backup_lock:
+        service = _auto_service()
+        cfg = await asyncio.to_thread(service.vault.read)
+        host = await asyncio.to_thread(service.vault.host)
+        data = Path(host["identity"]).read_bytes()
+        cfg["key_exported"] = True
+        await asyncio.to_thread(service.vault.write, cfg)
+        state.auth.audit("autobackup_key_exported", actor["username"], "Wiederherstellungsschlüssel exportiert", _client_ip(request))
+    return Response(data, media_type="application/octet-stream", headers={"Cache-Control": "no-store",
+                    "Content-Disposition": 'attachment; filename="HBlink4-Wiederherstellung.agekey"'})
+
+
+@app.post("/api/admin/autobackup/test/{ident}")
+async def admin_autobackup_test(ident: str, request: Request):
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    async with _backup_lock:
+        result = await asyncio.to_thread(_auto_service().test_target, ident)
+    state.auth.audit("autobackup_target_tested", actor["username"], ident, _client_ip(request))
+    return result
+
+
+@app.post("/api/admin/autobackup/run")
+async def admin_autobackup_run(request: Request):
+    actor = _require_backup_owner(request)
+    _backup_idle()
+    service = _auto_service()
+    if service.task and not service.task.done():
+        raise _HTTPError(409, "AutoBackup läuft bereits.")
+    cfg = await asyncio.to_thread(service.vault.read)
+    _backup_idle()
+    if not cfg["key_exported"] or not any(t["enabled"] for t in cfg["targets"]):
+        raise _HTTPError(400, "Zuerst Schlüssel exportieren und mindestens ein Ziel speichern.")
+    service.task = asyncio.create_task(service.run())
+    state.auth.audit("autobackup_started", actor["username"], "Manuell ausgelöst", _client_ip(request))
+    return {"ok": True, "queued": True}
+
+
+@app.post("/api/admin/autobackup/unlock")
+async def admin_autobackup_unlock(request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _secure_backup_transport(request)
+    _backup_idle()
+    await asyncio.to_thread(state.auth.confirm_password, actor, str(body.get("password") or ""), _client_ip(request))
+    token = str(body.get("key_token") or "")
+    if not re.fullmatch(r"[a-f0-9]{32}", token):
+        raise _HTTPError(400, "Wiederherstellungsschlüssel auswählen.")
+    folder = _backup_dir()
+    key = folder / ("recovery-" + token + ".key")
+    try:
+        info = json.loads(key.with_suffix(".json").read_text())
+    except (OSError, ValueError):
+        raise _HTTPError(400, "Schlüssel erneut auswählen.")
+    if info.get("actor_id") != actor["id"] or time.time() - info.get("created_at", 0) > 3600:
+        raise _HTTPError(400, "Schlüssel erneut auswählen.")
+    _backup_idle()
+    async with _backup_lock:
+        try:
+            await asyncio.to_thread(_auto_service().vault.recover, key)
+        finally:
+            key.unlink(missing_ok=True)
+            key.with_suffix(".json").unlink(missing_ok=True)
+    state.auth.audit("autobackup_unlocked", actor["username"], "Ziele entsperrt; Zeitplan deaktiviert", _client_ip(request))
+    return {"ok": True}
+
+
+@app.post("/api/admin/autobackup/reset")
+async def admin_autobackup_reset(request: Request, body: dict = Body(...)):
+    actor = _require_backup_owner(request)
+    _secure_backup_transport(request)
+    _backup_idle()
+    if body.get("confirmation") != "RESET":
+        raise _HTTPError(400, "Zum Zurücksetzen RESET eingeben.")
+    await asyncio.to_thread(state.auth.confirm_password, actor, str(body.get("password") or ""), _client_ip(request))
+    _backup_idle()
+    async with _backup_lock:
+        await asyncio.to_thread(_auto_service().vault.reset)
+    state.auth.audit("autobackup_reset", actor["username"], "Ziele und Zeitplan zurückgesetzt", _client_ip(request))
+    return {"ok": True}
 
 
 @app.post("/api/admin/backup/restore")
@@ -2880,8 +3077,10 @@ if static_path.exists():
 
 @app.on_event("startup")
 async def _start_update_loop():
+    global _auto_loop_task
     asyncio.create_task(_update_loop())
     asyncio.create_task(_refresh_link_icons())
+    _auto_loop_task = asyncio.create_task(_auto_service().loop())
 
 
 @app.on_event("startup")
@@ -2940,6 +3139,10 @@ async def startup_event():
 async def shutdown_event():
     """Clean shutdown - save data"""
     logger.info("💾 Dashboard shutting down, saving data...")
+    if _auto_loop_task:
+        _auto_loop_task.cancel()
+    if _auto_cache and _auto_cache[1].task and not _auto_cache[1].task.done():
+        _auto_cache[1].task.cancel()
     save_persistent_data()
     try:
         await asyncio.wait_for(state.aprs.stop(), 3)
