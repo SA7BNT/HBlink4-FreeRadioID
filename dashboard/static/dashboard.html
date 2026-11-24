@@ -1435,6 +1435,26 @@
         .ap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .ap-card { border-radius: var(--radius-md); padding: 12px 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); min-width: 0; }
         .ap-card.wide { margin-top: 10px; }
+        .backup-panel { display: grid; gap: 12px; }
+        .backup-panel .tab-intro { margin-bottom: 0; }
+        .backup-panel .ap-card h3 { margin: 0 0 10px; font-size: 16px; }
+        .backup-panel .ap-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.55; }
+        .backup-panel .ap-card p:empty { display: none; }
+        .backup-panel .ap-card ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+        .backup-panel .ap-card pre { max-width: 100%; overflow-x: auto; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.18); }
+        .backup-panel label { display: grid; gap: 6px; font-size: 13px; margin: 0 0 12px; }
+        .backup-panel input, .backup-panel select { width: 100%; max-width: 440px; box-sizing: border-box; padding: 9px 11px;
+            border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255,255,255,.05); color: inherit; }
+        .backup-panel input[type=file] { max-width: 100%; }
+        .backup-panel button:disabled { opacity: .45; cursor: not-allowed; }
+        .backup-panel #backupPreview:not(:empty) { padding: 10px; margin: 12px 0; border-left: 3px solid var(--accent);
+            background: rgba(255,255,255,.04); font-size: 13px; line-height: 1.55; }
+        .auto-backup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0 14px; }
+        .auto-backup-target { min-width: 0; border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; margin: 12px 0; }
+        .auto-backup-target legend { padding: 0 8px; font-weight: 600; }
+        .backup-panel textarea { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.05);
+            color: inherit; border: 1px solid var(--glass-border); border-radius: 8px; padding: 9px; }
+        @media (max-width: 600px) { .auto-backup-grid { grid-template-columns: minmax(0,1fr); } }
         .ap-card.warn { border-color: rgba(255,159,10,.45); background: rgba(255,159,10,.06); }
         .ap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-height: 24px; }
         .ap-head h3 { margin: 0; font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); flex: 1 1 auto; }
@@ -2955,8 +2975,8 @@
         // ================= Login, user menu, admin area =================
         const ROLE_LABEL = { superadmin: 'Superadmin', admin: 'Admin', user: 'User' };
 
-        async function api(method, url, body, raw) {
-            const opts = { method, headers: { 'X-Dashboard': '1' }, credentials: 'same-origin' };
+        async function api(method, url, body, raw, extraHeaders = {}) {
+            const opts = { method, headers: { 'X-Dashboard': '1', ...extraHeaders }, credentials: 'same-origin' };
             if (raw) { opts.body = raw; opts.headers['Content-Type'] = raw.type || 'application/octet-stream'; }
             else if (body !== undefined) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
             const r = await fetch(url, opts);
@@ -3108,7 +3128,7 @@
 
         // ---------- Admin area ----------
         const ADMIN_TABS = [['users', '👥 Users'], ['settings', '⚙️ Settings'], ['appearance', '🎨 Appearance'],
-                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['aprs', '📡 APRS'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
+                            ['links', '🔗 Links'], ['obp', '↔️ OpenBridge'], ['aprs', '📡 APRS'], ['backup', '💾 Backup'], ['import', '📥 Import'], ['sessions', '🔑 Sessions'],
                             ['audit', '📜 Log'], ['system', '🖥️ System']];
 
         // One line on top of the tabs that have no own heading
@@ -3146,9 +3166,248 @@
                 const intro = ADMIN_INTRO[tab] ? `<div class="tab-intro"><h3 class="set-panel-title">${ADMIN_INTRO[tab][0]}</h3>
                     <p class="set-panel-help">${ADMIN_INTRO[tab][1]}</p></div>` : '';
                 body.innerHTML = intro + await ({ users: adminUsers, settings: adminSettings, appearance: adminAppearance,
-                                          links: adminLinks, obp: adminObp, aprs: adminAprs, import: adminImport, sessions: adminSessions,
+                                          links: adminLinks, obp: adminObp, aprs: adminAprs, backup: adminBackup, import: adminImport, sessions: adminSessions,
                                           audit: adminAudit, system: adminSystem })[tab]();
             } catch (e) { body.innerHTML = `<div class="form-error">${escapeHtml(e.message)}</div>`; }
+        }
+
+        let backupPreview = null;
+        function backupSize(bytes) {
+            return bytes >= 1024 ** 3 ? (bytes / 1024 ** 3).toFixed(2) + ' GiB'
+                : (bytes / 1024 ** 2).toFixed(2) + ' MiB';
+        }
+        async function adminBackup() {
+            backupPreview = null;
+            if (state.me.role !== 'superadmin') return '<p>Vollständige Backups enthalten alle Zugangsdaten. Dieser Bereich ist dem Superadmin vorbehalten.</p>';
+            const [st, auto] = await Promise.all([api('GET', '/api/admin/backup'), api('GET', '/api/admin/autobackup')]);
+            const busy = st.busy || ['queued', 'running'].includes(st.restore.state);
+            return `<div class="backup-panel"><div class="tab-intro"><h3 class="set-panel-title">💾 Backup</h3>
+                <p class="set-panel-help">Sichere deine HBlink4-Installation und übertrage sie auf einen anderen HBlink4-Server.
+                Enthalten sind Programmcode, Konfigurationen, Benutzer, Zugangsdaten, Datenbanken, APRS-Daten und eigene Dateien.</p></div>
+                <div class="ap-card"><h3>Backup erstellen</h3>
+                    <p>Das Archiv enthält vertrauliche Daten und ist nicht verschlüsselt. Bewahre es sicher auf.
+                    Python-Umgebungen werden auf dem Ziel neu erstellt. Betriebssystem, Firewall und DNS gehören nicht zum Backup.</p>
+                    <button class="btn-s btn-primary" onclick="createFullBackup(this)" ${busy ? 'disabled' : ''}>💾 Backup erstellen und herunterladen</button>
+                    <p id="backupCreateProgress" role="status" aria-live="polite"></p></div>
+                <div class="ap-card"><h3>Gespeicherte Backups</h3>
+                    ${st.archives.length ? '<ul>' + st.archives.map(a => `<li>${escapeHtml(new Date(a.created_at * 1000).toLocaleString())} · ${backupSize(a.size)} ·
+                        <a href="/api/admin/backup/download/${encodeURIComponent(a.name)}" download>${escapeHtml(a.name.startsWith('before-restore-') ? 'Automatische Sicherung vor Wiederherstellung' : a.name.endsWith('.age') ? 'Verschlüsseltes AutoBackup herunterladen' : 'Backup herunterladen')}</a>
+                        <button type="button" class="btn-s" data-backup-name="${escapeHtml(a.name)}" aria-label="${escapeHtml('Lokales Backup löschen: ' + a.name)}"
+                            onclick="deleteFullBackup(this)" ${busy ? 'disabled' : ''}>Löschen</button></li>`).join('') + '</ul>' : '<p>Noch keine Backups vorhanden.</p>'}
+                    <p>Löschen entfernt nur die lokale Backup-Datei. Kopien auf SFTP oder Google Drive bleiben erhalten.</p>
+                </div>
+                ${autoBackupHtml(auto)}
+                <div class="ap-card"><h3>Backup wiederherstellen</h3>
+                    <p>Die Wiederherstellung ersetzt diese HBlink4-Installation. Vorher wird automatisch ein Backup des aktuellen Zustands erstellt.
+                    Bei einem Fehler wird der vorherige Zustand zurückgespielt. Anschließend meldest du dich mit dem Benutzerkonto des Quellservers an.</p>
+                    <p>Der Zielserver benötigt Linux mit systemd und Python ab 3.9. Bei abweichender Python-Version werden Code und gespeicherte Paketversionen vor dem Stoppen der Dienste auf Kompatibilität geprüft.
+                    Beide Dienste werden während der Wiederherstellung unterbrochen. Das kann durch die Installation der Python-Pakete mehrere Minuten dauern.</p>
+                    ${st.can_restore ? '' : `<p class="form-error">Der Diensthelfer fehlt. Einmal im HBlink4-Verzeichnis auf dem Zielserver ausführen:</p>
+                        <pre><code>${escapeHtml(st.install_command)}</code></pre><p>Danach diesen Bereich aktualisieren.</p>`}
+                    <label>Backup-Datei (.tar.gz oder .tar.gz.age, maximal ${backupSize(st.max_upload_bytes)})
+                        <input type="file" accept=".tar.gz,.age,application/gzip,application/octet-stream" id="backupUpload" ${busy ? 'disabled' : ''}></label>
+                    <label>Bei verschlüsselten AutoBackups: separater Wiederherstellungsschlüssel (.agekey)
+                        <input type="file" accept=".agekey,.txt" id="backupRecoveryKey" ${busy ? 'disabled' : ''}></label>
+                    <button class="btn-s" onclick="inspectFullBackup(this)" ${busy ? 'disabled' : ''}>Datei hochladen und prüfen</button>
+                    <p id="backupUploadProgress" role="status" aria-live="polite"></p>
+                    <div id="backupPreview"></div>
+                    <form onsubmit="event.preventDefault(); restoreFullBackup(this)">
+                        <p><label>Dein aktuelles Superadmin-Passwort <input name="password" type="password" autocomplete="current-password" required ${busy ? 'disabled' : ''}></label></p>
+                        <p><label>Zur Bestätigung RESTORE eingeben <input name="confirmation" autocomplete="off" pattern="RESTORE" required ${busy ? 'disabled' : ''}></label></p>
+                        <button class="btn-s btn-primary" id="backupRestoreButton" disabled data-helper="${st.can_restore ? 'yes' : 'no'}">Geprüftes Backup wiederherstellen</button>
+                    </form>
+                    <p id="backupRestoreProgress" role="status" aria-live="polite">${escapeHtml(st.restore.message || '')}</p>
+                    <button class="btn-s" onclick="adminTab('backup')">⟳ Aktualisieren</button>
+                </div></div>`;
+        }
+        async function deleteFullBackup(btn) {
+            const name = btn.dataset.backupName;
+            if (!window.confirm(`Lokales Backup endgültig löschen?\n\n${name}\n\nKopien auf SFTP oder Google Drive bleiben erhalten.`)) return;
+            btn.disabled = true;
+            try {
+                await api('DELETE', '/api/admin/backup/' + encodeURIComponent(name), {confirmation: name});
+                toast('Lokales Backup gelöscht.', 'ok');
+                adminTab('backup');
+            } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
+        }
+        async function createFullBackup(btn) {
+            btn.disabled = true;
+            const progress = document.getElementById('backupCreateProgress');
+            progress.textContent = 'Backup wird erstellt. Dieses Fenster geöffnet lassen.';
+            try {
+                const result = await api('POST', '/api/admin/backup/create', {});
+                progress.textContent = `Backup erstellt (${backupSize(result.size)}). Download wird gestartet.`;
+                const link = document.createElement('a');
+                link.href = '/api/admin/backup/download/' + encodeURIComponent(result.name);
+                link.download = result.name;
+                link.textContent = 'Backup erneut herunterladen';
+                progress.append(' ', link);
+                link.click();
+            } catch (e) { progress.textContent = e.message; }
+            finally { btn.disabled = false; }
+        }
+        async function inspectFullBackup(btn) {
+            const file = document.getElementById('backupUpload').files[0];
+            if (!file) { toast('Wähle zuerst eine Backup-Datei.', 'err'); return; }
+            if (file.size > 2 * 1024 ** 3 + 1024 ** 2) { toast('Die Datei ist größer als 2 GiB.', 'err'); return; }
+            backupPreview = null;
+            const restoreBtn = document.getElementById('backupRestoreButton');
+            restoreBtn.disabled = true;
+            btn.disabled = true;
+            document.getElementById('backupPreview').textContent = '';
+            const progress = document.getElementById('backupUploadProgress');
+            progress.textContent = 'Archiv wird hochgeladen und vollständig geprüft …';
+            try {
+                const key = document.getElementById('backupRecoveryKey').files[0];
+                if (key && !backupSecureTransport()) throw new Error('Wiederherstellungsschlüssel nur über HTTPS oder einen lokalen SSH-Tunnel übertragen.');
+                const headers = key ? {'X-Backup-Key': (await api('POST', '/api/admin/backup/recovery-key', undefined, key)).token} : {};
+                backupPreview = await api('POST', '/api/admin/backup/inspect', undefined, file, headers);
+                const b = backupPreview.backup;
+                document.getElementById('backupPreview').textContent = `Geprüft: ${new Date(b.created_at).toLocaleString()} · Version ${b.version.version || b.version.label || 'unbekannt'} · Python ${b.python} · ${b.files} Dateien · ${backupSize(b.unpacked_bytes)} entpackt`;
+                progress.textContent = 'Prüfsummen, Dateipfade und Datenbanken sind gültig. Es wurde noch nichts wiederhergestellt.' +
+                    (b.python_migration ? ` Python im Backup: ${b.python}; Ziel: ${b.target_python}. Vor dem Stoppen der Dienste werden Code und gespeicherte Paketversionen mit Ziel-Python geprüft.` : '');
+                restoreBtn.disabled = restoreBtn.dataset.helper !== 'yes';
+            } catch (e) { progress.textContent = e.message; }
+            finally { btn.disabled = false; }
+        }
+        async function restoreFullBackup(form) {
+            if (!backupPreview) return;
+            const progress = document.getElementById('backupRestoreProgress');
+            const btn = document.getElementById('backupRestoreButton');
+            btn.disabled = true;
+            try {
+                await api('POST', '/api/admin/backup/restore', {token: backupPreview.token,
+                    password: form.elements.password.value, confirmation: form.elements.confirmation.value});
+                form.elements.password.value = '';
+                form.querySelectorAll('input').forEach(el => el.disabled = true);
+                progress.textContent = 'Wiederherstellung gestartet. Beide Dienste werden neu gestartet. Lade die Seite nach Abschluss neu und melde dich mit dem Konto des Quellservers an. Bei einem Fehler startet der vorherige Zustand wieder; die Meldung steht nach der Anmeldung hier.';
+            } catch (e) { progress.textContent = e.message; btn.disabled = false; }
+        }
+
+        let autoBackupConfig = null;
+        function backupSecureTransport() { return location.protocol === 'https:' || ['localhost','127.0.0.1','[::1]'].includes(location.hostname); }
+        function autoBackupHtml(status) {
+            autoBackupConfig = status.config;
+            const cfg = status.config, st = status.state || {};
+            const history = (st.history || []).slice(0, 5).map(h => `<li>${escapeHtml(new Date(h.at * 1000).toLocaleString())}: ${escapeHtml(h.status)} ${escapeHtml(h.error || '')}</li>`).join('');
+            const title = `<h3>⏱️ AutoBackup</h3><p>Vollständige Backups nach Zeitplan erstellen, verschlüsseln und nach SFTP oder Google Drive übertragen.
+                Der Zeitplan läuft im Dashboard-Dienst, auch ohne geöffneten Browser. AutoBackup-Zugangsdaten werden verschlüsselt gespeichert;
+                der Wiederherstellungsschlüssel bleibt außerhalb der Programmdaten.</p>
+                ${backupSecureTransport() ? '' : '<p class="form-error">Für Zugangsdaten und Schlüsselexport HTTPS oder einen lokalen SSH-Tunnel verwenden.</p>'}`;
+            if (!status.ready) return `<div class="ap-card">${title}<p class="form-error">${escapeHtml(status.error)}</p>
+                <pre><code>sudo ./scripts/install_autobackup.sh</code></pre><p>Danach diesen Bereich aktualisieren.</p></div>`;
+            if (status.locked) return `<div class="ap-card">${title}<p class="form-error">${escapeHtml(status.error)}</p>
+                <form onsubmit="event.preventDefault(); unlockAutoBackup(this)">
+                    <label>Ursprünglicher Wiederherstellungsschlüssel <input name="key" type="file" accept=".agekey,.txt" required></label>
+                    <label>Aktuelles Superadmin-Passwort <input name="password" type="password" autocomplete="current-password" required></label>
+                    <button class="btn-s" type="submit">Gespeicherte Ziele entsperren</button>
+                </form><p>Nach dem Entsperren den Schlüssel dieses Servers exportieren und den Zeitplan neu aktivieren.</p>
+                <form onsubmit="event.preventDefault(); resetAutoBackup(this)">
+                    <label>Alternativ neu einrichten: RESET eingeben <input name="confirmation" pattern="RESET" required></label>
+                    <label>Superadmin-Passwort <input name="password" type="password" autocomplete="current-password" required></label>
+                    <button class="btn-s" type="submit">Ziele und Zeitplan zurücksetzen</button>
+                </form><p>Vorhandene Backup-Dateien bleiben erhalten.</p></div>`;
+            return `<div class="ap-card">${title}
+                <p><b>Status:</b> ${escapeHtml(st.status || 'idle')} · Letzter Erfolg: ${st.last_success ? escapeHtml(new Date(st.last_success * 1000).toLocaleString()) : 'noch keiner'}
+                · Nächster Termin: ${status.next_due ? escapeHtml(new Date(status.next_due * 1000).toLocaleString()) : 'deaktiviert'}
+                ${st.error ? '<br><span class="form-error">' + escapeHtml(st.error) + '</span>' : ''}</p>
+                <p>Die Ziele verwenden einen eigenen Unterordner <code>hblink4-${escapeHtml(status.instance)}</code> für diesen Server.</p>
+                <form onsubmit="event.preventDefault(); exportAutoBackupKey(this)">
+                    <label>Superadmin-Passwort zum Schlüsselexport <input name="password" type="password" autocomplete="current-password" required></label>
+                    <button class="btn-s" type="submit">Wiederherstellungsschlüssel herunterladen</button>
+                </form><p>${cfg.key_exported ? '✓ Schlüssel wurde exportiert.' : 'Zuerst den Schlüssel exportieren.'} Außerhalb dieses Servers sicher aufbewahren; ohne ihn sind die AutoBackups nicht entschlüsselbar.</p>
+                <form id="autoBackupForm" onsubmit="event.preventDefault(); saveAutoBackup(this)">
+                    <label><span><input name="enabled" type="checkbox" ${cfg.enabled ? 'checked' : ''} style="width:auto"> AutoBackup aktivieren</span></label>
+                    <div class="auto-backup-grid">
+                        <label>Rhythmus <select name="frequency"><option value="daily" ${cfg.frequency === 'daily' ? 'selected' : ''}>Täglich</option><option value="weekly" ${cfg.frequency === 'weekly' ? 'selected' : ''}>Wöchentlich</option></select></label>
+                        <label>Uhrzeit <input name="at" type="time" value="${escapeHtml(cfg.at)}" required></label>
+                        <label>Zeitzone <input name="timezone" value="${escapeHtml(cfg.timezone)}" placeholder="Europe/Stockholm" required></label>
+                        <label>Wochentag <select name="weekday">${['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'].map((d,i) => `<option value="${i}" ${cfg.weekday === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
+                        <label>Tägliche Stände aufbewahren <input name="keep_daily" type="number" min="1" max="90" value="${cfg.keep_daily}"></label>
+                        <label>Wöchentliche Stände aufbewahren <input name="keep_weekly" type="number" min="0" max="52" value="${cfg.keep_weekly}"></label>
+                        <label>Übertragungsgrenze (MiB/s) <input name="bandwidth_mib" type="number" min="1" max="100" value="${cfg.bandwidth_mib}"></label>
+                    </div>
+                    <div id="autoBackupTargets">${cfg.targets.map(autoBackupTargetHtml).join('')}</div>
+                    <p><button class="btn-s" type="button" onclick="addAutoBackupTarget('sftp')">＋ SFTP-Ziel</button>
+                    <button class="btn-s" type="button" onclick="addAutoBackupTarget('drive')">＋ Google Drive</button></p>
+                    <button class="btn-s btn-primary" type="submit">AutoBackup-Einstellungen speichern</button>
+                </form>
+                <p>Leere Passwort-/Tokenfelder behalten gespeicherte Werte. Alte Stände werden erst nach erfolgreichem Upload und Inhaltsprüfung bereinigt; manuelle Backups bleiben erhalten.</p>
+                <button class="btn-s" onclick="runAutoBackup(this)" ${st.status === 'running' ? 'disabled' : ''}>Verschlüsseltes Backup jetzt ausführen</button>
+                <button class="btn-s" onclick="adminTab('backup')">Status aktualisieren</button>
+                <p id="autoBackupProgress" role="status" aria-live="polite"></p><ul>${history}</ul>
+                </div>`;
+        }
+        function autoBackupTargetHtml(t) {
+            const input = (name, label, secret = false, fallback = '') => `<label>${label}<input name="${name}" ${secret ? 'type="password" autocomplete="new-password"' : ''}
+                value="${secret ? '' : escapeHtml(t[name] == null ? fallback : t[name])}" placeholder="${secret && t[name + '_set'] ? 'Gespeichert – leer lassen zum Beibehalten' : ''}"></label>`;
+            return `<fieldset class="auto-backup-target" data-id="${escapeHtml(t.id)}" data-type="${escapeHtml(t.type)}"><legend>${t.type === 'drive' ? 'Google Drive' : 'SFTP'}</legend>
+                ${input('label','Zielname')}${input('path','Zielordner',false,'HBlink4Backups')}
+                <label><span><input name="target_enabled" type="checkbox" ${t.enabled !== false ? 'checked' : ''} style="width:auto"> Ziel aktiv</span></label>
+                ${t.type === 'sftp' ? `${input('host','SFTP-Host')}${input('port','Port',false,'22')}${input('user','SFTP-Benutzer')}
+                    ${input('password','SFTP-Passwort',true)}${input('key_file','Oder: SSH-Schlüsseldatei auf dem Server (absoluter Pfad)')}
+                    <label>Geprüfter SSH-Hostschlüssel (OpenSSH known_hosts-Zeile)<textarea name="known_hosts" rows="3">${escapeHtml(t.known_hosts || '')}</textarea></label>
+                    <p>Hostschlüssel vorab mit dem Serverbetreiber prüfen. SSH-Schlüsseldateien müssen für den Dashboard-Dienstbenutzer lesbar sein.</p>` :
+                    `${input('client_id','Eigene Google OAuth Client ID')}${input('client_secret','OAuth Client Secret',true)}${input('token','OAuth Token-JSON mit refresh_token',true)}${input('folder_id','Folder ID (optional)')}
+                    <p>Auf einem Computer mit Browser <code>rclone config</code> ausführen: Google Drive, eigener OAuth-Client und Scope <code>drive.file</code>.
+                    Das Token-JSON hier eintragen. <a href="https://rclone.org/drive/#making-your-own-client-id" target="_blank" rel="noopener">OAuth-Anleitung</a>.
+                    Ohne Folder ID wird der Zielordner automatisch angelegt.</p>`}
+                <button class="btn-s" type="button" onclick="testAutoBackupTarget('${escapeHtml(t.id)}',this)">Gespeichertes Ziel testen</button>
+                <button class="btn-s" type="button" onclick="this.closest('fieldset').remove()">Ziel entfernen</button></fieldset>`;
+        }
+        function addAutoBackupTarget(type) {
+            const bytes = crypto.getRandomValues(new Uint8Array(16));
+            const id = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+            document.getElementById('autoBackupTargets').insertAdjacentHTML('beforeend', autoBackupTargetHtml({id,type,enabled:true,label:'',path:'HBlink4Backups'}));
+        }
+        async function saveAutoBackup(form) {
+            if (!backupSecureTransport()) { toast('Zugangsdaten nur über HTTPS oder einen lokalen SSH-Tunnel speichern.','err'); return; }
+            const value = {};
+            for (const key of ['frequency','at','timezone','weekday','keep_daily','keep_weekly','bandwidth_mib']) value[key] = form.elements[key].value;
+            value.enabled = form.elements.enabled.checked;
+            value.targets = Array.from(form.querySelectorAll('fieldset[data-id]')).map(el => {
+                const t = {id:el.dataset.id,type:el.dataset.type};
+                el.querySelectorAll('[name]').forEach(input => { t[input.name === 'target_enabled' ? 'enabled' : input.name] = input.type === 'checkbox' ? input.checked : input.value; });
+                return t;
+            });
+            try { await api('POST','/api/admin/autobackup/config',value); toast('AutoBackup gespeichert.','ok'); adminTab('backup'); }
+            catch(e) { toast(e.message,'err'); }
+        }
+        async function exportAutoBackupKey(form) {
+            if (!backupSecureTransport()) { toast('Schlüssel nur über HTTPS oder einen lokalen SSH-Tunnel exportieren.','err'); return; }
+            const btn = form.querySelector('button'); btn.disabled = true;
+            try {
+                const response = await fetch('/api/admin/autobackup/key',{method:'POST',credentials:'same-origin',
+                    headers:{'X-Dashboard':'1','Content-Type':'application/json'},body:JSON.stringify({password:form.elements.password.value})});
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Export fehlgeschlagen'); }
+                const url = URL.createObjectURL(await response.blob());
+                const a = document.createElement('a'); a.href=url; a.download='HBlink4-Wiederherstellung.agekey'; a.click();
+                setTimeout(() => URL.revokeObjectURL(url),60000); form.elements.password.value='';
+                toast('Schlüssel heruntergeladen. Außerhalb dieses Servers aufbewahren.','ok'); adminTab('backup');
+            } catch(e) { toast(e.message,'err'); } finally { btn.disabled=false; }
+        }
+        async function testAutoBackupTarget(id,btn) {
+            btn.disabled=true;
+            try { await api('POST','/api/admin/autobackup/test/'+encodeURIComponent(id),{}); toast('Schreiben, Lesen und Löschen erfolgreich.','ok'); }
+            catch(e) { toast(e.message,'err'); } finally { btn.disabled=false; }
+        }
+        async function runAutoBackup(btn) {
+            btn.disabled=true;
+            try { await api('POST','/api/admin/autobackup/run',{}); document.getElementById('autoBackupProgress').textContent='AutoBackup läuft im Hintergrund. Status nach Abschluss aktualisieren.'; }
+            catch(e) { toast(e.message,'err'); btn.disabled=false; }
+        }
+        async function unlockAutoBackup(form) {
+            if (!backupSecureTransport()) { toast('Schlüssel nur über HTTPS oder einen lokalen SSH-Tunnel übertragen.','err'); return; }
+            try {
+                const key=await api('POST','/api/admin/backup/recovery-key',undefined,form.elements.key.files[0]);
+                await api('POST','/api/admin/autobackup/unlock',{key_token:key.token,password:form.elements.password.value});
+                toast('Ziele entsperrt. Schlüssel dieses Servers exportieren und Zeitplan neu aktivieren.','ok'); adminTab('backup');
+            } catch(e) { toast(e.message,'err'); }
+        }
+        async function resetAutoBackup(form) {
+            if (!backupSecureTransport()) { toast('Nur über HTTPS oder einen lokalen SSH-Tunnel zurücksetzen.','err'); return; }
+            try { await api('POST','/api/admin/autobackup/reset',{confirmation:form.elements.confirmation.value,password:form.elements.password.value}); adminTab('backup'); }
+            catch(e) { toast(e.message,'err'); }
         }
 
         async function adminUsers() {

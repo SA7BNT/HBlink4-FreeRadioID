@@ -144,3 +144,28 @@ class TestKitFiles(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBackupAndGuard(unittest.TestCase):
+    """Backups (PR #2) and the N8 update guard must not get in each other's way."""
+
+    def test_guard_state_not_in_backups(self):
+        from dashboard import backup
+        for name in ("update.pending", "update.pending.tmp", "update.result"):
+            self.assertIn(name, backup.EXCLUDED)
+
+    def test_update_and_backup_exclude_each_other(self):
+        src = (ROOT / "dashboard" / "server.py").read_text()
+        install = src[src.index("async def api_admin_update_install"):src.index("@app.get(\"/api/admin/system\")")]
+        self.assertIn("_backup_idle()", install)
+        idle = src[src.index("def _backup_idle():"):src.index("@app.exception_handler(_backup.BackupError)")]
+        self.assertIn("_update_lock.locked()", idle)
+
+    def test_backup_routes_hidden_from_docs(self):
+        from fastapi.testclient import TestClient
+        from dashboard import server
+        c = TestClient(server.app)
+        self.assertNotEqual(c.get("/openapi.json").status_code, 200)
+        r = c.get("/api/admin/backup")
+        self.assertIn(r.status_code, (401, 403))
+        self.assertIn("default-src 'self'", r.headers["content-security-policy"])

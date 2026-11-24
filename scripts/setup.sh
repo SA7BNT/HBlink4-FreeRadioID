@@ -67,19 +67,36 @@ banner
 [ "$(id -u)" -eq 0 ] || fail "Bitte mit sudo starten: sudo ./scripts/setup.sh"
 info "Installationsverzeichnis: $REPO_ROOT"
 
+echo -e "   ${B}Einrichtungsart${N}"
+info "Neu einrichten: Einstellungen Schritt für Schritt eingeben."
+info "Backup wiederherstellen: Programm, Einstellungen und Benutzer aus einer Sicherung übernehmen."
+ask_yn RESTORE_SETUP "Vorhandenes HBlink4-Backup wiederherstellen?" n
+BACKUP_FILE=""
+if [ "$RESTORE_SETUP" = true ]; then
+    [ "${SKIP_SERVICES:-0}" != 1 ] || fail "Wiederherstellen benötigt systemd-Dienste; SKIP_SERVICES=1 ist dafür nicht möglich."
+    ask BACKUP_FILE "Pfad zur Backup-Datei (.tar.gz)" ""
+    [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ] || fail "Backup-Datei nicht gefunden: $BACKUP_FILE"
+    STEPS=2
+fi
+
 # ---------------------------------------------------------------------- 1
 step "Systempakete"
 if [ "${SKIP_APT:-0}" = 1 ]; then
     info "übersprungen (SKIP_APT=1)"
 elif command -v apt-get >/dev/null 2>&1; then
     apt-get update -qq >/dev/null 2>&1
-    if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-venv python3-pip git iproute2 >/dev/null 2>&1; then
-        ok "python3, venv, pip, git, iproute2"
+    if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-venv python3-pip git iproute2 age >/dev/null 2>&1; then
+        ok "python3, venv, pip, git, iproute2, age"
     else
         fail "apt-get konnte die Pakete nicht installieren"
     fi
 else
     warn "kein apt-get gefunden: bitte python3, python3-venv, pip und git selbst installieren"
+fi
+
+if [ "$RESTORE_SETUP" = true ]; then
+    step "Backup prüfen und wiederherstellen"
+    exec python3 "$REPO_ROOT/scripts/setup_restore.py" "$REPO_ROOT" "$BACKUP_FILE"
 fi
 
 # ---------------------------------------------------------------------- 2

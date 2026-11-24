@@ -4,6 +4,58 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.6.0] – 2026-11-24
+
+**Vollständige Backups, Wiederherstellung (auch beim Initial Setup) und verschlüsseltes AutoBackup** – Beitrag von SA7BNT
+(Pull Request #2), eingebaut auf den Stand 1.5.0 mit Sicherheits-Headern, N8 Kit und Update-Rollback.
+
+### 🔗 Einbau in 1.5.0 (N8 Kit, Sicherheit, Update-Guard)
+- **Update und Backup schließen sich aus:** *Update jetzt installieren* wartet nicht auf eine laufende Sicherung/Wiederherstellung,
+  sondern lehnt mit Hinweis ab; umgekehrt starten Backup, AutoBackup und Wiederherstellung nicht während eines Updates.
+- **Kein geklonter Update-Zustand:** `update.pending`/`update.result` des N8 update guard kommen nicht ins Backup. Sonst würde ein Klon
+  nach dem Einspielen eine fremde Update-Prüfung oder gar einen Rollback anstoßen.
+- **Sicherheits-Header bleiben:** Backup-Download, Schlüssel-Export und Uploads laufen über den eigenen Server; die
+  Content-Security-Policy musste dafür nicht gelockert werden. Die Backup-Routen erscheinen nirgends öffentlich (API-Doku bleibt aus).
+- **Sprache:** Die Backup-Oberfläche ist deutsch; mit **EN** erscheint sie auf Englisch (`i18n-dashboard.js`). Der Menüpunkt heißt
+  *💾 Backup* / *💾 Backup*, die Kacheln nutzen das N8-Design der APRS-Übersicht (`ap-card`).
+- **N8 Kit 1.0.1:** Absätze, die im Quelltext über mehrere Zeilen gehen, werden als Ganzes übersetzt (vorher Zeile für Zeile, deshalb blieben sie stehen).
+- **Doku:** Screenshots *Admin → Backup* (deutsch und englisch); Querverweise zwischen [Backup](docs/de/backup.md), [AutoBackup](docs/de/autobackup.md) und [Sicherheit & N8 Kit](docs/de/sicherheit.md).
+
+### Wiederherstellung mit unterschiedlichem Python
+
+- Der Initial Restore und die Archivprüfung im Dashboard lehnen Backups nicht mehr pauschal wegen einer anderen Python-Unterversion ab. Quelle und Ziel benötigen Python ab 3.9.
+- Bei einem Versionswechsel prüft der Diensthelfer vor dem Stoppen vorhandener Dienste den Programmcode und baut/installiert die gesicherten Anwendungspakete in einer Testumgebung. Inkompatibilitäten brechen vor dem Ersetzen ab; vorbereitete Pakete werden für die endgültige Umgebung wiederverwendet.
+- Die Anwendungspakete behalten ihre Versionen. pip/setuptools/wheel werden für Ziel-Python vorbereitet; Quell- und Zielversion sowie die zusätzliche Prüfung erscheinen in der Vorschau. Rücknahme und Wiederherstellungsbackup bleiben erhalten.
+
+### Gespeicherte Backups löschen
+
+- Admin → Backup bietet für jede gespeicherte Sicherung eine Löschschaltfläche mit Bestätigung.
+- Löschen betrifft nur lokale Archive; SFTP-/Drive-Kopien bleiben erhalten. Nur Superadmins dürfen löschen, laufende Sicherungen, Wiederherstellungen und Updates sind geschützt.
+
+### Verschlüsseltes AutoBackup
+
+- Admin → Backup: tägliche/wöchentliche vollständige Sicherungen mit Zeitzone, Aufbewahrung, Verlauf und manuellem Start; Ziele SFTP und Google Drive.
+- age verschlüsselt Archive und gespeicherte Zugangsdaten. Exportierbarer Wiederherstellungsschlüssel außerhalb des Backups; SFTP mit SSH-Hostschlüsselprüfung, Drive mit eigenem OAuth-Client und erneuerten Tokens.
+- Inhaltsprüfung vor dem Upload und vollständiges Rücklesen danach. Bereinigung nur katalogisierter AutoBackups nach Erfolg auf allen aktivierten Zielen; Wiederholungen bei Fehlern.
+- Verschlüsselte Archive im Adminbereich und beim Initial Setup wiederherstellbar. Klone können übernommene Zugangsdaten mit dem alten Schlüssel entsperren und den Zeitplan bewusst neu aktivieren.
+- Vorbereitung mit `sudo ./scripts/install_autobackup.sh`; Anleitung: [AutoBackup](docs/de/autobackup.md).
+
+### Backup beim Initial Setup wiederherstellen
+
+- Neue Auswahl zu Beginn von `scripts/setup.sh`: neu einrichten oder eine vorhandene vollständige Sicherung übernehmen.
+- Archivprüfung und Vorschau vor Konfigurations-/Datenänderungen; Bestätigung mit `RESTORE`, Anmeldung nachher mit dem Quellkonto.
+- Frische Ziele bekommen Python-Umgebung, zunächst gestoppte Dienste und den vorhandenen Wiederherstellungshelfer automatisch eingerichtet. HTTPS übernimmt bei Bedarf die certbot-Voraussetzung.
+- Vorhandene Installationen behalten ihr Dienstkonto und die automatische Rücknahme; ein fehlgeschlagener Erstaufbau bleibt gestoppt und deaktiviert. Der Wiederherstellungsdienst läuft unabhängig von der Setup-Konsole.
+
+### 💾 Vollständige Backups und Wiederherstellung
+
+- Neuer Menüpunkt **Admin → Backup** für den Superadmin: vollständiges Archiv erstellen, herunterladen und vor der Wiederherstellung prüfen.
+- Enthalten sind Programmcode, lokale Änderungen, Git-Versionsstand, Konfigurationen, Benutzer und Zugangsdaten, SQLite-Datenbanken einschließlich WAL-Inhalten, APRS-Daten, Statistiken, Bilder, Zertifikate und eigene Dateien. Python-Paketversionen und installierte systemd-Dienste werden dokumentiert.
+- Wiederherstellung auf einer vorbereiteten Linux/systemd-Installation mit Python ab 3.9 und Kompatibilitätsprüfung bei abweichender Unterversion. Installationspfade werden angepasst; Zielserver-Dienstkonto und systemd-Einrichtung bleiben erhalten. Die Python-Umgebung wird mit den gesicherten Anwendungspaketversionen neu erstellt.
+- Separater, einmalig installierter Diensthelfer stoppt beide Dienste, erstellt ein automatisches Wiederherstellungsbackup und startet die geklonte Installation. Fehler beim Einspielen oder Dienststart führen zur Rücknahme einschließlich der ursprünglichen Python-Umgebung.
+- Archivprüfung mit SHA-256, Größenlimits, SQLite-Prüfung und Schutz vor fremden Dateipfaden, Links und doppelten Einträgen. Wiederherstellen erfordert Archivvorschau, erneute Passwortbestätigung und `RESTORE`; importierte Sitzungen werden beendet.
+- Anleitung: [Backup und Klonen](docs/de/backup.md). Betriebssystem, Firewall, DNS und externe Dienste sind nicht Bestandteil eines HBlink4-Klons.
+
 ## [1.5.0] – 2026-11-24
 
 Sicherheit, Sprache und ein Update-System, das in **HBlink4-FreeRadioID, adn-frn-server, N8-HotSpot und N8 Crosslink** gleich aussieht und gleich funktioniert (**N8 Kit**). Ausführlich: [docs/de/sicherheit.md](docs/de/sicherheit.md).

@@ -46,6 +46,9 @@ config/obp_config.json
 dashboard/config.json
 *.bak
 
+# Full clone backups contain private configuration and credentials.
+.hblink4-backup/
+
 # User database backups (script output / dashboard refresh artifacts)
 user.old*
 user.bak*

@@ -40,6 +40,10 @@ Rufzeichen, Standort, Beschreibung, Software und Paketname schickt jedes Gerät 
 - **Beim Anzeigen** geht jedes dynamische Feld durch `escapeHtml` (bzw. `esc` auf der APRS-Karte) oder wird als `textContent` gesetzt. Geprüft wurden alle Render-Funktionen: Last Heard, ON AIR, Repeater-/Hotspot-Karten, Slots, OpenBridge, Outbound, Ereignisliste, Statistik, Talker Alias, Configuration-Tab, APRS-Karte. 1.5.0 hat dabei ungeescapte Stellen geschlossen (Rufzeichen und Standort der Repeater-Karte, Rufzeichen im Slot, Ereignisliste, Status und Namen der Outbound-Links, OpenBridge-Status, Tooltips übersetzter TGs).
 - Hochgeladene Bilder werden am Inhalt erkannt; SVG mit Skript wird abgelehnt.
 
+### Backups (Admin → 💾 Backup)
+
+Backup, Wiederherstellung und AutoBackup ([Backup](backup.md), [AutoBackup](autobackup.md)) sind dem **Superadmin** vorbehalten und laufen ganz über den eigenen Server – die Content-Security-Policy bleibt unverändert. Wiederherstellungsschlüssel und Zugangsdaten werden nur über HTTPS oder einen lokalen SSH-Tunnel angenommen. Update und Backup/Wiederherstellung schließen sich gegenseitig aus; der Zustand des Update-Guards (`update.pending`, `update.result`) kommt nie ins Archiv, damit ein Klon keine fremde Update-Prüfung übernimmt.
+
 ### Anmeldung
 
 Sitzungs-Cookie `HttpOnly`, `SameSite=Strict`, über HTTPS `Secure`; jede schreibende Anfrage braucht den Header `X-Dashboard` (CSRF-Schutz); fünf Fehlversuche sperren 15 Minuten. IP-Adressen sehen nur Admins.
