@@ -4,6 +4,55 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.6.1] – 2026-11-24
+
+**Live-Ansicht aufgeräumt: „🔌 Verbundene Systeme“ – ein gemeinsames Raster, eine schlanke Karte für alles**
+
+Bisher standen OpenBridge, Repeater, Hotspots, Apps, Netzwerke und Outbound-Links in eigenen Bereichen, die auf breiten
+Bildschirmen in zwei bzw. drei Spalten (`column-count`) ungleich übereinander rutschten. Jede Art hatte ihren eigenen Kartenaufbau
+(OpenBridge mit Chips, Stationen mit zweispaltiger Textliste, Badge in eigener Zeile). Das ist jetzt einheitlich.
+
+### 🧱 Ein Raster für alle verbundenen Systeme
+- Ein Abschnitt **🔌 Verbundene Systeme** mit Gesamtzahl ersetzt die sieben Einzelbereiche. Alle Karten stehen in **einem Raster**
+  mit gleich breiten Spalten (mind. 300 px): am großen Monitor 4–6 nebeneinander, am Tablet 2, am Smartphone 1.
+- Karten einer Reihe sind **gleich hoch**; die Zeitschlitz-Zeile sitzt immer unten.
+- Reihenfolge: OpenBridge → Repeater → Hotspots → Apps → Netzwerk eingehend → Unbekannte Geräte → Netzwerk ausgehend,
+  innerhalb einer Art steht oben, wer gerade spricht.
+- **Filter-Pillen** über dem Raster: *Alle 7 · ↔️ OpenBridge 1 · 📶 Repeater 2 · …* – Zählung und Filter in einem. Die Auswahl
+  merkt sich der Browser. Gibt es nur eine Art, entfällt die Leiste.
+- Ist nichts verbunden, steht *Keine Systeme verbunden*.
+
+### 🪪 Die schlanke Karte (gleich für Repeater, Hotspot, App, Netzwerk, Outbound und OpenBridge)
+- **Kopf:** Avatar mit kleinem Art-Symbol unten rechts (📶 📱 📲 🔗 ❔) · Rufzeichen + ID · darunter Login-Art als kleines Etikett
+  (**✓ FRID** grün, **👤 Gast** gelb, 🔀 Anzahl Übersetzungen) und Standort · rechts der Zustand als Pille:
+  **ON AIR**/**LIVE** (grün, pulsierend), *online*, *n verpasst* (gelb), *wartet*/*offline* (rot).
+- **Farbe pro Art** als Streifen links: OpenBridge orange, Repeater grün, Hotspot hellblau, App violett, Netzwerk cyan, Unbekannt gelb.
+- **Eine Kennzahlen-Zeile mit vier gleich breiten Feldern:**
+  Stationen: *Online · TX MHz · TS1 · TS2* (RX-Frequenz im Tooltip), Outbound: *Online · Server · TS1 · TS2*,
+  OpenBridge: *Online · Server · Talkgroups · Heute ↓ empfangen ↑ gesendet*. Am Smartphone 2 × 2.
+- Talkgroups als kleine Chips, höchstens zwei sichtbar, der Rest als **+N** (Liste im Tooltip). *Alle* (keine Konfiguration) grün.
+- Unten wie bisher die Zeitschlitze (`TS1 IDLE · TS2 IDLE` bzw. RX/TX/HANG mit Sprecher); bei OpenBridge jedes laufende Gespräch als Zeile.
+- Ein Klick auf den Kopf öffnet wie bisher die Detailansicht bzw. bei OpenBridge den Tab OpenBridge.
+- Der Hinweistext bei unbekannten Geräten steht nicht mehr über dem Raster; die gemeldete Software steht direkt auf der Karte
+  (*Minden · OpenGD77-Net · v4.2*), der Weg zur Geräteerkennung weiterhin in der Detailansicht.
+
+### 🐞 Behoben
+- **Outbound-Karte zeigte rohes HTML** (`<span class="hidden-ip" …>`), wenn die Adresse für Gäste verborgen ist – der Statustext
+  wurde samt Adress-HTML escaped. Jetzt wird nur der Fehlertext escaped, die Adresse erscheint als 🔒.
+- Name und ID im Outbound- und OpenBridge-Kopf laufen jetzt über `escapeHtml`. Der OpenBridge-Klick übergibt den Namen über
+  ein `data-`Attribut statt als JavaScript-String (Namen mit Apostroph brachen den Klick).
+- Gast-Karten färbten durch die Klasse `auth-guest` den ganzen Karteninhalt gelb – entfernt.
+
+### 🌐 Sprache
+- Neue Texte deutsch und englisch: *Verbundene Systeme, Keine Systeme verbunden, Unbekanntes Gerät, Netzwerk ein-/ausgehend,
+  Ausgehende Verbindung, n verpasst, wartet, kein Verkehr …*
+
+### 📖 Doku
+- [Dashboard → Verbundene Systeme](docs/de/dashboard.md#-verbundene-systeme) neu beschrieben; neue Screenshots
+  `connected-systems.png`, `connected-systems-filter.png`, `connected-systems-en.png`, aktualisiert `dashboard-desktop.png`,
+  `dashboard-mobile.png`, `dashboard-stations.png`, `dashboard-freeradioid-card.png`, `dashboard-guest-card.png`,
+  `openbridge-card.png`, `device-type-app.png`, `device-type-unknown.png`.
+
 ## [1.6.0] – 2026-11-24
 
 **Vollständige Backups, Wiederherstellung (auch beim Initial Setup) und verschlüsseltes AutoBackup** – Beitrag von SA7BNT

@@ -80,11 +80,11 @@ Der gewählte Tab steht in der Adresse (`…/#stats`, `…/#openbridge`, `…/#t
   <img src="../images/openbridge-tab-mobile.png" alt="Tab OpenBridge am Smartphone" width="22%">
 </p>
 
-Ein OpenBridge-Trunk führt oft über tausend Talkgroups. In der Live-Ansicht steht deshalb nur eine kompakte Karte: Name, Netzwerk-ID, Gegenstelle, Laufzeit, die **Anzahl** der Talkgroups mit Zeitschlitz, die Gespräche von heute (⬇ empfangen, ⬆ gesendet) und die laufenden Gespräche. **Details ›** öffnet den Tab.
+Ein OpenBridge-Trunk führt oft über tausend Talkgroups. In der Live-Ansicht steht deshalb nur eine kompakte Karte: Name, Netzwerk-ID, Protokoll, Laufzeit, Gegenstelle, die **Anzahl** der Talkgroups mit Zeitschlitz, die Gespräche von heute (↓ empfangen, ↑ gesendet) und die laufenden Gespräche. Ein Klick auf den Kopf öffnet den Tab.
 
 <p align="center"><img src="../images/openbridge-card.png" alt="OpenBridge-Karte in der Live-Ansicht" width="45%"></p>
 
-Die Karte ist so schmal wie die Stationskarten und steht mit ihnen im selben Raster; jedes laufende Gespräch ist eine eigene Zeile. Ein Klick auf den Sprecher öffnet seine [Stationsinfo](#stationsinfo-zu-jeder-dmr-id).
+Die Karte ist genauso gebaut wie die Stationskarten und steht mit ihnen im Raster [Verbundene Systeme](#-verbundene-systeme); jedes laufende Gespräch ist eine eigene Zeile. Ein Klick auf den Sprecher öffnet seine [Stationsinfo](#stationsinfo-zu-jeder-dmr-id).
 
 Im Tab **↔️ OpenBridge** steht alles zu einem Trunk. Bei mehreren Trunks wählst du oben den Trunk aus.
 
@@ -286,25 +286,44 @@ Ist die ID selbst als Station hier angemeldet (Repeater, Hotspot, App), führt *
 
 Am Ende jeder Seite steht **© Die N8schicht** mit der installierten Version (Versionsnummer und Commit) und ihrem Datum. So sieht man auf einen Blick, welcher Stand läuft.
 
-## Repeater, Hotspots, Verbindungen
+## 🔌 Verbundene Systeme
 
-<p align="center"><img src="../images/dashboard-stations.png" alt="Stationen als Raster" width="90%"></p>
+<p align="center"><img src="../images/connected-systems.png" alt="Verbundene Systeme als ein Raster" width="95%"></p>
 
-Repeater, Hotspots, Apps, Netzwerke, Outbound-Links und OpenBridge stehen als **schmale Karten nebeneinander**. Ab 1280 Pixel Breite stehen die Bereiche zusätzlich in **zwei Spalten** (ab 2100 Pixel in drei), mit je zwei Karten pro Reihe; am Tablet zwei Karten, am Smartphone eine. So passen viele Stationen auf einen Blick, ohne lange zu scrollen.
+Alles, was mit dem Server verbunden ist – **OpenBridge-Trunks, Repeater, Hotspots, Apps, Netzwerke (ein- und ausgehend) und unbekannte
+Geräte** – steht in **einem gemeinsamen Raster**. Alle Karten sind gleich breit, Karten einer Reihe gleich hoch. Das Raster passt sich der
+Breite an: am großen Monitor vier bis sechs Karten nebeneinander, am Tablet zwei, am Smartphone eine.
 
-Jede Karte zeigt Avatar, Rufzeichen, DMR-ID, Standort, Frequenzen und die Talkgroups pro Zeitschlitz. Darunter stehen die Zeitschlitze als kurze Zeilen:
+Über dem Raster zählen **Filter-Pillen** die Systeme pro Art. Ein Klick zeigt nur diese Art, *Alle* wieder alles; der Browser merkt sich die Auswahl.
+
+<p align="center"><img src="../images/connected-systems-filter.png" alt="Filter: nur Repeater" width="95%"></p>
+
+### So ist eine Karte aufgebaut
+
+| Teil | Inhalt |
+|---|---|
+| **Streifen links** | Farbe der Art: ↔️ OpenBridge orange · 📶 Repeater grün · 📱 Hotspot hellblau · 📲 App violett · 🔗 Netzwerk cyan · ❔ Unbekannt gelb |
+| **Kopf** | Avatar mit Art-Symbol, Rufzeichen und DMR-ID (bei OpenBridge Name und NetID), darunter Login-Art und Standort |
+| **Zustand rechts** | **ON AIR** / **LIVE** (es läuft ein Gespräch) · *online* · *n verpasst* (Keep-Alive-Pings fehlen) · *wartet* / *offline* |
+| **Kennzahlen** | vier gleich breite Felder: Stationen *Online · TX MHz · TS1 · TS2* (RX im Tooltip) · Outbound *Online · Server · TS1 · TS2* · OpenBridge *Online · Server · Talkgroups · Heute ↓↑* |
+| **Unten** | die Zeitschlitze (siehe unten), bei OpenBridge jedes laufende Gespräch als Zeile |
+
+Von den Talkgroups pro Zeitschlitz stehen höchstens zwei als Chip da, der Rest als **+N** (die ganze Liste im Tooltip). **Alle** (grün)
+heißt: keine Einschränkung konfiguriert; **Keine** heißt: alles gesperrt. Gold markierte Talkgroups werden übersetzt (🔀).
+
+Die Zeitschlitze:
 - Sind beide frei, ist es eine Zeile: `TS1 IDLE · TS2 IDLE`.
 - Läuft ein Gespräch, zeigt die Zeile **⬇️ RX** (empfangen) oder **⬆️ TX** (gesendet), den Sprecher, die Talkgroup mit Namen und die Dauer.
 - In der Nachlaufzeit (**HANG**) steht nur die Talkgroup.
-- Ein Klick auf den Sprecher öffnet die [Stationsinfo](#stationsinfo-zu-jeder-dmr-id), ein Klick auf Avatar oder Rufzeichen der Karte die [Detailansicht](#detailansicht).
+- Ein Klick auf den Sprecher öffnet die [Stationsinfo](#stationsinfo-zu-jeder-dmr-id), ein Klick auf den Kopf der Karte die [Detailansicht](#detailansicht) (bei OpenBridge den Tab OpenBridge).
 
-Die Login-Art erkennst du am Badge und an der Farbe:
+Die Login-Art steht als kleines Etikett unter dem Rufzeichen:
 
 | Anzeige | Bedeutung |
 |---|---|
-| <img src="../images/dashboard-freeradioid-card.png" width="300"> | **🛡️ FreeRadioID ✓**, grüner Rand: Die Station hat sich mit ihrem FreeRadioID-Passwort angemeldet und hat volle Rechte. |
-| <img src="../images/dashboard-guest-card.png" width="300"> | **👤 Guest**, gelber Rand: Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
-| ohne Badge | angemeldet mit dem Passwort eines eigenen Patterns, bei dem FreeRadioID aus ist |
+| <img src="../images/dashboard-freeradioid-card.png" width="300"> | **✓ FRID** (grün): Die Station hat sich mit ihrem FreeRadioID-Passwort angemeldet und hat volle Rechte. |
+| <img src="../images/dashboard-guest-card.png" width="300"> | **👤 Gast** (gelb): Die Station hat sich mit dem Standard-Passwort angemeldet. Sie darf nur auf die Gast-Talkgroups senden, empfangen kann sie alles. |
+| ohne Etikett | angemeldet mit dem Passwort eines eigenen Patterns, bei dem FreeRadioID aus ist |
 
 ### Gerätearten: Repeater, Hotspot, App
 
@@ -318,20 +337,23 @@ HBlink4 sortiert jede Station anhand des **Paketnamens**, den ihre Software beim
 | 🔗 | **Network Inbound** | ein anderer Server verbindet sich hierher | `HBlink`, `FreeDMR`, `BrandMeister` |
 | ❔ | **Unknown device type** | Paketname steht in keiner Liste | – |
 
+Die Art erkennst du am Symbol unten rechts am Avatar und an der Farbe des Streifens; mit den Filter-Pillen zeigst du nur eine Art:
+
 <p align="center">
-  <img src="../images/device-type-app.png" alt="Bereich Apps" width="49%">
-  <img src="../images/station-detail-app.png" alt="Detailansicht einer App-Station" width="49%">
+  <img src="../images/device-type-app.png" alt="Filter Apps" width="95%">
 </p>
+<p align="center"><img src="../images/station-detail-app.png" alt="Detailansicht einer App-Station" width="60%"></p>
 
-Bei Apps und unbekannten Geräten steht unter dem Rufzeichen die gemeldete Software (📦 Paketname · Version). Früher stand hier ein rotes **❓ Other** – das hieß nur „Paketname unbekannt“, nicht „Fehler“. Jetzt heißt der Bereich **❔ Unknown device type**, ist grau statt rot und nennt den gemeldeten Namen:
+Bei **❔ Unbekanntes Gerät** steht die gemeldete Software direkt auf der Karte (*Minden · OpenGD77-Net · v4.2*). Das heißt nur
+„Paketname steht in keiner Liste“, nicht „Fehler“:
 
-<p align="center"><img src="../images/device-type-unknown.png" alt="Unbekannte Geräteart" width="90%"></p>
+<p align="center"><img src="../images/device-type-unknown.png" alt="Filter Unbekanntes Gerät" width="95%"></p>
 
-Ein Admin sortiert solche Geräte unter **Adminbereich → Settings → 📲 Device detection** ein (siehe [Adminbereich](adminbereich.md#️-dmr-server-hblink4)). Verbundene Stationen wandern nach dem Speichern sofort in den richtigen Bereich.
+Ein Admin sortiert solche Geräte unter **Adminbereich → Settings → 📲 Device detection** ein (siehe [Adminbereich](adminbereich.md#️-dmr-server-hblink4)). Verbundene Stationen wandern nach dem Speichern sofort zur richtigen Art.
 
 > **Hinweis DroidStar:** DroidStar meldet ab Werk den Paketnamen `MMDVM_MMDVM_HS_Hat` und sieht damit für den Server genau wie ein Hotspot aus. Als App erscheint es nur, wenn in DroidStar ein eigener Paketname eingetragen ist (z. B. `DroidStar`). Z3DMR meldet sich korrekt als `Z3DMR`.
 
-Gold markierte Talkgroups werden für diese Station übersetzt (🔀). **OpenBridge** und **Network Outbound** zeigen Verbindungen zu anderen Servern. Bei OpenBridge steht statt der langen Talkgroup-Liste nur die Anzahl; alles Weitere zeigt der [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
+**OpenBridge** und **Netzwerk ausgehend** zeigen Verbindungen zu anderen Servern. Bei OpenBridge steht statt der langen Talkgroup-Liste nur die Anzahl; alles Weitere zeigt der [Tab OpenBridge](#️-openbridge--die-trunks-im-detail).
 
 ## Detailansicht
 

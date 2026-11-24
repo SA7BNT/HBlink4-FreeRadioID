@@ -53,7 +53,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.6.0", **_sec.FASTAPI_KWARGS)
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.6.1", **_sec.FASTAPI_KWARGS)
 
 # Load dashboard configuration
 def load_config() -> dict:

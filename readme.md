@@ -57,6 +57,11 @@ Ein DMR-Server für Repeater, Hotspots und Apps wie Z3DMR (HomeBrew-Protokoll, z
   <img src="docs/images/dashboard-mobile.png" alt="Dashboard am Smartphone" width="22%">
 </p>
 
+**🔌 Verbundene Systeme** *(neu in 1.6.1)*: OpenBridge, Repeater, Hotspots, Apps und Netzwerk-Links stehen in einem gemeinsamen Raster
+aus gleich großen, schlanken Karten – mit Filter-Pillen pro Art. Mehr dazu in der [Dashboard-Doku](docs/de/dashboard.md#-verbundene-systeme).
+
+<p align="center"><img src="docs/images/connected-systems.png" alt="Verbundene Systeme" width="95%"></p>
+
 ## Schnellstart
 
 Auf einem Debian- oder Ubuntu-Server, als root bzw. mit `sudo`:
@@ -88,7 +93,7 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 </tr>
 <tr>
 <td><img src="docs/images/openbridge-tab.png" alt="OpenBridge"><br><b>Tab ↔️ OpenBridge</b>: Trunk-Status, Verkehr empfangen/gesendet, Top-Talkgroups und alle Talkgroups des Trunks.</td>
-<td><img src="docs/images/openbridge-card.png" alt="OpenBridge-Karte"><br><b>Kompakt in der Live-Ansicht</b>: Anzahl der Talkgroups, Gespräche heute, laufende Gespräche.</td>
+<td><img src="docs/images/openbridge-card.png" alt="OpenBridge-Karte"><br><b>Kompakt in der Live-Ansicht</b>: gleiche Karte wie alle verbundenen Systeme – Talkgroups, Gespräche heute, laufende Gespräche.</td>
 </tr>
 <tr>
 <td><img src="docs/images/admin-openbridge.png" alt="OpenBridge-Editor"><br><b>OpenBridge im Formular</b>: Protokoll, Verbindung, Talkgroups und fertiger Abschnitt für die Gegenstelle.</td>

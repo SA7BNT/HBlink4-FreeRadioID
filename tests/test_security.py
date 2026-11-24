@@ -169,3 +169,24 @@ class TestBackupAndGuard(unittest.TestCase):
         r = c.get("/api/admin/backup")
         self.assertIn(r.status_code, (401, 403))
         self.assertIn("default-src 'self'", r.headers["content-security-policy"])
+
+
+class TestConnectedSystemsCards:
+    """1.6.1: one grid, one card renderer; no raw fmtAddr HTML escaped into text."""
+    html = (Path(__file__).resolve().parents[1] / "dashboard" / "static" / "dashboard.html").read_text(encoding="utf-8")
+
+    def test_single_grid_replaces_masonry(self):
+        assert 'id="connAll"' in self.html and 'class="conn-columns"' not in self.html
+        assert "column-count" not in self.html.split("/* ---- Connected systems")[1].split("</style>")[0]
+
+    def test_all_kinds_use_conn_card(self):
+        for kind in ("openbridge", "outbound"):
+            assert f"kind: '{kind}'" in self.html
+        assert "kind: sectionName" in self.html
+
+    def test_outbound_status_not_double_escaped(self):
+        assert "escapeHtml(statusText)}</span>` : ''" not in self.html
+        assert "fmtAddr(o.remote_address, o.remote_port)\n                    : `<span class=" in self.html
+
+    def test_obp_click_uses_data_attribute(self):
+        assert "obpOpen(this.closest(\\'.conn-card\\').dataset.obp)" in self.html

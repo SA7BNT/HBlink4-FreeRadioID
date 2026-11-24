@@ -1723,6 +1723,86 @@
         .sc-dst { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
         .sc-tg { color: var(--accent); font-weight: 650; }
         .sc-dur { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+        /* ---- Connected systems: one adaptive grid, one slim card for every kind ---- */
+        .conn-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 10px; }
+        .conn-filter button { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; cursor: pointer;
+            font: 650 12px/1 inherit; color: var(--text-dim); background: rgba(255,255,255,.04); border: 1px solid var(--glass-border); }
+        .conn-filter button b { color: var(--text); font-weight: 750; }
+        .conn-filter button.on { color: var(--text); background: rgba(var(--accent-rgb), .16); border-color: rgba(var(--accent-rgb), .55); }
+        .conn-all { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; align-items: stretch; }
+        .conn-all > div:not([style*="display: none"]):not(.conn-empty), .conn-all > div > .card, .conn-all .conn-grid { display: contents !important; }
+        .conn-all > div > .section-header { display: none !important; }
+        .conn-all[data-filter] .conn-card.conn-card.conn-card { display: none !important; }
+        .conn-all[data-filter="openbridge"] .conn-card.conn-card.conn-card.kind-openbridge, .conn-all[data-filter="repeaters"] .conn-card.conn-card.conn-card.kind-repeaters,
+        .conn-all[data-filter="hotspots"] .conn-card.conn-card.conn-card.kind-hotspots, .conn-all[data-filter="apps"] .conn-card.conn-card.conn-card.kind-apps, .conn-all[data-filter="networks"] .conn-card.conn-card.conn-card.kind-networks,
+        .conn-all[data-filter="unknown"] .conn-card.conn-card.conn-card.kind-unknown, .conn-all[data-filter="outbound"] .conn-card.conn-card.conn-card.kind-outbound { display: flex !important; }
+        .conn-empty { display: none; grid-column: 1 / -1; padding: 18px; text-align: center; color: var(--text-dim); font-size: 13px; }
+        .conn-empty.show { display: block; }
+
+        .conn-all .conn-card.conn-card.conn-card { --kc: var(--accent); --kc-rgb: var(--accent-rgb); display: flex !important; flex-direction: column; gap: 8px;
+            margin: 0 !important; padding: 10px 12px !important; min-width: 0; border-radius: 14px !important;
+            border: 1px solid var(--glass-border) !important; border-left: 3px solid rgba(var(--kc-rgb), .85) !important; outline: 0 !important;
+            background: linear-gradient(90deg, rgba(var(--kc-rgb), .07), transparent 45%), rgba(255,255,255,.03) !important; box-shadow: none !important; }
+        .conn-card.kind-openbridge { --kc: #ff9f0a; --kc-rgb: 255, 159, 10; }
+        .conn-card.kind-repeaters { --kc: #30d158; --kc-rgb: 48, 209, 88; }
+        .conn-card.kind-hotspots { --kc: #5ac8fa; --kc-rgb: 90, 200, 250; }
+        .conn-card.kind-apps { --kc: #bf5af2; --kc-rgb: 191, 90, 242; }
+        .conn-card.kind-networks, .conn-card.kind-outbound { --kc: #64d2ff; --kc-rgb: 100, 210, 255; }
+        .conn-card.kind-unknown { --kc: #ffd60a; --kc-rgb: 255, 214, 10; }
+        .conn-card.is-down { opacity: .7; }
+        .conn-all .conn-card.conn-card.conn-card.on-air { border-left-color: #30d158 !important; border-color: rgba(48,209,88,.55) !important; box-shadow: 0 0 0 1px rgba(48,209,88,.25), 0 6px 22px rgba(48,209,88,.14) !important; }
+
+        .cc-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; cursor: pointer; }
+        .cc-av { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
+        .cc-av > img, .cc-av > span:first-child { width: 34px !important; height: 34px !important; }
+        .cc-kind { position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; display: grid; place-items: center; font-size: 10px;
+            border-radius: 50%; background: var(--bg, #0b1220); border: 1px solid rgba(var(--kc-rgb), .7); }
+        .cc-ico { display: grid; place-items: center; border-radius: 50%; font-size: 16px; background: rgba(var(--kc-rgb), .14); border: 1px solid rgba(var(--kc-rgb), .45); }
+        .cc-title { min-width: 0; }
+        .cc-name { display: flex; align-items: center; gap: 7px; min-width: 0; line-height: 1.2; }
+        .cc-name b { font-size: 14.5px; font-weight: 750; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cc-name .rid { flex: none; font-size: 10.5px; padding: 1px 7px; }
+        .cc-sub { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 2px; font-size: 11.5px; color: var(--text-dim); line-height: 18px; }
+        .cc-subtext { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .cc-chip { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 16px; padding: 0 6px; border-radius: 5px;
+            font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; border: 1px solid var(--glass-border); }
+        .cc-chip i { font-style: normal; }
+        .cc-chip.frid { color: #30d158; background: rgba(48,209,88,.12); border-color: rgba(48,209,88,.45); }
+        .cc-chip.guest { color: #ffd60a; background: rgba(255,214,10,.10); border-color: rgba(255,214,10,.45); }
+        .cc-chip.xlate { color: #f5c451; background: rgba(245,196,81,.10); border-color: rgba(245,196,81,.45); }
+        .cc-state { display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 9.5px;
+            font-weight: 800; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; color: var(--text-dim);
+            background: rgba(255,255,255,.05); border: 1px solid var(--glass-border); }
+        .cc-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .cc-state.ok { color: #30d158; border-color: rgba(48,209,88,.35); }
+        .cc-state.air { color: #fff; background: #30d158; border-color: #30d158; box-shadow: 0 0 10px rgba(48,209,88,.5); }
+        .cc-state.air i { animation: ccPulse 1.2s ease-in-out infinite; }
+        .cc-state.warn { color: #ffd60a; border-color: rgba(255,214,10,.4); }
+        .cc-state.bad { color: #ff6b61; border-color: rgba(255,69,58,.4); }
+        @keyframes ccPulse { 50% { opacity: .25; } }
+
+        .cc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border-radius: 9px; overflow: hidden;
+            background: rgba(255,255,255,.03); border: 1px solid var(--glass-border); }
+        .cc-grid > div { padding: 4px 8px; min-width: 0; }
+        .cc-grid > div + div { border-left: 1px solid var(--glass-border); }
+        .cc-grid dt { font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); line-height: 1.4; }
+        .cc-grid dd { margin: 0; font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
+        .cc-grid .rx { color: #7fb2f2; } .cc-grid .tx { color: #f0935f; }
+        .cc-tgs { display: inline-flex; gap: 3px; flex-wrap: nowrap; overflow: hidden; vertical-align: middle; }
+        .cc-tg { padding: 0 5px; border-radius: 5px; font-size: 11px; background: rgba(var(--accent-rgb), .14); color: var(--accent); }
+        .cc-tg.more { background: rgba(255,255,255,.08); color: var(--text-dim); }
+        .cc-tgs.rpto .cc-tg { box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .45); }
+        .cc-all { color: #30d158; }
+        .cc-err { color: #ff6b61; }
+        .cc-foot { margin-top: auto; min-width: 0; }
+        .cc-grid .hidden-ip { font-size: 0; } .cc-grid .hidden-ip::before { content: '🔒'; font-size: 12px; }
+        .cc-grid .rx, .cc-grid .tx { font-size: 11.5px; }
+        .cc-foot .slots-compact { margin: 0 !important; padding: 0 !important; }
+        .cc-foot .sc-row { min-height: 24px; }
+        .cc-foot .obp-stream-pill { display: flex; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; padding: 3px 6px; }
+        html[data-theme-mode=light] .cc-grid, html[data-theme-mode=light] .conn-all .conn-card { background: rgba(0,0,0,.025) !important; }
+        @media (max-width: 420px) { .cc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .cc-grid > div:nth-child(3) { border-left: 0; } .cc-grid > div:nth-child(n+3) { border-top: 1px solid var(--glass-border); } }
         /* OpenBridge cards in the same grid, a bit tighter */
         .conn-grid > .repeater-card.obp-card { padding: 4px; }
         .conn-grid .obp-card .repeater-info { padding: 8px 10px 8px; }
@@ -1805,13 +1885,7 @@
 
         /* ---- Less scrolling: station sections in columns on wide screens ---- */
         @media (min-width: 1280px) {
-            .conn-columns { column-count: 2; column-gap: 14px; }
-            .conn-columns > div { break-inside: avoid; -webkit-column-break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; }
-            .conn-columns > div[style*="display: none"] { display: none !important; }
-            .conn-columns .type-hint { white-space: normal; }
         }
-        @media (min-width: 2100px) { .conn-columns { column-count: 3; } }
-        .conn-columns .section-header { margin-top: 14px !important; }
 
         /* ---- Phone: one header row + tabs, 3×2 stat tiles ---- */
         @media (max-width: 600px) {
@@ -2529,7 +2603,11 @@
             <button type="button" class="lh-more" id="lhMore" hidden onclick="state.lhShowAll = !state.lhShowAll; renderLastHeard()"></button>
         </div>
 
-        <div class="conn-columns">
+        <div id="connSection">
+        <h2 class="section-header collapsible" data-section="conn" data-collapse-target="connBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span><span>🔌 Connected systems</span> <span id="connTotal" style="color: var(--accent); font-weight: 700;"></span></h2>
+        <div id="connBody">
+        <div class="conn-filter" id="connFilter" role="tablist" aria-label="Filter"></div>
+        <div class="conn-all" id="connAll">
         <!-- OpenBridge Trunks (positioned above Repeaters) -->
         <div id="openbridgeSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="openbridge" data-collapse-target="openbridgeBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>↔️ OpenBridge <span id="openbridgeCount" style="color: var(--accent); font-weight: 700;"></span></h2>
@@ -2574,8 +2652,6 @@
         <div id="unknownSection" style="display: none;">
             <h2 class="section-header collapsible" data-section="unknown" data-collapse-target="unknownBody" style="margin-top: 20px;"><span class="collapse-caret">▾</span>❔ Unknown device type <span id="unknownCount" style="color: var(--accent); font-weight: 700;"></span></h2>
             <div class="card" id="unknownBody">
-                <p class="type-hint">The software of these stations reports a name HBlink4 does not know yet (shown on the card).
-                    Admins can sort it in: <b>Admin area → Settings → 📲 Device detection</b>.</p>
                 <div id="unknownContainer" class="conn-grid"></div>
             </div>
         </div>
@@ -2588,7 +2664,8 @@
             </div>
         </div>
 
-        </div><!-- /conn-columns -->
+        <div class="conn-empty" id="connEmpty">No systems connected</div>
+        </div></div></div>
 
         <!-- Recent Events -->
         <div id="eventsSection">
@@ -5272,6 +5349,72 @@ PROTO_VER: ${fd ? 5 : 1}`;
             ).join(', ');
         }
 
+        // ---------- Connected systems: one symmetric card for every kind ----------
+        // Head (avatar · name/ID · state), one row of equal chips, a fixed 2×2 grid, the time slots at the bottom.
+        const CONN_KIND = { openbridge: ['↔️', 'OpenBridge'], repeaters: ['📶', 'Repeater'], hotspots: ['📱', 'Hotspot'], apps: ['📲', 'App'],
+                            networks: ['🔗', 'Network inbound'], unknown: ['❔', 'Unknown device'], outbound: ['🔗', 'Network outbound'] };
+        const ccAvatar = (html, kind) => `<span class="cc-av">${html}<span class="cc-kind" title="${escapeHtml(kind[1])}">${kind[0]}</span></span>`;
+        const ccMhz = hz => (parseFloat(hz) / 1e6).toFixed(4);
+        function ccChip(cls, icon, text, title) {
+            return `<span class="cc-chip ${cls}"${title ? ` title="${escapeHtml(title)}"` : ''}><i aria-hidden="true">${icon}</i><span>${escapeHtml(text)}</span></span>`;
+        }
+        function ccAuthChip(method) {
+            if (method === 'freeradioid') return ccChip('frid', '✓', 'FRID', 'Login verified by FreeRadioID.net – full access');
+            if (method === 'guest') return ccChip('guest', '👤', 'Guest', 'Logged in with the default passphrase – TX limited to guest talkgroups');
+            return '';
+        }
+        function ccTgs(cfg, rf, rpto) {
+            if (cfg === null || cfg === undefined) return '<span class="cc-all" title="All talkgroups allowed (no configuration)">All</span>';
+            if (!rf || !rf.length) return '<span class="muted" title="All talkgroups denied (empty configuration)">None</span>';
+            const max = 2, shown = rf.slice(0, max);
+            const html = shown.some(e => e.translated) ? renderTgChips(shown)
+                : shown.map(e => `<span class="cc-tg">${escapeHtml(e.tgid)}</span>`).join('');
+            const more = rf.length > max ? `<span class="cc-tg more" title="${escapeHtml(rf.map(e => e.tgid).join(', '))}">+${rf.length - max}</span>` : '';
+            return `<span class="cc-tgs${rpto ? ' rpto' : ''}"${rpto ? ' title="TGs supplied by repeater via RPTO"' : ''}>${html}${more}</span>`;
+        }
+        // ---- Connected systems: summary pills that double as filter, empty state ----
+        const CONN_FILTER_KEY = 'hblink4-conn-filter';
+        let connFilter = ''; try { connFilter = localStorage.getItem(CONN_FILTER_KEY) || ''; } catch (e) { /* ignore */ }
+        function connRefreshSummary() {
+            const all = document.getElementById('connAll'), bar = document.getElementById('connFilter');
+            if (!all || !bar) return;
+            const cards = [...all.querySelectorAll('.conn-card')], counts = {};
+            cards.forEach(c => { const k = (c.className.match(/kind-(\w+)/) || [])[1]; if (k) counts[k] = (counts[k] || 0) + 1; });
+            if (connFilter && !counts[connFilter]) connFilter = '';
+            if (connFilter) all.dataset.filter = connFilter; else delete all.dataset.filter;
+            document.getElementById('connTotal').textContent = cards.length || '';
+            document.getElementById('connEmpty').classList.toggle('show', !cards.length);
+            const kinds = Object.keys(CONN_KIND).filter(k => counts[k]);
+            const html = kinds.length < 2 ? '' : [`<button type="button" data-k="" class="${connFilter ? '' : 'on'}">All <b>${cards.length}</b></button>`]
+                .concat(kinds.map(k => `<button type="button" data-k="${k}" class="${connFilter === k ? 'on' : ''}">${CONN_KIND[k][0]} ${escapeHtml(CONN_KIND[k][1])} <b>${counts[k]}</b></button>`)).join('');
+            if (bar.dataset.html !== html) { bar.dataset.html = html; bar.innerHTML = html; if (window.N8Kit && N8Kit.i18n && N8Kit.i18n.apply) N8Kit.i18n.apply(bar); }
+        }
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('#connFilter button'); if (!btn) return;
+            connFilter = btn.dataset.k || ''; try { localStorage.setItem(CONN_FILTER_KEY, connFilter); } catch (err) { /* ignore */ }
+            connRefreshSummary();
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const all = document.getElementById('connAll'); if (!all) return;
+            let t = 0; new MutationObserver(() => { clearTimeout(t); t = setTimeout(connRefreshSummary, 60); })
+                .observe(all, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+            connRefreshSummary();
+        });
+
+        function connCard(c) {
+            const click = c.click ? ` onclick="${c.click}" role="button" tabindex="0" title="Click for detailed information"` : '';
+            return `<div class="repeater-card conn-card kind-${c.kind} ${c.cls || ''}" ${c.attrs || ''}>
+                <div class="cc-head"${click}>
+                    ${c.avatar}
+                    <div class="cc-title"><div class="cc-name"><b>${escapeHtml(c.call)}</b><span class="rid">${escapeHtml(c.id)}</span></div>
+                        <div class="cc-sub">${c.chips.filter(Boolean).join('')}<span class="cc-subtext">${escapeHtml(c.sub)}</span></div></div>
+                    <span class="cc-state ${c.state[0]}" title="${escapeHtml(c.state[2] || '')}"><i></i>${escapeHtml(c.state[1])}</span>
+                </div>
+                <dl class="cc-grid">${c.cells.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>
+                <div class="cc-foot">${c.slots}</div>
+            </div>`;
+        }
+
         function renderConnectionGroup(sectionName, countId, connections, icon) {
             const section = document.getElementById(`${sectionName}Section`);
             const container = document.getElementById(`${sectionName}Container`);
@@ -5320,91 +5463,23 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 const xlateBadge = hasTranslations ? `<span title="${xlateTitle}">🔀</span> ` : '';
                 const { rf1, rf2 } = rfTgLists(r.slot1_talkgroups, r.slot2_talkgroups, r.translations);
 
-                return `
-                    <div class="repeater-card ${r.auth_method ? 'auth-' + r.auth_method : ''} ${onAir(r) ? 'on-air' : ''}" data-repeater-id="${r.repeater_id}">
-                        <div class="repeater-info">
-                            <div class="card-title-row">
-                                <span onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">${avatarHtml(r.repeater_id, r.callsign, 34)}</span>
-                                <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
-                                    ${icon} ${xlateBadge}${escapeHtml(r.callsign || 'Unknown')} <span class="rid">${escapeHtml(r.repeater_id)}</span>
-                                </div>
-                                ${onAir(r) ? '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>' : ''}
-                            </div>
-                            ${authBadge(r)}
-                            ${['app', 'unknown'].includes(r.connection_type || 'unknown') || !['repeater', 'hotspot', 'network'].includes(r.connection_type) ? `
-                            <div class="sw-line" title="Software and package name the station reports at login">📦 ${escapeHtml((r.package_id || '').trim() || '–')}
-                                ${(r.software_id || '').trim() ? `<span class="muted">· ${escapeHtml(r.software_id.trim())}</span>` : ''}</div>` : ''}
-                            <div class="repeater-meta">
-                                <!-- Row 1: Location / TX / TS1 -->
-                                <div class="repeater-meta-item">
-                                    ${escapeHtml(r.location || 'Location unknown')}
-                                </div>
-                                ${r.tx_freq ? `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">TX:</span>
-                                    <span>${(parseFloat(r.tx_freq) / 1000000).toFixed(4).padStart(8, '0')} MHz</span>
-                                </div>
-                                ` : '<div></div>'}
-                                ${r.slot1_talkgroups === null ? `
-                                <div class="repeater-meta-item" title="All talkgroups allowed (no configuration)">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>All</span>
-                                </div>
-                                ` : Array.isArray(r.slot1_talkgroups) && r.slot1_talkgroups.length === 0 && rf1.length === 0 ? `
-                                <div class="repeater-meta-item" title="All talkgroups denied (empty configuration)">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                ` : rf1.length > 0 ? `
-                                <div class="repeater-meta-item" ${r.rpto_received ? 'title="TGs supplied by repeater via RPTO"' : ''}>
-                                    <span class="repeater-meta-label ${r.rpto_received ? 'rpto-tgs' : ''}">TS1 TGs:</span>
-                                    <span>${renderTgChips(rf1)}</span>
-                                </div>
-                                ` : `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                `}
-
-                                <!-- Row 2: Connected / RX / TS2 -->
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">Connected:</span>
-                                    <span data-connected-duration data-connected-at="${r.connected_at || ''}">${connectedDuration}</span>
-                                </div>
-                                ${r.rx_freq ? `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">RX:</span>
-                                    <span>${(parseFloat(r.rx_freq) / 1000000).toFixed(4).padStart(8, '0')} MHz</span>
-                                </div>
-                                ` : '<div></div>'}
-                                ${r.slot2_talkgroups === null ? `
-                                <div class="repeater-meta-item" title="All talkgroups allowed (no configuration)">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>All</span>
-                                </div>
-                                ` : Array.isArray(r.slot2_talkgroups) && r.slot2_talkgroups.length === 0 && rf2.length === 0 ? `
-                                <div class="repeater-meta-item" title="All talkgroups denied (empty configuration)">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                ` : rf2.length > 0 ? `
-                                <div class="repeater-meta-item" ${r.rpto_received ? 'title="TGs supplied by repeater via RPTO"' : ''}>
-                                    <span class="repeater-meta-label ${r.rpto_received ? 'rpto-tgs' : ''}">TS2 TGs:</span>
-                                    <span>${renderTgChips(rf2)}</span>
-                                </div>
-                                ` : `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                `}
-                            </div>
-                        </div>
-                        
-                        ${renderSlotsCompact(slot1Stream, slot2Stream)}
-                    </div>
-                `;
+                const freq = parseFloat(r.tx_freq) ? `<span title="${escapeHtml('TX ' + ccMhz(r.tx_freq) + ' · RX ' + ccMhz(r.rx_freq || r.tx_freq) + ' MHz')}">${ccMhz(r.tx_freq)}</span>` : '';
+                const kind = CONN_KIND[sectionName] || CONN_KIND.unknown;
+                const sw = (r.package_id || '').trim();
+                const swTxt = sw + ((r.software_id || '').trim() ? ' · ' + r.software_id.trim() : '');
+                const chips = [ccAuthChip(r.auth_method),
+                    hasTranslations ? ccChip('xlate', '🔀', String(r.translations.length), xlateTitle) : ''];
+                const state = onAir(r) ? ['air', 'ON AIR'] : hasMissedPings ? ['warn', `${r.missed_pings} missed`, 'Missed keep-alive pings'] : ['ok', 'online'];
+                return connCard({
+                    cls: onAir(r) ? 'on-air' : '', kind: sectionName,
+                    attrs: `data-repeater-id="${escapeHtml(r.repeater_id)}"`, click: `showRepeaterDetails(${Number(r.repeater_id) || 0})`,
+                    avatar: ccAvatar(avatarHtml(r.repeater_id, r.callsign, 34), kind), call: r.callsign || 'Unknown', id: r.repeater_id,
+                    sub: [r.location || 'Location unknown', sectionName === 'unknown' && sw ? swTxt : ''].filter(Boolean).join(' · '), state, chips,
+                    cells: [['Online', `<span data-connected-duration data-connected-at="${escapeHtml(r.connected_at || '')}">${connectedDuration}</span>`],
+                            ['TX MHz', freq || '<span class="muted">–</span>'],
+                            ['TS1', ccTgs(r.slot1_talkgroups, rf1, r.rpto_received)],
+                            ['TS2', ccTgs(r.slot2_talkgroups, rf2, r.rpto_received)]],
+                    slots: renderSlotsCompact(slot1Stream, slot2Stream) });
             }).join('');
         }
         
@@ -5605,46 +5680,35 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
             container.innerHTML = list.map(o => {
                 const lk = obpLink(o), up = lk.up;
-                const headerClass = up ? 'outbound-header-connected' : 'outbound-header-disconnected';
                 const upDur = (up && o.connected_at) ? formatDuration(Date.now() / 1000 - o.connected_at) : '—';
 
                 // Talkgroups only as a count per timeslot — the full list lives in the OpenBridge tab
                 const tgs = o.talkgroups || {};
                 const tgKeys = Object.keys(tgs);
                 const ts1 = tgKeys.filter(t => String(tgs[t]) === '1').length, ts2 = tgKeys.length - ts1;
-                const tgChip = o.all_talkgroups
-                    ? `<span class="obp-chip">📡 All TGs <span class="dim">· no filter · TS${o.default_slot || 2}</span></span>`
-                    : `<span class="obp-chip">📡 ${n(tgKeys.length)} TGs`
-                      + (tgKeys.length ? ` <span class="dim">· ${obpTsSplit(ts1, ts2)}</span>` : '') + `</span>`;
                 const t = (state.obpToday || {})[o.connection_name];
-                const todayChip = t
-                    ? `<span class="obp-chip"><span class="dim">Today</span> <span class="rx">⬇ ${n(t.rx)}</span> <span class="tx">⬆ ${n(t.tx)}</span>`
-                      + ` <span class="dim">· ${tgsFmtDur((t.rx_duration || 0) + (t.tx_duration || 0), true)}</span></span>` : '';
 
                 // Live streams on this trunk (OBP is stream-multiplexed — list them all)
                 const active = streams.filter(s =>
                     s.connection_type === 'openbridge' &&
                     s.connection_name === o.connection_name &&
                     (s.status === 'active' || s.status === 'hang_time'));
-                const streamHtml = active.length
-                    ? `<div class="obp-streams">` + active.map(obpStreamPill).join('') + `</div>`
-                    : `<div class="obp-streams"><span class="obp-stream-pill idle">— idle —</span></div>`;
 
-                return `
-                    <div class="repeater-card obp-card">
-                        <div class="repeater-info">
-                            <div class="obp-head">
-                                <div class="${headerClass}">↔️ ${escapeHtml(o.connection_name)}
-                                    <span class="rid">NetID ${o.network_id}</span>
-                                    ${lk.cls !== 'up' ? `<span class="obp-state ${escapeHtml(lk.cls)}" title="${escapeHtml(lk.hint)}"><i></i>${escapeHtml(lk.label)}</span>` : ''}</div>
-                                <button type="button" class="obp-more" onclick="obpOpen('${escapeHtml(o.connection_name)}')">Details ›</button>
-                            </div>
-                            <div class="obp-meta">
-                                ${fmtAddr(o.remote_address, o.remote_port)} · ${up ? 'up ' + upDur : escapeHtml(lk.hint)}${o.protocol ? ' · ' + escapeHtml(obpProto(o)) : ''}</div>
-                            <div class="obp-chips">${tgChip}${todayChip}</div>
-                            ${streamHtml}
-                        </div>
-                    </div>`;
+                const st = lk.cls === 'up' ? (active.length ? ['air', 'LIVE'] : ['ok', 'online'])
+                    : lk.cls === 'wait' ? ['warn', 'waiting', lk.hint] : ['bad', lk.label.toLowerCase(), lk.hint];
+                const tgTxt = o.all_talkgroups ? `All · TS${o.default_slot || 2}`
+                    : `${n(tgKeys.length)}${tgKeys.length ? ' · ' + obpTsSplit(ts1, ts2) : ''}`;
+                return connCard({
+                    kind: 'openbridge', cls: `obp-card ${up ? '' : 'is-down'} ${active.length ? 'on-air' : ''}`,
+                    attrs: `data-obp="${escapeHtml(o.connection_name)}"`, click: 'obpOpen(this.closest(\'.conn-card\').dataset.obp)',
+                    avatar: `<span class="cc-av"><span class="cc-ico">↔️</span></span>`, call: o.connection_name, id: `NetID ${o.network_id}`,
+                    sub: o.protocol ? obpProto(o) : 'OpenBridge', state: st, chips: [],
+                    cells: [['Online', up && o.connected_at ? `<span data-connected-duration data-connected-at="${escapeHtml(o.connected_at)}">${upDur}</span>` : '<span class="muted">–</span>'],
+                            ['Server', fmtAddr(o.remote_address, o.remote_port)],
+                            ['Talkgroups', escapeHtml(tgTxt)],
+                            ['Today', t ? `<span class="rx">↓${n(t.rx)}</span> <span class="tx">↑${n(t.tx)}</span>` : '<span class="muted">–</span>']],
+                    slots: active.length ? `<div class="slots-compact">${active.map(obpStreamPill).join('')}</div>`
+                        : `<div class="slots-compact"><div class="sc-row idle"><span class="slot-status-badge idle">IDLE</span><span class="muted">no traffic</span></div></div>` });
             }).join('');
         }
 
@@ -5776,63 +5840,20 @@ PROTO_VER: ${fd ? 5 : 1}`;
                     (s.status === 'active' || s.status === 'hang_time')
                 ) || null;
                 
-                return `
-                    <div class="repeater-card" data-outbound-name="${escapeHtml(o.connection_name)}">
-                        <div class="repeater-info">
-                            <div class="${headerClass}">
-                                🔗 ${o.connection_name} (${o.radio_id})
-                            </div>
-                            <div class="repeater-meta">
-                                <!-- Row 1: Status/Server / (empty) / TS1 -->
-                                <div class="repeater-meta-item" ${o.status === 'error' ? 'style="color: #f87171;"' : ''}>
-                                    ${escapeHtml(statusText)}
-                                </div>
-                                <div></div>
-                                ${o.slot1_talkgroups === null ? `
-                                <div class="repeater-meta-item" title="All talkgroups allowed">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>All</span>
-                                </div>
-                                ` : Array.isArray(o.slot1_talkgroups) && o.slot1_talkgroups.length === 0 ? `
-                                <div class="repeater-meta-item" title="All talkgroups denied">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                ` : Array.isArray(o.slot1_talkgroups) && o.slot1_talkgroups.length > 0 ? `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">TS1 TGs:</span>
-                                    <span>${o.slot1_talkgroups.join(', ')}</span>
-                                </div>
-                                ` : '<div></div>'}
-                                
-                                <!-- Row 2: Connected / (empty) / TS2 -->
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">Connected:</span>
-                                    <span data-connected-duration data-connected-at="${o.connected_at || ''}">${connectedDuration}</span>
-                                </div>
-                                <div></div>
-                                ${o.slot2_talkgroups === null ? `
-                                <div class="repeater-meta-item" title="All talkgroups allowed">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>All</span>
-                                </div>
-                                ` : Array.isArray(o.slot2_talkgroups) && o.slot2_talkgroups.length === 0 ? `
-                                <div class="repeater-meta-item" title="All talkgroups denied">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>None</span>
-                                </div>
-                                ` : Array.isArray(o.slot2_talkgroups) && o.slot2_talkgroups.length > 0 ? `
-                                <div class="repeater-meta-item">
-                                    <span class="repeater-meta-label">TS2 TGs:</span>
-                                    <span>${o.slot2_talkgroups.join(', ')}</span>
-                                </div>
-                                ` : '<div></div>'}
-                            </div>
-                        </div>
-                        
-                        ${renderSlotsCompact(slot1Stream, slot2Stream)}
-                    </div>
-                `;
+                const up = o.status === 'connected';
+                const st = up ? (o.missed_acks > 0 ? ['warn', `${o.missed_acks} missed`] : ['ok', 'online'])
+                    : o.status === 'connecting' ? ['warn', 'connecting'] : ['bad', o.status === 'error' ? 'error' : 'offline'];
+                const server = (o.status === 'connected' || !statusText) ? fmtAddr(o.remote_address, o.remote_port)
+                    : `<span class="${o.status === 'error' ? 'cc-err' : 'muted'}">${escapeHtml(statusText)}</span>`;
+                return connCard({
+                    cls: up ? '' : 'is-down', kind: 'outbound', attrs: `data-outbound-name="${escapeHtml(o.connection_name)}"`,
+                    avatar: ccAvatar(avatarHtml(o.radio_id, o.connection_name, 34, ''), CONN_KIND.outbound), call: o.connection_name, id: o.radio_id,
+                    sub: 'Outbound link', state: st, chips: [],
+                    cells: [['Online', `<span data-connected-duration data-connected-at="${escapeHtml(up ? (o.connected_at || '') : '')}">${connectedDuration}</span>`],
+                            ['Server', server],
+                            ['TS1', ccTgs(o.slot1_talkgroups, (o.slot1_talkgroups || []).map(tg => ({ tgid: tg })), false)],
+                            ['TS2', ccTgs(o.slot2_talkgroups, (o.slot2_talkgroups || []).map(tg => ({ tgid: tg })), false)]],
+                    slots: renderSlotsCompact(slot1Stream, slot2Stream) });
             }).join('');
         }
         

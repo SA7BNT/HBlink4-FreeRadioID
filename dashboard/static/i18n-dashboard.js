@@ -238,6 +238,12 @@ N8Kit.i18n.add({
         'State of HTTPS, access and the DMR server, the installed version and updates, plus restart buttons.': 'Zustand von HTTPS, Zugang und DMR-Server, installierte Version und Updates, dazu Knöpfe zum Neustart.',
         'Server software': 'Server-Software', 'DMR server (HBlink4)': 'DMR-Server (HBlink4)', 'FreeRadioID login': 'FreeRadioID-Login', 'Registered IDs': 'Registrierte IDs',
 
+        // Connected systems (one grid, slim cards)
+        'Connected systems': 'Verbundene Systeme', 'No systems connected': 'Keine Systeme verbunden', 'TX MHz': 'TX MHz', 'Server': 'Server',
+        'Network outbound': 'Netzwerk ausgehend', 'Network inbound': 'Netzwerk eingehend', 'Unknown device': 'Unbekanntes Gerät', 'OpenBridge': 'OpenBridge',
+        'Repeater': 'Repeater', 'App': 'App', 'Outbound link': 'Ausgehende Verbindung', 'no traffic': 'kein Verkehr', 'waiting': 'wartet',
+        'Missed keep-alive pings': 'Verpasste Keep-Alive-Pings', 'FRID': 'FRID', 'Today': 'Heute', 'Talkgroups': 'Talkgroups',
+        'All talkgroups allowed (no configuration)': 'Alle Talkgroups erlaubt (keine Konfiguration)', 'All talkgroups denied (empty configuration)': 'Alle Talkgroups gesperrt (leere Konfiguration)',
         // APRS map page
         'Stations on the map': 'Stationen auf der Karte', 'Stations with a position from a DMR radio': 'Stationen mit Position aus einem DMR-Funkgerät', 'Live connection to the server': 'Live-Verbindung zum Server',
         'Connection to the APRS network': 'Verbindung zum APRS-Netz', 'Show or hide the station list': 'Stationsliste ein- oder ausblenden', 'Callsign, DMR ID or comment': 'Rufzeichen, DMR-ID oder Kommentar',
@@ -245,6 +251,7 @@ N8Kit.i18n.add({
         'Path': 'Pfad', 'Position': 'Position', 'Distance': 'Entfernung', 'Via': 'Über', 'Hotspot': 'Hotspot', 'Kind of GPS report': 'Art der GPS-Meldung', 'Talkgroup': 'Talkgroup',
     },
     rules: [
+        [/^(\d+) missed$/, '$1 verpasst'], [/^All · TS(\d)$/, 'Alle · TS$1'], [/^no keep-alive$/, 'kein Keep-Alive'],
         [/^(\d+)m ago$/, 'vor $1 Min.'], [/^(\d+)s ago$/, 'vor $1 s'], [/^(\d+)h ago$/, 'vor $1 Std.'], [/^(\d+)d ago$/, 'vor $1 T.'],
         [/^([\d.,]+ ?[mhs]+) · (\d+) speakers?$/, '$1 · $2 Sprecher'], [/^(\d+) names? sent by the radios$/, '$1 Namen von den Funkgeräten'],
         [/^(\d+) verified$/, '$1 bestätigt'], [/^(\d+) other$/, '$1 weitere'], [/^(\d+) guests?$/, '$1 Gäste'], [/^(\d+) duplicates? dropped$/, '$1 Duplikate verworfen'],
