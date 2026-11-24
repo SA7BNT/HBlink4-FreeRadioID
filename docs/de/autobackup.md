@@ -133,7 +133,8 @@ Zum Entschlüsseln muss das Paket `age` auf dem Ziel installiert sein.
 **Initial Setup:** `sudo ./scripts/setup.sh` starten, Wiederherstellung wählen und
 die verschlüsselte Datei angeben. Das Setup fragt den lokalen Pfad zur `.agekey`-Datei
 ab und prüft das entschlüsselte Archiv vor Änderungen am Ziel. Mit `SKIP_APT=1` muss
-`age` bereits installiert sein. Es gelten die bisherigen Größen- und Python-Versionsgrenzen.
+`age` bereits installiert sein. Es gelten die Größenlimits und die
+[Python-Kompatibilitätsprüfung](backup.md#zielserver-vorbereiten); Quell- und Ziel-Unterversion dürfen abweichen.
 
 **AutoBackup auf dem Klon:** `sudo ./scripts/install_autobackup.sh` ausführen.
 Der neue Server erhält einen eigenen Schlüssel und Zielunterordner. Übernommene

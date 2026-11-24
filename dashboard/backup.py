@@ -328,8 +328,8 @@ def unpack_archive(archive_path, destination):
             raise BackupError("Invalid unpacked size.")
         if not isinstance(manifest.get("python"), str) or not re.fullmatch(r"3\.\d+\.\d+", manifest["python"]):
             raise BackupError("Invalid Python version metadata.")
-        if tuple(map(int, manifest["python"].split(".")[:2])) != sys.version_info[:2]:
-            raise BackupError("Restore requires the same Python major/minor version as the source server.")
+        if tuple(map(int, manifest["python"].split(".")[:2])) < (3, 9) or sys.version_info[:2] < (3, 9):
+            raise BackupError("HBlink4 restore requires Python 3.9 or newer.")
         for name, info in files.items():
             p = destination / name
             if not isinstance(info, dict) or p.stat().st_size != info.get("size") or digest(p) != info.get("sha256"):
@@ -354,7 +354,12 @@ def unpack_archive(archive_path, destination):
 
 def summary(manifest):
     return {k: manifest[k] for k in ("format", "schema", "created_at", "version", "python", "platform", "unpacked_bytes")} | {
-        "files": len(manifest["files"]), "contains_secrets": True}
+        "files": len(manifest["files"]), "contains_secrets": True,
+        "target_python": platform.python_version(), "python_migration": python_migration(manifest)}
+
+
+def python_migration(manifest):
+    return tuple(map(int, manifest["python"].split(".")[:2])) != sys.version_info[:2]
 
 
 def helper_available(root, data_dir):
@@ -441,6 +446,75 @@ def _as_owner(cfg, args, **kw):
 def _own_tree(path, cfg):
     for item in [path, *path.rglob("*")]:
         os.chown(item, int(cfg["uid"]), int(cfg["gid"]), follow_symlinks=False)
+
+
+def check_python_sources(stage):
+    """Compile, never execute, restored program sources with the target Python."""
+    for directory in ("hblink4", "dashboard", "scripts"):
+        for path in (Path(stage) / "app" / directory).rglob("*.py"):
+            try:
+                compile(path.read_bytes(), str(path.relative_to(stage)), "exec", dont_inherit=True)
+            except (SyntaxError, ValueError) as error:
+                target = f"{sys.version_info.major}.{sys.version_info.minor}"
+                raise BackupError(f"Programmdatei {path.relative_to(stage)} ist mit Ziel-Python {target} nicht kompatibel: {error}") from None
+
+
+def migration_requirements(text):
+    """Keep application pins; bootstrap tools must belong to the target Python."""
+    lines = []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9.!+_-]+)", line.strip())
+        if not match:
+            raise BackupError("Ungültige gespeicherte Python-Paketversion. Nur veröffentlichte Name==Version-Einträge sind übertragbar.")
+        if match[1].lower() not in ("pip", "setuptools", "wheel"):
+            lines.append(line.strip())
+    return "\n".join(lines) + "\n"
+
+
+def prepare_python_packages(cfg, stage, prepared):
+    """Build and test saved pins before stopping services, as the service user.
+
+    Keep a wheelhouse at its final control-directory path across the swap. The
+    final venv is created at root/venv, since virtualenvs cannot be relocated.
+    """
+    check_python_sources(stage)
+    code = r'''
+import pathlib, shutil, subprocess, sys
+folder = pathlib.Path(sys.argv[1])
+folder.mkdir(mode=0o700)
+requirements = folder / 'requirements.txt'
+requirements.write_text(sys.stdin.read())
+def run(args):
+    result = subprocess.run(list(map(str, args)), stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True, errors='replace')
+    if result.returncode:
+        raise SystemExit(result.stdout[-2000:])
+run([sys.executable, '-m', 'venv', folder / 'probe'])
+python = folder / 'probe/bin/python'
+wheels = folder / 'wheels'
+wheels.mkdir()
+if requirements.read_text().strip():
+    run([python, '-m', 'pip', 'wheel', '--wheel-dir', wheels, '-r', requirements])
+    run([python, '-m', 'pip', 'install', '--no-index', '--find-links', wheels, '-r', requirements])
+run([python, '-m', 'pip', 'check'])
+shutil.rmtree(folder / 'probe')
+'''
+    try:
+        _as_owner(cfg, [sys.executable, "-I", "-c", code, str(prepared)],
+                  input=migration_requirements((Path(stage) / "metadata/requirements-frozen.txt").read_text()), timeout=1800)
+    except (BackupError, subprocess.SubprocessError) as error:
+        target = f"{sys.version_info.major}.{sys.version_info.minor}"
+        raise BackupError(f"Paketprüfung für Ziel-Python {target} fehlgeschlagen. Die gesicherten Paketversionen müssen auf dem Ziel installierbar sein. {error}") from None
+
+
+def cleanup_prepared_python(cfg, prepared):
+    # This directory is writable by the service user. Never follow/remove its
+    # contents as root, including on the failure/rollback path.
+    with contextlib.suppress(Exception):
+        _as_owner(cfg, [sys.executable, "-I", "-c",
+                       "import shutil,sys; shutil.rmtree(sys.argv[1])", str(prepared)], timeout=60)
 
 
 class InstallationSwap:
@@ -537,6 +611,7 @@ def restore_worker(cfg):
 
         status("running", "Checking backup before stopping services")
         stopped = False
+        prepared = None
         rollback_archive = control / ("before-restore-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + ".tar.gz")
         with tempfile.TemporaryDirectory(prefix="hblink4-restore-", dir=root.parent) as tmp:
             work, stage = Path(tmp), Path(tmp) / "stage"
@@ -555,6 +630,13 @@ def restore_worker(cfg):
                 adapt_paths(stage, manifest, root, data)
                 if shutil.disk_usage(root).free < manifest["unpacked_bytes"] + 1024**3:
                     raise BackupError("Not enough free disk space for a safe restore.")
+                if python_migration(manifest):
+                    target = f"{sys.version_info.major}.{sys.version_info.minor}"
+                    status("running", f"Python {manifest['python']} → {target}: Paket- und Codeprüfung vor dem Stoppen der Dienste")
+                    prepared = control / ("restore-python-" + uuid.uuid4().hex)
+                    prepare_python_packages(cfg, stage, prepared)
+                    if shutil.disk_usage(root).free < manifest["unpacked_bytes"] + 1024**3:
+                        raise BackupError("Not enough free disk space after preparing Python packages.")
                 # Stopping both services flushes in-memory state before making
                 # the independent, downloadable recovery archive.
                 status("running", "Stopping services and creating the automatic recovery backup")
@@ -570,12 +652,19 @@ def restore_worker(cfg):
                 status("running", "Rebuilding the Python environment with saved package versions")
                 _as_owner(cfg, [sys.executable, "-m", "venv", str(root / "venv")], timeout=120)
                 frozen = stage / "metadata/requirements-frozen.txt"
+                if prepared:
+                    target_requirements = work / "requirements-target.txt"
+                    target_requirements.write_text(migration_requirements(frozen.read_text()))
+                    frozen = target_requirements
                 requirements = control / "restore-requirements.txt"
                 with open(frozen, "rb") as src:
                     _as_owner(cfg, [sys.executable, "-I", str(Path(__file__).resolve()),
                                     "--write-file", requirements.name], stdin=src)
                 try:
-                    _as_owner(cfg, [str(root / "venv/bin/python"), "-m", "pip", "install", "-r", str(requirements)], timeout=1800)
+                    options = ["--no-index", "--find-links", str(prepared / "wheels")] if prepared else []
+                    _as_owner(cfg, [str(root / "venv/bin/python"), "-m", "pip", "install", *options,
+                                    "-r", str(requirements)], timeout=1800)
+                    _as_owner(cfg, [str(root / "venv/bin/python"), "-m", "pip", "check"], timeout=60)
                 finally:
                     requirements.unlink(missing_ok=True)
                 bundle = stage / "metadata/repository.bundle"
@@ -639,6 +728,9 @@ def restore_worker(cfg):
                     status("failed", str(error) + recovery_error,
                            recovery=rollback_archive.name if rollback_archive.exists() else "")
                 raise
+            finally:
+                if prepared is not None:
+                    cleanup_prepared_python(cfg, prepared)
 
 def main():
     parser = argparse.ArgumentParser(description="HBlink4 isolated restore helper")

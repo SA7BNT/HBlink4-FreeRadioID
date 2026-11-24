@@ -3183,7 +3183,7 @@
                 <div class="ap-card"><h3>Backup wiederherstellen</h3>
                     <p>Die Wiederherstellung ersetzt diese HBlink4-Installation. Vorher wird automatisch ein Backup des aktuellen Zustands erstellt.
                     Bei einem Fehler wird der vorherige Zustand zurückgespielt. Anschließend meldest du dich mit dem Benutzerkonto des Quellservers an.</p>
-                    <p>Der Zielserver benötigt Linux mit systemd und dieselbe Python-Haupt-/Nebenversion wie der Quellserver.
+                    <p>Der Zielserver benötigt Linux mit systemd und Python ab 3.9. Bei abweichender Python-Version werden Code und gespeicherte Paketversionen vor dem Stoppen der Dienste auf Kompatibilität geprüft.
                     Beide Dienste werden während der Wiederherstellung unterbrochen. Das kann durch die Installation der Python-Pakete mehrere Minuten dauern.</p>
                     ${st.can_restore ? '' : `<p class="form-error">Der Diensthelfer fehlt. Einmal im HBlink4-Verzeichnis auf dem Zielserver ausführen:</p>
                         <pre><code>${escapeHtml(st.install_command)}</code></pre><p>Danach diesen Bereich aktualisieren.</p>`}
@@ -3247,7 +3247,8 @@
                 backupPreview = await api('POST', '/api/admin/backup/inspect', undefined, file, headers);
                 const b = backupPreview.backup;
                 document.getElementById('backupPreview').textContent = `Geprüft: ${new Date(b.created_at).toLocaleString()} · Version ${b.version.version || b.version.label || 'unbekannt'} · Python ${b.python} · ${b.files} Dateien · ${backupSize(b.unpacked_bytes)} entpackt`;
-                progress.textContent = 'Prüfsummen, Dateipfade und Datenbanken sind gültig. Es wurde noch nichts wiederhergestellt.';
+                progress.textContent = 'Prüfsummen, Dateipfade und Datenbanken sind gültig. Es wurde noch nichts wiederhergestellt.' +
+                    (b.python_migration ? ` Python im Backup: ${b.python}; Ziel: ${b.target_python}. Vor dem Stoppen der Dienste werden Code und gespeicherte Paketversionen mit Ziel-Python geprüft.` : '');
                 restoreBtn.disabled = restoreBtn.dataset.helper !== 'yes';
             } catch (e) { progress.textContent = e.message; }
             finally { btn.disabled = false; }

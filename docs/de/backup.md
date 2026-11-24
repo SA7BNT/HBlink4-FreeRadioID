@@ -61,8 +61,24 @@ Auf dem Ziel muss eine funktionierende HBlink4-Installation mit dieser Backup-Fu
 und den Diensten `hblink4.service` und `hblink4-dash.service` vorhanden sein.
 Beide Dienste benötigen dasselbe Dienstkonto, dasselbe Installationsverzeichnis als
 `WorkingDirectory` und die virtuelle Umgebung unter `venv/bin/python`.
-Die System-Python-Version und beide HBlink4-Umgebungen müssen in **Haupt-/Nebenversion**
-übereinstimmen, beispielsweise Python 3.11 auf Quelle und Ziel.
+Quelle und Ziel benötigen **Python ab 3.9**, dürfen aber verschiedene Unterversionen
+verwenden, beispielsweise Quelle 3.11 und Ziel 3.13. Bei einem Versionswechsel prüft
+der Helfer vor dem Stoppen der Dienste den gesicherten Programmcode mit Ziel-Python.
+Er baut außerdem die gespeicherten Anwendungspakete in einer separaten Testumgebung,
+installiert sie und führt `pip check` aus. Die Paketversionen der Anwendung bleiben
+erhalten. Die Installationswerkzeuge `pip`, `setuptools` und `wheel` werden nicht auf
+die Versionen des Quellservers festgelegt, sondern für die Zielumgebung vorbereitet.
+
+Sind Code oder Paketversionen inkompatibel, bricht die Prüfung ab, während die
+bisherigen Dienste weiterlaufen. Die Meldung nennt die betroffene Datei oder den
+Paketfehler. Dann eine dazu passende Python-Version auf dem Ziel verwenden oder
+den Quellstand vor einem neuen Backup aktualisieren. Nach erfolgreicher Prüfung
+wird die endgültige Umgebung am Zielpfad neu angelegt und aus den vorbereiteten
+Paketen ohne erneuten Download installiert. Eine vorhandene virtuelle Umgebung
+wird nicht kopiert oder verschoben.
+
+**Auf dem Ziel selbst** müssen System-Python und die HBlink4-Dienstumgebungen weiterhin
+dieselbe Haupt-/Nebenversion verwenden; das prüft der Installer des Diensthelfers.
 
 Im HBlink4-Verzeichnis des Zielservers einmal ausführen:
 
@@ -92,10 +108,13 @@ als Referenz gesichert, aber aus einem hochgeladenen Archiv niemals als root aus
 1. Auf dem **Zielserver** als dessen bisheriger Superadmin **Admin → Backup** öffnen.
 2. Archiv auswählen, bei `.tar.gz.age` zusätzlich den separaten Wiederherstellungsschlüssel
    angeben und **Datei hochladen und prüfen** anklicken. Dateipfade, Dateitypen,
-   Prüfsummen, Größen, Konfigurationen, Datenbanken und Python-Version werden geprüft.
+   Prüfsummen, Größen, Konfigurationen, Datenbanken und Python-Metadaten werden geprüft.
+   Eine abweichende Quell-/Ziel-Python-Version erscheint in der Vorschau; die Code- und
+   Paketprüfung folgt nach Bestätigung, bevor die laufenden Dienste unterbrochen werden.
 3. Version, Datum und Dateianzahl in der Vorschau kontrollieren. Das aktuelle Passwort des
    **Zielservers** eingeben, `RESTORE` eintragen und die Wiederherstellung starten.
-4. Der unabhängige Diensthelfer stoppt beide Dienste und erzeugt zunächst ein Backup des
+4. Bei abweichender Python-Version bereitet der unabhängige Diensthelfer zunächst die
+   kompatible Zielumgebung vor. Danach stoppt er beide Dienste und erzeugt ein Backup des
    Zielzustands. Dann ersetzt er Programm und Daten, passt installationslokale Pfade an,
    baut die Python-Umgebung neu auf und startet die Dienste. Das kann mehrere Minuten dauern.
 5. Seite neu öffnen und mit dem **Konto aus dem Quell-Backup** anmelden. Alle importierten
@@ -129,6 +148,8 @@ einer automatischen Rücknahme. Vor einer erneuten Wiederherstellung zuerst den 
 
 Die automatisierten Tests prüfen echte Archiv-/SQLite-Rundläufe, WAL-Inhalte, Kontenübernahme,
 Pfadanpassung, ungültige Archive, Berechtigungen, Upload-Veränderungen und die Rücknahme von
-Programm, Daten und Python-Umgebung nach simulierten Dienstfehlern. systemd und die
-Paketinstallation werden in diesen Tests ersetzt; eine produktive Wiederherstellung auf
+Programm, Daten und Python-Umgebung nach simulierten Dienstfehlern. Die systemd-
+Dienststeuerung wird in diesen Tests ersetzt. Zusätzliche Integrationstests erzeugen
+Archive unter Python 3.11 und 3.14 und prüfen den Paketaufbau sowie die Installation
+in der Zielumgebung ohne Paketindex. Eine produktive Wiederherstellung auf
 einem zweiten Linux-Server muss vor dem ersten Migrationseinsatz zusätzlich erprobt werden.

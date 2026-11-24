@@ -12,6 +12,10 @@ leaves its bootstrap stopped and disabled.
 
 Encrypted `.tar.gz.age` archives are accepted too; setup asks for the separate
 recovery key before validating or changing the target. With `SKIP_APT=1`, install `age` first.
+Different Python minors (3.9+) are supported: before stopping services, the worker
+compiles the restored program and builds/installs the saved application pins in a
+test environment. Bootstrap tools use target-compatible versions. Prepared wheels
+are reused for the final venv; incompatible code/packages abort before replacement.
 
 See **[Initial setup](../docs/de/installation.md#vorhandenes-backup-beim-initial-setup-einspielen)**.
 The archive should be outside the checkout. `SKIP_SERVICES=1` is incompatible

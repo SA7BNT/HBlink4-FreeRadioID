@@ -6,6 +6,12 @@ Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
 ## Noch nicht veröffentlicht
 
+### Wiederherstellung mit unterschiedlichem Python
+
+- Der Initial Restore und die Archivprüfung im Dashboard lehnen Backups nicht mehr pauschal wegen einer anderen Python-Unterversion ab. Quelle und Ziel benötigen Python ab 3.9.
+- Bei einem Versionswechsel prüft der Diensthelfer vor dem Stoppen vorhandener Dienste den Programmcode und baut/installiert die gesicherten Anwendungspakete in einer Testumgebung. Inkompatibilitäten brechen vor dem Ersetzen ab; vorbereitete Pakete werden für die endgültige Umgebung wiederverwendet.
+- Die Anwendungspakete behalten ihre Versionen. pip/setuptools/wheel werden für Ziel-Python vorbereitet; Quell- und Zielversion sowie die zusätzliche Prüfung erscheinen in der Vorschau. Rücknahme und Wiederherstellungsbackup bleiben erhalten.
+
 ### Gespeicherte Backups löschen
 
 - Admin → Backup bietet für jede gespeicherte Sicherung eine Löschschaltfläche mit Bestätigung.

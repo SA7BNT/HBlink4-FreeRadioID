@@ -102,7 +102,9 @@ class SetupRestore:
         self.say("\nBackup geprüft – noch nicht eingespielt:")
         self.say(f"  Erstellt: {manifest['created_at']}")
         self.say(f"  Version: {manifest['version'].get('version') or manifest['version'].get('label') or 'unbekannt'}")
-        self.say(f"  Python: {manifest['python']} · Dateien: {len(manifest['files'])}")
+        self.say(f"  Python im Backup: {manifest['python']} · Ziel-Python: {sys.version_info.major}.{sys.version_info.minor} · Dateien: {len(manifest['files'])}")
+        if backup.python_migration(manifest):
+            self.say("  Python-Version weicht ab: Code und gespeicherte Paketversionen werden vor dem Stoppen der Dienste mit Ziel-Python geprüft.")
         self.say(f"  Ziel: {self.root} · Dienstkonto: {account}")
         self.say(f"  Anmeldung nachher mit dem Quellkonto: {admin or '(Konto aus dem Backup)'}")
         self.say("Programm, Einstellungen, Benutzer und Daten werden aus dem Backup übernommen.")

@@ -3,8 +3,10 @@ import io
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -77,6 +79,33 @@ class BackupFixture(unittest.TestCase):
 
 
 class TestArchives(BackupFixture):
+    def test_other_python_minor_is_inspectable_and_reported_in_preview(self):
+        self.create()
+        source = '3.11.9' if sys.version_info[:2] != (3, 11) else '3.12.1'
+        def change_python(name, content):
+            if name == 'manifest.json':
+                value = json.loads(content)
+                value['python'] = source
+                return json.dumps(value).encode()
+            return content
+        self.rewrite(change_python)
+        _, manifest = self.unpack()
+        preview = backup.summary(manifest)
+        self.assertEqual(preview['python'], source)
+        self.assertTrue(preview['python_migration'])
+        self.assertEqual(preview['target_python'], backup.platform.python_version())
+
+    def test_python_below_supported_minimum_is_rejected(self):
+        self.create()
+        def old_python(name, content):
+            if name == 'manifest.json':
+                value = json.loads(content); value['python'] = '3.8.20'
+                return json.dumps(value).encode()
+            return content
+        self.rewrite(old_python)
+        with self.assertRaisesRegex(backup.BackupError, '3.9'):
+            self.unpack()
+
     def test_full_roundtrip_copies_wal_users_code_branding_and_data(self):
         self.auth._db.execute("INSERT INTO audit(ts,username,action) VALUES(?,?,?)", (time.time(), "source", "wal-only"))
         aprs = sqlite3.connect(self.data / "aprs.db")
@@ -254,8 +283,15 @@ class TestDirectoryTransaction(unittest.TestCase):
 
 class TestRestoreWorker(BackupFixture):
     """Exercise real filesystem swaps and DB recovery; emulate systemd/pip only."""
-    def prepare_request(self):
+    def prepare_request(self, source_python=None):
         self.create()
+        if source_python:
+            def change_python(name, content):
+                if name == 'manifest.json':
+                    value = json.loads(content); value['python'] = source_python
+                    return json.dumps(value).encode()
+                return content
+            self.rewrite(change_python)
         token = "a" * 32
         upload = self.control / (token + ".tar.gz")
         upload.write_bytes(self.archive.read_bytes())
@@ -264,9 +300,17 @@ class TestRestoreWorker(BackupFixture):
         self.auth.sync_superadmin({"username": "destination", "password": "destination-secret"})
         return {"root": str(self.root), "data_dir": str(self.data), "uid": os.getuid(), "gid": os.getgid(), "home": str(self.base)}
 
-    def run_worker(self, cfg, *, fail_start=False, restart_loop=False):
+    def run_worker(self, cfg, *, fail_start=False, restart_loop=False, fail_prepare=False):
         starts = []
         self.system_commands = []
+        self.owner_commands = []
+        self.prepared_paths = []
+        def prepare(cfg, stage, prepared):
+            self.assertFalse(any(cmd[:2] == ['systemctl', 'stop'] for cmd in self.system_commands))
+            self.prepared_paths.append(prepared)
+            (prepared / 'wheels').mkdir(parents=True)
+            if fail_prepare:
+                raise backup.BackupError('incompatible saved package')
         def commands(args, **kw):
             self.system_commands.append(args)
             if args[:2] == ["systemctl", "start"]:
@@ -277,6 +321,10 @@ class TestRestoreWorker(BackupFixture):
                 return "1"
             return ""
         def owner_commands(cfg, args, **kw):
+            self.owner_commands.append(args)
+            if len(args) > 3 and 'shutil.rmtree(sys.argv[1])' in args[3]:
+                shutil.rmtree(args[-1])
+                return ''
             if args[-1].endswith("setup-bootstrap.json"):
                 Path(args[-1]).unlink(missing_ok=True)
                 return ""
@@ -297,6 +345,7 @@ class TestRestoreWorker(BackupFixture):
         with patch.object(backup, "LOCK_PATH", str(self.base / "worker.lock")), \
              patch.object(backup, "command", side_effect=commands), \
              patch.object(backup, "_as_owner", side_effect=owner_commands), \
+             patch.object(backup, "prepare_python_packages", side_effect=prepare), \
              patch.object(backup.time, "sleep"):
             # The snapshot mock still needs the real stdlib metadata command.
             real_create = backup.create_archive
@@ -309,6 +358,38 @@ class TestRestoreWorker(BackupFixture):
                 return owner_commands(cfg, args, **kw)
             with patch.object(backup, "_as_owner", side_effect=snapshot_command):
                 backup.restore_worker(cfg)
+
+    def test_cross_minor_restore_uses_preflight_wheels_and_cleans_probe(self):
+        source = '3.11.9' if sys.version_info[:2] != (3, 11) else '3.12.1'
+        cfg = self.prepare_request(source)
+        self.run_worker(cfg)
+        self.assertEqual(len(self.prepared_paths), 1)
+        self.assertFalse(self.prepared_paths[0].exists())
+        install = next(args for args in self.owner_commands if 'install' in args)
+        self.assertIn('--no-index', install)
+        self.assertIn('--find-links', install)
+        self.assertTrue(any(args[-2:] == ['pip', 'check'] for args in self.owner_commands))
+        self.assertEqual(json.loads((self.control / 'restore-status.json').read_text())['state'], 'complete')
+
+    def test_incompatible_python_packages_never_stop_or_replace_destination(self):
+        source = '3.11.9' if sys.version_info[:2] != (3, 11) else '3.12.1'
+        cfg = self.prepare_request(source)
+        with self.assertRaisesRegex(backup.BackupError, 'incompatible'):
+            self.run_worker(cfg, fail_prepare=True)
+        self.assertFalse(any(cmd[0] == 'systemctl' for cmd in self.system_commands))
+        self.assertEqual((self.root / 'hblink4/hblink.py').read_text(), '# destination before restore\n')
+        self.assertTrue((self.root / 'venv/excluded').exists())
+        self.assertFalse(self.prepared_paths[0].exists())
+        self.assertEqual(json.loads((self.control / 'restore-status.json').read_text())['state'], 'failed')
+
+    def test_cross_minor_start_failure_rolls_back_original_environment(self):
+        source = '3.11.9' if sys.version_info[:2] != (3, 11) else '3.12.1'
+        cfg = self.prepare_request(source)
+        with self.assertRaisesRegex(backup.BackupError, 'simulated'):
+            self.run_worker(cfg, fail_start=True)
+        self.assertTrue((self.root / 'venv/excluded').exists())
+        self.assertEqual((self.root / 'hblink4/hblink.py').read_text(), '# destination before restore\n')
+        self.assertFalse(self.prepared_paths[0].exists())
 
     def test_success_restores_source_account_and_creates_destination_recovery(self):
         cfg = self.prepare_request()
