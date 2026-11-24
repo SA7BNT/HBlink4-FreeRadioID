@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="/static/n8-theme.css">
     <script src="/static/n8-theme.js"></script>
     <link rel="stylesheet" href="/static/n8-light.css" id="n8LightCss">
+    <link rel="stylesheet" href="/static/n8-kit.css">
+    <script src="/static/n8-kit.js"></script>
+    <script src="/static/i18n-dashboard.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -2407,7 +2410,9 @@
             .status-strip .connection-status .hdr-lbl, .status-strip .audio-toggle .hdr-lbl, .status-strip .ss-info { display: none !important; }
             .user-chip .u-name { display: none; }
             header .main-tabs .tab-admin .t-short { display: inline; }
+            .status-strip .hdr-sl { display: inline !important; }
         }
+        .hdr-sl { display: none; }
     </style>
 </head>
 <body>
@@ -2451,7 +2456,7 @@
         <nav class="links-bar" id="linksBar" hidden></nav>
 
         <!-- Update notice: only for logged-in admins, when GitHub has a newer version -->
-        <div class="update-banner" id="updateBanner" hidden></div>
+        <div class="n8-upd" id="updateBanner" hidden></div>
 
         <!-- Announcement Banner (hidden by default, shown if announcement text exists) -->
         <div id="announcementBanner" class="announcement-banner" style="display: none;">
@@ -4520,20 +4525,13 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
         async function sysUpdCheck(force) {
             const el = document.getElementById('sysUpd'); if (!el) return;
-            if (force) el.innerHTML = infoRow('GitHub', '<span class="muted">checking…</span>');
             const u = await checkUpdate(force);
             if (!u) { el.innerHTML = infoRow('GitHub', '<span class="auth-guest">not reachable</span>'); return; }
-            const state_ = !u.enabled ? '<span class="muted">check switched off</span>'
-                : u.error ? `<span class="auth-guest" title="${escapeHtml(u.error)}">check failed</span>`
-                : u.available ? `<span class="auth-guest">${u.behind} new ${u.behind === 1 ? 'change' : 'changes'}</span>`
-                : '<span class="auth-ok">up to date</span>';
-            el.innerHTML = infoRow('GitHub', state_) +
-                (u.latest ? infoRow('Newest there', escapeHtml(`${u.remote_version ? 'v' + u.remote_version + ' · ' : ''}${u.latest.short} · ${fmtDay(u.latest.date)}`)) : '') +
-                (u.checked_at ? infoRow('Checked', escapeHtml(new Date(u.checked_at * 1000).toLocaleString('en-GB'))) : '') +
-                (u.enabled ? infoRow('Restart after update', u.sudo_restart ? 'systemctl via sudo' : u.systemd ? 'by systemd (Restart=always)' : 'by hand') : '') +
-                (u.enabled ? infoRow('Update now', u.can_install ? '<span class="auth-ok">allowed for you</span>'
-                    : `<span class="muted">${u.install_role === 'nobody' ? 'switched off' : 'superadmin only'}</span>`) : '');
-            const b = document.getElementById('sysUpdNow'); if (b) b.hidden = !(u.available && u.can_install);
+            const k = kitUpdateState(u);
+            k.extra = [['Branch', escapeHtml(u.branch || '—')],
+                       ['Restart after update', u.sudo_restart ? 'systemctl via sudo' : u.systemd ? 'by systemd (Restart=always)' : 'by hand'],
+                       ['Update now', u.can_install ? '<span class="auth-ok">allowed for you</span>' : `<span class="muted">${u.install_role === 'nobody' ? 'switched off' : 'superadmin only'}</span>`]];
+            N8Kit.update.panel(el, k, { onCheck: () => sysUpdCheck(true), onInstall: () => openUpdateDialog() });
         }
 
         async function adminSystem() {
@@ -4558,16 +4556,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
                     ${infoRow('FreeRadioID IDs', s.frid_ids)}
                     ${infoRow('Avatars cached', s.frid_avatars)}
                 </section>
-                <section class="tile" id="sysVersion"><h3>⬆️ Version</h3>
-                    ${infoRow('Installed', escapeHtml(`v${(s.build || {}).version || '?'} · ${(s.build || {}).short || 'no git'}`))}
-                    ${infoRow('Based on', escapeHtml(`HBlink4 ${(s.build || {}).base || '?'}`))}
-                    ${infoRow('Date', escapeHtml(fmtDay((s.build || {}).date) || '—'))}
-                    ${infoRow('Branch', escapeHtml((s.build || {}).branch || '—'))}
+                <section class="tile" id="sysVersion"><h3>⬆️ Updates</h3>
                     <div id="sysUpd">${infoRow('GitHub', '<span class="muted">checking…</span>')}</div>
-                    <div class="set-actions" style="justify-content:flex-start;margin-top:8px">
-                        <button class="btn-s" onclick="sysUpdCheck(true)">🔍 Check now</button>
-                        <button class="btn-s upd-now" id="sysUpdNow" hidden onclick="openUpdateDialog()">⬇️ Update now</button>
-                    </div>
                 </section></div>
                 <div class="set-actions" style="justify-content:flex-start">
                     <button class="btn-s" onclick="adminTab('settings')">⚙️ Change settings</button>
@@ -4864,7 +4854,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const el = document.getElementById('wsStatus');
             
             if (connected) {
-                el.innerHTML = 'Live<span class="hdr-lbl">&nbsp;data</span>';
+                el.innerHTML = '<span class="hdr-lbl">Live data</span><span class="hdr-sl">Live</span>';
                 el.className = 'connection-status clickable connected';
                 el.title = 'Live Data: Browser connected to the dashboard providing real-time updates - Click to reload';
             } else {
@@ -4878,11 +4868,11 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const el = document.getElementById('hblinkStatus');
             
             if (connected) {
-                el.innerHTML = 'DMR<span class="hdr-lbl">&nbsp;server</span>';
+                el.innerHTML = '<span class="hdr-lbl">DMR server</span><span class="hdr-sl">DMR</span>';
                 el.className = 'connection-status connected';
                 el.title = 'DMR Server: Dashboard is connected to the DMR server';
             } else {
-                el.innerHTML = 'DMR<span class="hdr-lbl">&nbsp;server offline</span>';
+                el.innerHTML = '<span class="hdr-lbl">DMR server offline</span><span class="hdr-sl">DMR</span>';
                 el.className = 'connection-status warning';
                 el.title = 'DMR Server: Dashboard is not connected to the DMR server';
                 
@@ -5018,7 +5008,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
 
         function renderTgChips(entries) {
             return entries.map(e => e.translated
-                ? `<span class="translated-tg" title="${e.title}${tgName(e.tgid) ? ' · ' + escapeHtml(tgName(e.tgid)) : ''}">${e.tgid}</span>`
+                ? `<span class="translated-tg" title="${escapeHtml(e.title)}${tgName(e.tgid) ? ' · ' + escapeHtml(tgName(e.tgid)) : ''}">${e.tgid}</span>`
                 : (tgName(e.tgid) ? `<span title="${escapeHtml(tgName(e.tgid))}" style="text-decoration: underline dotted rgba(255,255,255,.35); text-underline-offset: 3px;">${e.tgid}</span>` : `${e.tgid}`)
             ).join(', ');
         }
@@ -5077,7 +5067,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             <div class="card-title-row">
                                 <span onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">${avatarHtml(r.repeater_id, r.callsign, 34)}</span>
                                 <div class="${headerClass}" onclick="showRepeaterDetails(${r.repeater_id})" title="Click for detailed information">
-                                    ${icon} ${xlateBadge}${r.callsign || 'Unknown'} <span class="rid">${r.repeater_id}</span>
+                                    ${icon} ${xlateBadge}${escapeHtml(r.callsign || 'Unknown')} <span class="rid">${escapeHtml(r.repeater_id)}</span>
                                 </div>
                                 ${onAir(r) ? '<span class="on-air-pill"><span class="on-air-dot"></span>ON AIR</span>' : ''}
                             </div>
@@ -5088,7 +5078,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             <div class="repeater-meta">
                                 <!-- Row 1: Location / TX / TS1 -->
                                 <div class="repeater-meta-item">
-                                    ${r.location || 'Location unknown'}
+                                    ${escapeHtml(r.location || 'Location unknown')}
                                 </div>
                                 ${r.tx_freq ? `
                                 <div class="repeater-meta-item">
@@ -5299,7 +5289,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
             // Talker Alias (sent by the radio) replaces the database callsign when present
             const callsign = stream?.talker_alias
                 ? `${escapeHtml(stream.talker_alias)} <span class="ta-tag" title="Talker Alias${stream.callsign ? ' · database: ' + escapeHtml(stream.callsign) : ''}">TA</span>`
-                : (stream?.callsign || '—');
+                : escapeHtml(stream?.callsign || '—');
             
             return `
                 <div class="slot ${status}">
@@ -5324,7 +5314,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                         <div class="slot-col-value ${stream ? '' : 'empty'}" 
                              data-stream-duration 
                              data-start-time="${stream?.start_time || ''}" 
-                             data-status="${stream?.status || ''}" 
+                             data-status="${escapeHtml(stream?.status || '')}" 
                              data-final-duration="${stream?.duration || ''}">${duration}</div>
                     </div>
                     <div class="slot-col">
@@ -5387,7 +5377,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             <div class="obp-head">
                                 <div class="${headerClass}">↔️ ${escapeHtml(o.connection_name)}
                                     <span class="rid">NetID ${o.network_id}</span>
-                                    ${lk.cls !== 'up' ? `<span class="obp-state ${lk.cls}" title="${lk.hint}"><i></i>${lk.label}</span>` : ''}</div>
+                                    ${lk.cls !== 'up' ? `<span class="obp-state ${escapeHtml(lk.cls)}" title="${escapeHtml(lk.hint)}"><i></i>${escapeHtml(lk.label)}</span>` : ''}</div>
                                 <button type="button" class="obp-more" onclick="obpOpen('${escapeHtml(o.connection_name)}')">Details ›</button>
                             </div>
                             <div class="obp-meta">
@@ -5528,7 +5518,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 ) || null;
                 
                 return `
-                    <div class="repeater-card" data-outbound-name="${o.connection_name}">
+                    <div class="repeater-card" data-outbound-name="${escapeHtml(o.connection_name)}">
                         <div class="repeater-info">
                             <div class="${headerClass}">
                                 🔗 ${o.connection_name} (${o.radio_id})
@@ -5536,7 +5526,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                             <div class="repeater-meta">
                                 <!-- Row 1: Status/Server / (empty) / TS1 -->
                                 <div class="repeater-meta-item" ${o.status === 'error' ? 'style="color: #f87171;"' : ''}>
-                                    ${statusText}
+                                    ${escapeHtml(statusText)}
                                 </div>
                                 <div></div>
                                 ${o.slot1_talkgroups === null ? `
@@ -5615,8 +5605,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 return `
                     <div class="event">
                         <div class="time">${time}</div>
-                        <span class="type">${e.type}</span>
-                        <span>${dataStr}</span>
+                        <span class="type">${escapeHtml(e.type)}</span>
+                        <span>${escapeHtml(dataStr)}</span>
                     </div>
                 `;
             }).join('');
@@ -6541,7 +6531,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 && (s.status === 'active' || s.status === 'hang_time'));
 
             let html = `<div class="card obp-hero">
-                <div><h3>↔️ ${escapeHtml(o.connection_name)} <span class="obp-state ${lk.cls}" title="${lk.hint}"><i></i>${lk.label}</span></h3>
+                <div><h3>↔️ ${escapeHtml(o.connection_name)} <span class="obp-state ${escapeHtml(lk.cls)}" title="${escapeHtml(lk.hint)}"><i></i>${escapeHtml(lk.label)}</span></h3>
                     ${o.description ? `<div class="desc">${escapeHtml(o.description)}</div>` : ''}</div>
                 <div></div>
                 <div class="obp-facts">
@@ -7151,7 +7141,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 el.hidden = false;
                 el.className = 'connection-status ss-aprs ' + (ok || off ? 'connected' : 'warning');
                 const n = (st.counts && st.counts.active_1h) || 0;
-                el.innerHTML = `APRS<span class="hdr-lbl">&nbsp;${off ? 'local' : ok ? 'online' : 'connecting'} · ${n} stations</span>`;
+                el.innerHTML = `<span class="hdr-lbl">APRS ${off ? 'local' : ok ? 'online' : 'connecting'} · ${n} stations</span><span class="hdr-sl">APRS</span>`;
                 el.title = off ? 'APRS: map and DAPRS run locally (no uplink)' : ok ? 'APRS: connected to the APRS network' : 'APRS: uplink not connected';
             } catch (e) { el.hidden = true; }
         }
@@ -7379,43 +7369,27 @@ PROTO_VER: ${fd ? 5 : 1}`;
             return `<div class="${cls}">` + notes.map(n => `<div class="rn"><div class="rn-head">v${escapeHtml(n.version)}${n.date ? ` <span class="muted">· ${escapeHtml(n.date)}</span>` : ''}</div>${mdLite(n.body)}</div>`).join('') + '</div>';
         }
 
-        function updDismissed(sha) { try { return localStorage.getItem('n8.updateDismissed') === sha; } catch (e) { return false; } }
+        // ---------- Updates: banner, dialog and progress from the N8 Kit (same in all N8schicht pages) ----------
+        function kitUpdateState(u) {
+            if (!u) return null;
+            const cur = u.local ? `v${u.local.version || '?'} · ${u.local.short || '?'}` : '?';
+            const lat = u.latest ? (u.remote_version ? `v${u.remote_version} · ${u.latest.short}` : u.latest.short) : '';
+            const notes = releaseNotesHtml(u.release_notes) || ((u.commits || []).length ? '<ul>' + u.commits.slice(0, 8).map(c => `<li><code>${escapeHtml(c.short)}</code> ${escapeHtml(c.message)}</li>`).join('') + '</ul>' : '');
+            return { available: !!(u.available && u.latest), current: cur, latest: lat, notes, checked: u.checked_at || u.checked,
+                     can_install: !!u.can_install, result: u.result || null, error: u.error,
+                     schedule: u.enabled === false ? 'aus' : 'stündlich zur vollen Stunde',
+                     reason: u.can_install ? '' : `Install on the server: <code>cd ${escapeHtml(u.path || '/opt/HBlink4')} &amp;&amp; ${u.owner && u.owner !== 'root' ? 'sudo -u ' + escapeHtml(u.owner) + ' ' : ''}git pull &amp;&amp; sudo systemctl restart hblink4 hblink4-dash</code>` };
+        }
         async function checkUpdate(force = false) {
             const el = document.getElementById('updateBanner');
             if (!isAdmin()) { el.hidden = true; return null; }
             let u;
             try { u = await api('GET', '/api/admin/update' + (force ? '?force=1' : '')); } catch (e) { return null; }
             state.update = u;
-            const show = u.available && u.latest && (force || !updDismissed(u.latest.commit));
-            el.hidden = !show;
-            if (show) {
-                const list = (u.commits || []).slice(0, 5).map(c => `<li><code>${escapeHtml(c.short)}</code> ${escapeHtml(c.message)}</li>`).join('');
-                const notes = releaseNotesHtml(u.release_notes);
-                el.innerHTML = `
-                    <div class="upd-main">
-                        <span class="upd-icon">⬆️</span>
-                        <div class="upd-text"><b>${u.remote_version && u.remote_version !== u.local.version ? `Version ${escapeHtml(u.remote_version)} available` : 'Update available'}</b> –
-                            ${u.behind} new ${u.behind === 1 ? 'change' : 'changes'} on GitHub
-                            <span class="muted">(v${escapeHtml(u.local.version || '?')} · ${escapeHtml(u.local.short || '?')} → ${escapeHtml(u.latest.short)}, ${escapeHtml(fmtDay(u.latest.date))})</span></div>
-                        <div class="upd-actions">
-                            <button type="button" class="btn-s" onclick="this.closest('.update-banner').classList.toggle('open')">What's new</button>
-                            <a class="btn-s" href="${escapeHtml(u.url)}" target="_blank" rel="noopener">GitHub ↗</a>
-                            ${u.can_install ? '<button type="button" class="btn-s upd-now" onclick="openUpdateDialog()">⬇️ Update now</button>' : ''}
-                            <button type="button" class="btn-s" title="Hide until the next version" onclick="updDismiss()">✕</button>
-                        </div>
-                    </div>
-                    <div class="upd-more">
-                        ${notes || `<ul>${list}</ul>`}
-                        <p class="muted small">Install on the server: <code>cd ${escapeHtml(u.path || '/opt/HBlink4')} &amp;&amp; ${u.owner && u.owner !== 'root' ? 'sudo -u ' + escapeHtml(u.owner) + ' ' : ''}git pull &amp;&amp; sudo systemctl restart hblink4 hblink4-dash</code></p>
-                    </div>`;
-            }
+            N8Kit.update.banner(el, kitUpdateState(u), { app: 'hb4', onInstall: () => openUpdateDialog(), onDetails: () => openAdmin('system') });
             return u;
         }
-        function updDismiss() {
-            try { localStorage.setItem('n8.updateDismissed', state.update.latest.commit); } catch (e) {}
-            document.getElementById('updateBanner').hidden = true;
-        }
-        // The server asks GitHub once an hour; the page picks the cached answer up every 10 minutes
+        // The server asks GitHub every full hour; the page picks the cached answer up every 10 minutes
         setInterval(() => { if (isAdmin()) checkUpdate(); }, 10 * 60 * 1000);
 
         // ---------- Update now ----------
@@ -7427,79 +7401,26 @@ PROTO_VER: ${fd ? 5 : 1}`;
         function openUpdateDialog() {
             const u = state.update; if (!u || !u.latest) return;
             const how = u.sudo_restart ? 'sudo' : (u.systemd ? 'service' : 'manual');
-            const list = (u.commits || []).map(c => `<li><code>${escapeHtml(c.short)}</code> ${escapeHtml(c.message)}</li>`).join('');
-            const m = openModal(`
-                <form class="upd-dialog" onsubmit="event.preventDefault(); runUpdate(this)">
-                    <h2>⬇️ Install update</h2>
-                    <p class="muted">v${escapeHtml(u.local.version || '?')} → <b>${u.remote_version ? 'v' + escapeHtml(u.remote_version) : escapeHtml(u.latest.short)}</b> · ${escapeHtml(fmtDay(u.latest.date))} ·
-                        ${u.behind} ${u.behind === 1 ? 'change' : 'changes'}</p>
-                    ${releaseNotesHtml(u.release_notes, 'upd-notes') || `<ul class="upd-list">${list}</ul>`}
-                    <div class="upd-facts">
-                        <div>📦 From: <code>${escapeHtml(u.origin || 'origin')}</code> (branch <code>${escapeHtml(u.branch)}</code>)</div>
-                        <div>${RESTART_INFO[how]}</div>
-                        <div class="muted small">Only moves forward to exactly this version. Stops if files were changed by hand. Settings and data stay.</div>
-                    </div>
-                    <label class="check"><input type="checkbox" name="restart" checked ${how === 'manual' ? 'disabled' : ''}> Restart afterwards</label>
-                    <input name="password" type="password" placeholder="Your password (confirmation)" autocomplete="current-password" required>
-                    <div class="form-error" hidden></div>
-                    <div class="upd-progress" hidden></div>
-                    <div class="set-actions">
-                        <button type="button" class="btn-s" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
-                        <button class="btn-primary" type="submit">⬇️ Update now</button>
-                    </div>
-                </form>`, 'small', true);
-            m.querySelector('input[name=password]').focus();
+            const k = kitUpdateState(u);
+            const target = u.latest.short;
+            N8Kit.update.run({
+                from: k.current, to: k.latest, password: true,
+                text: `${k.notes}<div class="upd-facts"><div>📦 From: <code>${escapeHtml(u.origin || 'origin')}</code> (branch <code>${escapeHtml(u.branch || 'main')}</code>)</div><div>${RESTART_INFO[how]}</div></div>`,
+                install: async (password) => {
+                    const r = await api('POST', '/api/admin/update/install', { password, expected: u.latest.commit, restart: how !== 'manual' });
+                    state.auditDirty = true;
+                    document.getElementById('updateBanner').hidden = true;
+                    if (r.requirements_changed) return { restart: false, message: 'New Python packages are needed – not restarted. On the server: venv/bin/pip install -r requirements.txt -r requirements-dashboard.txt, then sudo systemctl restart hblink4 hblink4-dash.' };
+                    if (r.restart === 'manual' || r.restart === 'none') return { restart: false, message: 'Installed. Please restart HBlink4 and the dashboard by hand.' };
+                    return r;
+                },
+                version: async () => {
+                    const v = await fetch('/api/version', { cache: 'no-store', credentials: 'same-origin' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+                    return `${v.version ? 'v' + v.version + ' · ' : ''}${v.commit || ''}`;
+                },
+            });
+            void target;
         }
-        async function runUpdate(form) {
-            const err = form.querySelector('.form-error'), prog = form.querySelector('.upd-progress');
-            const btn = form.querySelector('button[type=submit]');
-            err.hidden = true; btn.disabled = true; prog.hidden = false;
-            prog.innerHTML = '⏳ Fetching and installing …';
-            let r;
-            try {
-                r = await api('POST', '/api/admin/update/install', {
-                    password: form.password.value, expected: state.update.latest.commit, restart: form.restart.checked });
-            } catch (e) {
-                prog.hidden = true; btn.disabled = false; form.password.value = '';
-                err.textContent = e.message; err.hidden = false; return;
-            }
-            form.password.value = '';
-            const lines = [`✅ Installed: ${escapeHtml(r.old.slice(0, 7))} → <b>${escapeHtml(r.new.slice(0, 7))}</b> (${r.files.length} files)`];
-            if (r.requirements_changed) {
-                lines.push('⚠️ New Python packages are needed – <b>not restarted</b>. On the server: '
-                    + `<code>cd ${escapeHtml(state.update.path || '')} &amp;&amp; venv/bin/pip install -r requirements.txt -r requirements-dashboard.txt</code>, `
-                    + 'then <code>sudo systemctl restart hblink4 hblink4-dash</code>.');
-            } else if (r.restart === 'sudo' || r.restart === 'service') {
-                lines.push('🔄 Restarting … the page reloads by itself.');
-                if (r.restart === 'service' && r.dmr_restarted === false)
-                    lines.push('⚠️ HBlink4 was not connected and keeps running the old version – restart it on the server (<code>sudo systemctl restart hblink4</code>).');
-                waitForVersion(r.new.slice(0, 7), prog);
-            } else if (r.restart === 'manual') {
-                lines.push('⚠️ Please restart HBlink4 and the dashboard by hand.');
-            } else lines.push('ℹ️ Not restarted – changes apply after the next restart.');
-            prog.innerHTML = lines.map(x => `<div>${x}</div>`).join('');
-            btn.hidden = true;
-            form.password.style.display = 'none'; form.querySelector('label.check').style.display = 'none';
-            const cancel = form.querySelector('.set-actions .btn-s'); if (cancel) cancel.textContent = 'Close';
-            document.getElementById('updateBanner').hidden = true;
-            state.auditDirty = true;
-        }
-        function waitForVersion(short, prog) {
-            const started = Date.now();
-            const tick = async () => {
-                try {
-                    const v = await fetch('/api/version', { cache: 'no-store', credentials: 'same-origin' }).then(r => r.ok ? r.json() : null);
-                    if (v && v.commit === short) { location.reload(); return; }
-                } catch (e) {}
-                if (Date.now() - started > 150000) {
-                    prog.insertAdjacentHTML('beforeend', '<div>⚠️ No answer after 2½ minutes – check the services on the server (<code>systemctl status hblink4-dash</code>).</div>');
-                    return;
-                }
-                setTimeout(tick, 3000);
-            };
-            setTimeout(tick, 4000);
-        }
-
         // Initialize dashboard
         loadVersion();
         initCollapsibles();
@@ -7517,6 +7438,10 @@ PROTO_VER: ${fd ? 5 : 1}`;
                 }
             });
         }
+    </script>
+    <script>
+        // N8 Kit: DE | EN next to Links and the login (the same switch in all N8schicht pages)
+        N8Kit.langSwitch(document.querySelector('header .hdr-right'), { before: document.getElementById('userArea') });
     </script>
 </body>
 </html>

@@ -12,6 +12,9 @@ Type=simple
 User=cort
 Group=cort
 WorkingDirectory=/home/cort/hblink4
+# N8 update guard: after an update from the web interface, go back to the previous commit
+# if the dashboard does not come up three times in a row (relative to WorkingDirectory)
+ExecStartPre=-/bin/sh scripts/n8-update-guard.sh . dashboard/data
 ExecStart=/home/cort/hblink4/venv/bin/python /home/cort/hblink4/dashboard/server.py
 Restart=always
 RestartSec=10

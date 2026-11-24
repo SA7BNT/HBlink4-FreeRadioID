@@ -41,6 +41,8 @@ from .obpstats import OBPStats
 from .talkgroups import Talkgroups
 from . import version as _version
 from . import siteicons as _siteicons
+from . import n8_security as _sec
+from . import n8_update_guard as _guard
 from .aprs.service import AprsService
 from .aprs.store import public as _aprs_public
 from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_call
@@ -49,7 +51,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.4.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.5.0", **_sec.FASTAPI_KWARGS)
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -1294,9 +1296,7 @@ async def _security_middleware(request: Request, call_next):
                 and not current_user(request)):
             return JSONResponse({"error": "Please log in."}, status_code=401)
     response = await call_next(request)
-    response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-    response.headers.setdefault("Referrer-Policy", "same-origin")
+    _sec.headers(response, https=_sec.is_https(request))
     return response
 
 
@@ -1469,7 +1469,8 @@ async def api_admin_update(request: Request, force: bool = False):
         owner = pwd.getpwuid(_version.REPO_ROOT.stat().st_uid).pw_name
     except Exception:
         owner = ""
-    return {"enabled": True, **res, "path": str(_version.REPO_ROOT), "owner": owner}
+    return {"enabled": True, **res, "path": str(_version.REPO_ROOT), "owner": owner,
+            "result": _guard.last_result(state._data_dir)}
 
 
 @app.post("/api/admin/update/install")
@@ -1498,6 +1499,13 @@ async def api_admin_update_install(request: Request, body: dict = Body(...)):
     state.auth.audit("update", user["username"], f"{res['old'][:7]} → {res['new'][:7]}", ip)
     logger.info(f"⬆️ Updated by {user['username']}: {res['old'][:7]} → {res['new'][:7]} ({len(res['files'])} files)")
     restart = bool(body.get("restart", True)) and res["changed"] and not res["requirements_changed"]
+    if restart:
+        # N8 update guard: the new code confirms that its web interface answers; otherwise
+        # scripts/n8-update-guard.sh (ExecStartPre) goes back to the old commit after three starts
+        try:
+            _guard.mark_pending(state._data_dir, res["old"], res["new"], _ver_short(res["old"]), _ver_short(res["new"]))
+        except OSError as e:
+            logger.warning(f"update guard not armed: {e}")
     how = "none"
     if restart:
         if await asyncio.to_thread(_version.sudo_restart_allowed):
@@ -2740,9 +2748,15 @@ if static_path.exists():
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
+def _ver_short(commit: str) -> str:
+    return (commit or "")[:7]
+
+
 @app.on_event("startup")
 async def _start_update_loop():
     asyncio.create_task(_update_loop())
+    if _guard.pending(state._data_dir):
+        asyncio.create_task(_guard.startup_check(state._data_dir, _self_url() + "/api/version"))
     asyncio.create_task(_refresh_link_icons())
 
 
@@ -2984,8 +2998,17 @@ class _Server:
 
         kwargs.setdefault("log_level", "info")
         kwargs.setdefault("access_log", False)
+        for k, v in _sec.UVICORN_KWARGS.items():
+            kwargs.setdefault(k, v)           # no "server: uvicorn" header
         kwargs.setdefault("loop", "asyncio")   # uvloop breaks Unix socket connections
         return S(uvicorn.Config(app_, **kwargs))
+
+
+_SELF = {"host": "127.0.0.1", "port": 8080}
+
+
+def _self_url() -> str:
+    return _guard.local_url(_SELF["host"], _SELF["port"]).rstrip("/")
 
 
 async def _serve(host: str, port: int):
@@ -2996,6 +3019,7 @@ async def _serve(host: str, port: int):
     HTTP otherwise), so it is reachable while certbot works in the background.
     A stop signal ends everything at once, in any phase.
     """
+    _SELF.update(host=host, port=port)
     import signal
     global _tls_manager
     https_cfg = dashboard_config.get("https") or {}

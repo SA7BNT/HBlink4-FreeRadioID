@@ -280,28 +280,31 @@ Die genaue Umsetzung steht in [Anleitungen → Umziehen](anleitungen.md#2-von-hb
 - **Sessions**: alle Anmeldungen mit IP, Browser und Ablauf; jede lässt sich beenden.
 - **Log**: Anmeldungen, Fehlversuche, Benutzer- und Einstellungsänderungen, Neustarts, jeweils mit Zeit, Person und IP.
 - **System**: HTTPS mit Ablaufdatum des Zertifikats, Zugriff, Verbindung zum DMR-Server, FreeRadioID-IDs und gespeicherte Avatare. Dazu die Knöpfe **Restart dashboard** und **Restart DMR server**; sie erscheinen nur, wenn beides als systemd-Dienst läuft.
-- **⬆️ Version** (im Tab System): installierte Version, Commit, Datum und Branch, der Stand auf GitHub, wie nach einem Update neu gestartet wird und ob du installieren darfst. **🔍 Check now** fragt sofort nach, **⬇️ Update now** installiert.
+- **⬆️ Updates** (im Tab System): installiert, Stand auf GitHub, zuletzt geprüft, letztes Update (erfolgreich oder zurückgenommen), Branch, Art des Neustarts und ob du installieren darfst. **↻ Jetzt prüfen** fragt sofort nach, **⬆️ Update jetzt installieren** installiert.
 
 ### ⬆️ Update-Hinweis
 
 <p align="center"><img src="../images/update-banner.png" alt="Update-Hinweis" width="90%"></p>
-<p align="center"><img src="../images/admin-system-update.png" alt="Version im Tab System" width="50%"></p>
+<p align="center"><img src="../images/admin-system-update.png" alt="Updates im Tab System" width="50%"></p>
 
-Der Server fragt **zu jeder vollen Stunde** bei GitHub nach (bei einem eingestellten Intervall über einer Stunde an den passenden vollen Stunden), auch wenn niemand eingeloggt ist; eine neue Version steht dann auch im Log. Gibt es eine, sehen **eingeloggte Admins** unter der Kopfzeile einen Hinweis mit der Zahl der Änderungen. **What's new** klappt die letzten Änderungen auf. **✕** blendet den Hinweis bis zur nächsten neuen Version aus. Alle anderen Besucher sehen nichts davon.
+Hinweis, Updates-Kachel und Fortschritt kommen aus dem **N8 Kit** und sehen in **HBlink4-FreeRadioID, adn-frn-server, N8-HotSpot und N8 Crosslink gleich aus** (siehe [Sicherheit & N8 Kit](sicherheit.md)).
 
-#### ⬇️ Update now
+Der Server fragt **zu jeder vollen Stunde** bei GitHub nach (bei einem eingestellten Intervall über einer Stunde an den passenden vollen Stunden), auch wenn niemand eingeloggt ist; eine neue Version steht dann auch im Log. Gibt es eine, sehen **eingeloggte Admins** unter der Statusleiste den Hinweis *Update verfügbar: v1.4.0 · … → v1.5.0 · …* mit den Knöpfen **Was ist neu?** (klappt die Änderungen auf), **Jetzt aktualisieren**, **Details** (öffnet Admin → System) und **Später** (blendet den Hinweis für diese Version einen Tag lang aus). Alle anderen Besucher sehen nichts davon.
+
+#### ⬆️ Jetzt aktualisieren
 
 <p align="center">
-  <img src="../images/update-dialog.png" alt="Update installieren" width="40%">
-  <img src="../images/update-dialog-done.png" alt="Update installiert" width="40%">
+  <img src="../images/update-dialog.png" alt="Update bestätigen" width="40%">
+  <img src="../images/update-dialog-done.png" alt="Update läuft" width="40%">
 </p>
 
-**⬇️ Update now** (im Hinweis und unter **🖥️ System**) installiert die angezeigte Version und startet beide Dienste neu. Die Seite lädt danach von selbst neu, die Fußzeile zeigt die neue Version.
+Das Fenster zeigt, was neu ist, woher das Update kommt und wie neu gestartet wird, und fragt **dein Passwort** noch einmal ab. Danach siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu → Weboberfläche wird geprüft**. Ist die neue Version da, lädt die Seite von selbst neu.
 
-- **Passwort:** Vor dem Installieren fragt das Dashboard dein Passwort noch einmal ab. Fünf Fehlversuche sperren 15 Minuten, genau wie beim Login.
+- **Passwort:** Fünf Fehlversuche sperren 15 Minuten, genau wie beim Login. Ein falsches Passwort lässt das Fenster offen, du kannst es noch einmal eingeben.
 - **Wer darf:** Standard ist **nur der Superadmin**. Einstellbar unter *Settings → ⬆️ Updates → Who may press “Update now”* (auch „alle Admins“ oder „niemand“).
-- **Neustart:** Wie neu gestartet wird, steht im Dialog. Ohne weitere Einrichtung beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie wieder. Eine sudo-Regel ist **nicht nötig**, siehe [Betrieb → Neustart nach dem Update](betrieb.md#neustart-nach-dem-update-und-sudoers).
-- **Neue Python-Pakete:** Bringt das Update neue Pakete mit (`requirements*.txt` geändert), wird **nicht** neu gestartet. Der Dialog zeigt dann den `pip`-Befehl für die Konsole.
+- **Neustart:** Ohne weitere Einrichtung beenden sich HBlink4 und das Dashboard selbst, und systemd startet sie wieder. Eine sudo-Regel ist **nicht nötig**, siehe [Betrieb → Neustart nach dem Update](betrieb.md#neustart-nach-dem-update-und-sudoers).
+- **Automatisch zurück (Rollback):** Vor dem Neustart merkt sich das Dashboard den alten Stand (`dashboard/data/update.pending`). Die neue Version prüft nach dem Start, ob ihre Weboberfläche antwortet. Antwortet sie nicht, beendet sie sich; nach **drei erfolglosen Starts** setzt `scripts/n8-update-guard.sh` (läuft als `ExecStartPre` im Dienst `hblink4-dash`) den Checkout auf den alten Commit zurück. Das Ergebnis steht unter *Letztes Update* („erfolgreich“ oder „zurückgenommen“) und in `dashboard/data/update.result`. Bestehende Installationen bekommen die `ExecStartPre`-Zeile mit `sudo ./scripts/install_services.sh`.
+- **Neue Python-Pakete:** Bringt das Update neue Pakete mit (`requirements*.txt` geändert), wird **nicht** neu gestartet; das Fenster zeigt den `pip`-Befehl für die Konsole.
 
 Was Update now **nicht** tut, mit Absicht:
 - Es lädt nur vom Git-Remote `origin`, der **auf dem Server** eingerichtet ist; eine Adresse aus dem Browser wird nie benutzt. Das Repository in den Settings dient nur dem Hinweis.

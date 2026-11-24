@@ -4,6 +4,31 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.5.0] – 2026-11-24
+
+Sicherheit, Sprache und ein Update-System, das in **HBlink4-FreeRadioID, adn-frn-server, N8-HotSpot und N8 Crosslink** gleich aussieht und gleich funktioniert (**N8 Kit**). Ausführlich: [docs/de/sicherheit.md](docs/de/sicherheit.md).
+
+### 🔐 Sicherheit
+- **API-Beschreibung aus:** `/docs`, `/redoc` und `/openapi.json` antworten mit 404 (vorher lagen dort alle Routen samt Admin-Endpunkten und Schemas offen). Zum Entwickeln: `N8_API_DOCS=1`.
+- **Neue Header bei jeder Antwort:** `Content-Security-Policy` (nur eigene Skripte/Styles/Schriften, Verbindungen nur zum eigenen Server, `object-src 'none'`, `base-uri`, `form-action`, `frame-ancestors`), `Strict-Transport-Security` über HTTPS (auch hinter einem Proxy mit `X-Forwarded-Proto`), `Permissions-Policy`, `Cross-Origin-Opener-Policy`/`-Resource-Policy`. Der Header `server: uvicorn` entfällt.
+- **XSS geschlossen:** Alle Render-Funktionen geprüft. Ungeescapt waren Rufzeichen und Standort auf der Repeater-Karte, das Rufzeichen im Slot, die Ereignisliste (*Recent Events*), Status und Name der Outbound-Links, der OpenBridge-Status und der Tooltip übersetzter Talkgroups – jetzt alle über `escapeHtml`.
+- **Eingaben vom Gerät bereinigt:** HBlink4 entfernt aus den Textfeldern der Anmeldung (Rufzeichen, Standort, Beschreibung, URL, Software, Paket) HTML-Zeichen und Steuerzeichen, bevor sie irgendwohin gehen.
+- Doku mit Beispielen für **Caddy** und **nginx** als Reverse-Proxy.
+
+### 🌐 Sprache DE | EN
+- Umschalter **DE | EN** in der Kopfzeile (Dashboard und APRS-Karte), **Standard Deutsch**. Umschalten ohne Neuladen; die Wahl gilt per Cookie für alle N8schicht-Oberflächen auf dem Server. `?lang=en` für Links.
+- Deutsche Texte für Menü, Statusleiste, Live-Ansicht, Statistik, OpenBridge, Talkgroups, Configuration-Tab, Adminbereich (alle Settings-Abschnitte, Aussehen, Links, OpenBridge-Editor, Import, APRS, System) und APRS-Karte (`dashboard/static/i18n-dashboard.js`).
+- Statusleiste: Kurz- und Langtext getrennt (*Live-Daten* / *Live*), damit sie sich übersetzen lassen.
+
+### ⬆️ Updates wie in N8 Crosslink
+- Hinweis unter der Statusleiste im N8-Kit-Stil: *Update verfügbar: alt → neu* mit **Was ist neu?**, **Jetzt aktualisieren**, **Details**, **Später** (einen Tag).
+- **Jetzt aktualisieren** öffnet ein Fenster mit Neuerungen und Passwortabfrage, danach drei Schritte mit Fortschritt (*geladen und eingespielt → Dienst startet neu → Weboberfläche wird geprüft*); die Seite lädt danach neu. Ein falsches Passwort lässt das Fenster offen.
+- **Admin → System → ⬆️ Updates**: gleiche Kachel wie in den anderen Projekten (installiert, GitHub, zuletzt geprüft, automatische Prüfung, letztes Update, Branch, Neustart, Berechtigung).
+- **Rollback:** Vor dem Neustart wird der alte Stand gemerkt; die neue Version prüft ihre eigene Weboberfläche. Antwortet sie nicht, setzt `scripts/n8-update-guard.sh` (`ExecStartPre` in `hblink4-dash.service`) nach drei Starts auf den alten Commit zurück. Ergebnis unter *Letztes Update*. Bestehende Installationen: einmal `sudo ./scripts/install_services.sh`.
+
+### 🧪 Tests
+- `tests/test_security.py`: API-Doku aus, alle Header, HSTS hinter Proxy, kein `server`-Header, Bereinigung der Gerätefelder, Rollback nach drei Starts, Bestätigung nach erfolgreichem Start, Kit-Dateien eingebunden.
+
 ## [1.4.0] – 2026-11-24
 
 ### 📻 Talker Alias

@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
     <script src="/static/vendor/leaflet/leaflet.js"></script>
     <script src="/static/n8-theme.js"></script>
+    <link rel="stylesheet" href="/static/n8-kit.css">
+    <script src="/static/n8-kit.js"></script>
+    <script src="/static/i18n-dashboard.js"></script>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.055); --glass-border: rgba(255, 255, 255, 0.12);
@@ -642,6 +645,10 @@ function placeStrip() {
 window.addEventListener('resize', placeStrip);
 placeStrip(); setTimeout(placeStrip, 300);
 start();
+</script>
+<script>
+    // N8 Kit: DE | EN at the end of the menu (not in the embedded view of the dashboard)
+    if (window.self === window.top) N8Kit.langSwitch(document.querySelector('header .menu'));
 </script>
 </body>
 </html>

@@ -83,6 +83,16 @@ from .lc import (
 
 # Data classes moved to models.py
 
+
+_MARKUP = set(b'<>"\'`')
+
+
+def _clean_text_field(raw: bytes, keep_amp: bool = False) -> bytes:
+    """Drop HTML markup characters and control codes from a text field a repeater/hotspot sends.
+    Keeps the length (padding with spaces) so the fixed-width layout of RPTC stays the same."""
+    out = bytes(c for c in raw if c not in _MARKUP and (c >= 32 or c == 0) and c != 127 and (keep_amp or c != 0x26))
+    return out + b" " * (len(raw) - len(out))
+
 class OutboundProtocol(asyncio.DatagramProtocol):
     """Protocol instance for a single outbound connection"""
     def __init__(self, hbprotocol: 'HBProtocol', connection_name: str):
@@ -3009,7 +3019,10 @@ class HBProtocol(asyncio.DatagramProtocol):
                 return
                 
             # Store raw bytes for metadata
-            repeater.callsign = data[8:16]
+            # Text fields come from the device: no markup characters or control codes (defence in
+            # depth – every page escapes them too, see docs/de/sicherheit.md)
+            _clean = _clean_text_field
+            repeater.callsign = _clean(data[8:16])
             repeater.rx_freq = data[16:25]
             repeater.tx_freq = data[25:34]
             repeater.tx_power = data[34:36]
@@ -3017,12 +3030,12 @@ class HBProtocol(asyncio.DatagramProtocol):
             repeater.latitude = data[38:46]
             repeater.longitude = data[46:55]
             repeater.height = data[55:58]
-            repeater.location = data[58:78]
-            repeater.description = data[78:97]
+            repeater.location = _clean(data[58:78])
+            repeater.description = _clean(data[78:97])
             repeater.slots = data[97:98]
-            repeater.url = data[98:222]
-            repeater.software_id = data[222:262]
-            repeater.package_id = data[262:302]
+            repeater.url = _clean(data[98:222], keep_amp=True)
+            repeater.software_id = _clean(data[222:262])
+            repeater.package_id = _clean(data[262:302])
             
             # Detect connection type from package_id (primary) and software_id (fallback)
             repeater.connection_type = detect_connection_type(
