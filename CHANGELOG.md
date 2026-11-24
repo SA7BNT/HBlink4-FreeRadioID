@@ -4,6 +4,24 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.4.0] – 2026-11-24
+
+### 📻 Talker Alias
+- HBlink4 liest den **DMR Talker Alias** aus (den Namen, den das Funkgerät mitsendet, z. B. „DL1ABC Hans“). Quellen sind der Sprachrahmen (Embedded LC, FLCO 4–7) und **DMRA**-Pakete von MMDVMHost/DMRGateway. Unterstützt werden alle vier Formate (7-Bit, ISO-8859-1, UTF-8, UTF-16) bis 31 Zeichen.
+- Das gilt für alle Eingänge: Repeater/Hotspots, Outbound-Links und OpenBridge. Der Alias erscheint schon nach dem ersten Block (etwa 1 s) und vervollständigt sich während des Gesprächs. Jede neue Übertragung beginnt leer.
+- Neues Ereignis `talker_alias` zum Dashboard; `stream_end` trägt den Alias mit. Im Log steht jeder vollständige Alias einmal mit `📻`.
+- Bisher wurden DMRA-Pakete nur bestätigt; jetzt werden sie ausgewertet. Format: Quell-ID, Blocktyp, 7 Datenbytes.
+
+### 🎙️ Dashboard
+- **Der Talker Alias ersetzt den Namen** aus der Rufzeichen-Datenbank: in Last Heard, in den Slots der Repeater-/Hotspot-Karten, in der Slot-Detailansicht und bei OpenBridge/Outbound. Er ist mit **TA** markiert; der Tooltip zeigt das Rufzeichen aus der Datenbank.
+- **📈 Statistics:** neue Rangliste **📻 Talker Alias**, getrennt von den DMR-IDs: Gespräche, Sprechzeit, sendende IDs/Rufzeichen, Talkgroups, letztes Gespräch. Gleiche Namen in anderer Schreibweise werden zusammengefasst. In der Talkgroup-Tabelle zeigt *Most active* den TA der aktivsten Station.
+- Die Datenbank bekommt die Spalte `talker_alias` in `tg_calls` (wird beim Start automatisch ergänzt, alte Gespräche bleiben leer).
+- Demo (`?demo`) mit Talker-Alias-Beispielen.
+
+### 🧪 Tests
+- `tests/test_talker_alias.py`: 7-Bit, Latin-1 mit Umlauten, 4 Blöcke mit Teilergebnis, DMRA-Blöcke, neue Übertragung setzt zurück, Müll wird ignoriert (Vektoren aus einem unabhängigen MMDVMHost-Port).
+- `tests/test_tgstats.py`: Rangliste und Zusammenfassen gleicher Namen. Ende-zu-Ende geprüft mit echtem Sprachstrom von N8 Crosslink: erst „DL1ABC“, dann vollständig „DL1ABC Hans“.
+
 ## [1.3.0] – 2026-11-22
 
 Neue Kopfzeile mit **einem Menü** und einer schmalen **Statusleiste** darunter (gleicher Aufbau wie in frn_adn und N8-HotSpot),

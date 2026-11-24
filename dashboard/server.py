@@ -49,7 +49,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.3.0")
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.4.0")
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -978,6 +978,26 @@ class EventReceiver:
             elif data.get('repeater_id') in state.repeaters:
                 state.repeaters[data['repeater_id']]['last_activity'] = event['timestamp']
         
+        elif event_type == 'talker_alias':
+            # DMR Talker Alias of a running call – replaces the name in Live / Last Heard
+            connection_type = data.get('connection_type', 'repeater')
+            if connection_type == 'openbridge':
+                key = f"{data['connection_name']}.{data.get('stream_id')}"
+            elif connection_type == 'outbound':
+                key = f"{data['connection_name']}.{data['slot']}"
+            else:
+                key = f"{data.get('repeater_id')}.{data['slot']}"
+            alias = (data.get('talker_alias') or '').strip()
+            if key in state.streams and alias:
+                state.streams[key]['talker_alias'] = alias
+                state.streams[key]['talker_alias_complete'] = bool(data.get('complete'))
+            src_id = data.get('src_id')
+            if src_id and alias:
+                entry = next((u for u in state.last_heard if u['radio_id'] == src_id), None)
+                if entry:
+                    entry['talker_alias'] = alias
+                    entry['talker_alias_complete'] = bool(data.get('complete'))
+
         elif event_type == 'stream_update':
             # Handle both repeater and outbound streams
             connection_type = data.get('connection_type', 'repeater')
@@ -1009,6 +1029,8 @@ class EventReceiver:
                 stream['packets'] = data.get('packet_count', data.get('packets', 0))
                 stream['duration'] = data['duration']
                 stream['end_reason'] = data.get('end_reason', 'unknown')
+                if data.get('talker_alias'):
+                    stream['talker_alias'] = data['talker_alias']
                 stream['hang_time'] = data.get('hang_time', 0)
                 
                 # Only accumulate duration for RX streams (not assumed/TX streams or outbound)
@@ -1133,7 +1155,7 @@ class EventReceiver:
                 state.events.append(event)
         
         # For stream events, include updated last_heard list in the event
-        if event_type in ['stream_start', 'stream_end', 'hang_time_expired']:
+        if event_type in ['stream_start', 'stream_end', 'hang_time_expired', 'talker_alias']:
             event['last_heard'] = state.last_heard
         
         # Send to all WebSocket clients
@@ -2034,7 +2056,8 @@ def _record_tg_call(stream: dict, data: dict, connection_type: str, ts) -> None:
                              src_id=stream.get('rf_src') or stream.get('src_id') or data.get('src_id'),
                              is_data=bool(stream.get('is_data') or data.get('is_data')), source=source,
                              ts=float(ts) if ts else None,
-                             origin=connection_type if connection_type in ('openbridge', 'outbound') else 'repeater')
+                             origin=connection_type if connection_type in ('openbridge', 'outbound') else 'repeater',
+                             talker_alias=(data.get('talker_alias') or stream.get('talker_alias') or None))
     except Exception as e:
         logger.warning(f"📈 Could not store talkgroup statistics: {e}")
 

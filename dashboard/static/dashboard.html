@@ -2192,6 +2192,10 @@
         .repeater-card.on-air .avatar { box-shadow: 0 0 0 2px var(--on-air), 0 0 14px rgba(48, 209, 88, 0.6); }
 
         /* Last Heard */
+        .ta-tag { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 6px; font-size: 9.5px; font-weight: 800;
+                  letter-spacing: .04em; line-height: 15px; vertical-align: 1px; color: #0b1020; background: var(--accent, #5ac8fa); }
+        #taPanel .ta-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 4px 4px 8px; font-size: 15px; }
+        #taPanel .ta-head small { color: var(--text-dim); font-weight: 400; font-size: 12px; }
         #lastHeardTable td.lh-id { font-variant-numeric: tabular-nums; color: var(--text-dim); }
         #lastHeardTable td.lh-call { font-weight: 600; }
         #lastHeardTable td.lh-call.muted { color: var(--text-dim); font-weight: 400; }
@@ -2603,6 +2607,14 @@
                         <tbody id="tgsTable"></tbody>
                     </table>
                     <div class="tgs-more" id="tgsMore" style="display: none;"><button type="button" onclick="tgs.showAll = !tgs.showAll; renderTgStats();"></button></div>
+                </div>
+                <div class="tgs-table-wrap" id="taPanel" style="margin-top: 14px;">
+                    <h3 class="ta-head"><span>📻 Talker Alias</span><small id="taNote">names sent by the radios</small></h3>
+                    <table class="tgs-table">
+                        <thead><tr><th>Talker Alias</th><th class="num">Calls</th><th class="num">Airtime</th><th class="hide-sm">DMR ID / callsign</th><th class="hide-sm">Talkgroups</th><th class="hide-sm">Last call</th></tr></thead>
+                        <tbody id="taTable"></tbody>
+                    </table>
+                    <div class="tgs-more" id="taMore" style="display: none;"><button type="button" onclick="tgs.taAll = !tgs.taAll; renderTaTable(tgs.data);"></button></div>
                 </div>
             </div>
         </div><!-- /tabStats -->
@@ -5174,7 +5186,9 @@ PROTO_VER: ${fd ? 5 : 1}`;
                     return `<div class="sc-row ${cls}"><span class="sc-ts">TS${n}</span><span class="slot-status-badge ${cls}">${lbl}</span>
                         <span class="sc-dst">${dst}</span></div>`;
                 }
-                const who = idLink(st.src_id, `<b>${escapeHtml(st.callsign || st.src_id || '—')}</b>${st.callsign ? ` <span class="muted">${escapeHtml(st.src_id)}</span>` : ''}`);
+                const who = idLink(st.src_id, st.talker_alias
+                    ? `<b>${escapeHtml(st.talker_alias)}</b> <span class="ta-tag" title="Talker Alias${st.callsign ? ' · database: ' + escapeHtml(st.callsign) : ''}">TA</span> <span class="muted">${escapeHtml(st.src_id)}</span>`
+                    : `<b>${escapeHtml(st.callsign || st.src_id || '—')}</b>${st.callsign ? ` <span class="muted">${escapeHtml(st.src_id)}</span>` : ''}`);
                 return `<div class="sc-row ${cls}"><span class="sc-ts">TS${n}</span><span class="slot-status-badge ${cls}">${lbl}</span>
                     <span class="sc-who">${who}</span><span class="sc-arrow">→</span><span class="sc-dst">${dst}</span>
                     <span class="sc-dur">${slotDuration(st)}</span></div>`;
@@ -5282,8 +5296,10 @@ PROTO_VER: ${fd ? 5 : 1}`;
             
             const packets = stream?.packets || 0;
             
-            // Get callsign directly from stream data (looked up by server)
-            const callsign = stream?.callsign || '—';
+            // Talker Alias (sent by the radio) replaces the database callsign when present
+            const callsign = stream?.talker_alias
+                ? `${escapeHtml(stream.talker_alias)} <span class="ta-tag" title="Talker Alias${stream.callsign ? ' · database: ' + escapeHtml(stream.callsign) : ''}">TA</span>`
+                : (stream?.callsign || '—');
             
             return `
                 <div class="slot ${status}">
@@ -5762,12 +5778,14 @@ PROTO_VER: ${fd ? 5 : 1}`;
                            + (user.is_data ? '<span title="Data call (not forwarded)">📟</span>' : '<span title="Voice call">🎤</span>');
                 const nm = isUnit ? '' : tgName(user.talkgroup);
                 const dest = `${kind} <b class="lh-tg">${isUnit ? '' : 'TG'}${escapeHtml(user.talkgroup)}</b>${nm ? ` <span class="lh-tgname">${escapeHtml(nm)}</span>` : ''}`;
-                const callsign = user.callsign || '–';
+                const ta = user.talker_alias || '';
+                const callsign = ta || user.callsign || '–';
+                const taTag = ta ? `<span class="ta-tag" title="Talker Alias (sent by the radio)${user.callsign ? ' · database: ' + escapeHtml(user.callsign) : ''}">TA</span>` : '';
                 return `
                     <div class="lh-row ${user.active ? 'lh-active' : ''}" role="listitem">
                         <div class="lh-c lh-id">${idLink(user.radio_id, escapeHtml(user.radio_id))}</div>
-                        <div class="lh-c lh-call ${user.callsign ? '' : 'muted'}">${idLink(user.radio_id,
-                            `<span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 26)}<span class="lh-cs">${escapeHtml(callsign)}</span>`
+                        <div class="lh-c lh-call ${user.callsign || ta ? '' : 'muted'}">${idLink(user.radio_id,
+                            `<span class="lh-user">${avatarHtml(user.radio_id, user.callsign, 26)}<span class="lh-cs">${escapeHtml(callsign)}</span>${taTag}`
                             + `${user.frid ? '<span class="frid-tag" title="Registered at FreeRadioID.net">FRID</span>' : ''}`
                             + `<span class="lh-mid">${escapeHtml(user.radio_id)}</span></span>`)}</div>
                         <div class="lh-c lh-src" title="Source">${source}</div>
@@ -5871,6 +5889,22 @@ PROTO_VER: ${fd ? 5 : 1}`;
                     // Update last heard display
                     updateLastHeard(state.last_heard);
                     break;
+
+                case 'talker_alias': {
+                    // DMR Talker Alias of a running call: replaces the name in slots, cards and Last Heard
+                    const ct = data.connection_type || 'repeater';
+                    const st = state.streams.find(s => ct === 'openbridge'
+                        ? (s.connection_type === 'openbridge' && s.connection_name === data.connection_name && s.stream_id === data.stream_id)
+                        : ct === 'outbound'
+                            ? (s.connection_type === 'outbound' && s.connection_name === data.connection_name && Number(s.slot) === Number(data.slot))
+                            : (s.repeater_id == data.repeater_id && Number(s.slot) === Number(data.slot)));
+                    if (st) { st.talker_alias = data.talker_alias; st.talker_alias_complete = !!data.complete; }
+                    if (ct === 'outbound') { updateOutbounds(state.outbounds); updateOpenbridges(state.openbridges); }
+                    else if (ct === 'openbridge') updateOpenbridges(state.openbridges);
+                    else if (state.repeaters) updateRepeaters(state.repeaters);
+                    updateLastHeard(state.last_heard);
+                    break;
+                }
                     
                 case 'stream_end':
                     if (!data.is_assumed) scheduleTgRefresh();   // talkgroup statistics
@@ -6317,7 +6351,8 @@ PROTO_VER: ${fd ? 5 : 1}`;
                   is_data: false, call_type: 'group', src_id: 3188765, dst_id: 3120, start_time: now - 6 },
                 // Call B: XL0DIG keys US-Nationwide (31) on TS1 → egress OUT the trunk
                 { repeater_id: 265800, slot: 1, status: 'active', is_assumed: false,
-                  is_data: false, call_type: 'group', src_id: 265800, dst_id: 31, start_time: now - 4 },
+                  is_data: false, call_type: 'group', src_id: 265800, callsign: 'XL0DIG', dst_id: 31, start_time: now - 4,
+                  talker_alias: 'XL0DIG Nachtschicht', talker_alias_complete: true },
                 { connection_type: 'openbridge', connection_name: 'OBP-Funkerportal', slot: 1,
                   status: 'active', is_assumed: true, is_data: false, call_type: 'group',
                   src_id: 265800, callsign: 'XL0DIG', dst_id: 31, start_time: now - 4 },
@@ -6331,10 +6366,10 @@ PROTO_VER: ${fd ? 5 : 1}`;
                   call_type: 'group', is_data: false, active: true,
                   source_name: 'OBP-Funkerportal', last_heard: now - 6 },
                 { radio_id: 265800, callsign: 'XL0DIG', talkgroup: 31, slot: 1,
-                  call_type: 'group', is_data: false, active: true,
+                  call_type: 'group', is_data: false, active: true, talker_alias: 'XL0DIG Nachtschicht',
                   source_name: 'XL0DIG', source_repeater_id: 265800, last_heard: now - 4, frid: true },
                 { radio_id: 3161001, callsign: 'W0DEF', talkgroup: 3100, slot: 1,
-                  call_type: 'group', is_data: false, active: false,
+                  call_type: 'group', is_data: false, active: false, talker_alias: 'W0DEF Dave Topeka',
                   source_name: 'KD0XYZ', source_repeater_id: 3112002, last_heard: now - 22, frid: true },
                 { radio_id: 3112003, callsign: 'KE0FGH', talkgroup: 265800, slot: 2,
                   call_type: 'private', is_data: false, active: false,
@@ -6805,7 +6840,27 @@ PROTO_VER: ${fd ? 5 : 1}`;
             renderTgBars(d);
             renderTgTime(d);
             renderTgTable(d);
+            renderTaTable(d);
             renderTgOrigin(d);
+        }
+
+        // Talker Alias ranking: the names the radios send, counted separately from IDs/callsigns
+        function renderTaTable(d) {
+            const tb = document.getElementById('taTable'), more = document.getElementById('taMore');
+            if (!tb || !d) return;
+            const rows = d.talker_aliases || [];
+            document.getElementById('taNote').textContent = rows.length ? `${rows.length} names sent by the radios` : 'names sent by the radios';
+            if (!rows.length) { tb.innerHTML = '<tr><td colspan="6" class="tgs-empty">No Talker Alias received in this period.</td></tr>'; more.style.display = 'none'; return; }
+            const list = tgs.taAll ? rows : rows.slice(0, 10);
+            tb.innerHTML = list.map(r => {
+                const ids = (r.ids || []).map((id, i) => idLink(id, `${escapeHtml(String(id))}${r.callsigns && r.callsigns[i] ? `&nbsp;<span style="color:var(--text-dim)">${escapeHtml(r.callsigns[i])}</span>` : ''}`)).join(', ');
+                const last = r.last ? new Date(r.last * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
+                return `<tr><td><b>${escapeHtml(r.alias)}</b> <span class="ta-tag">TA</span></td><td class="num">${r.calls.toLocaleString('de-DE')}</td>`
+                    + `<td class="num">${tgsFmtDur(r.duration, true)}</td><td class="hide-sm">${ids || '–'}</td>`
+                    + `<td class="hide-sm">${(r.talkgroups || []).map(t => `TG${t}`).join(', ')}</td><td class="hide-sm">${last}</td></tr>`;
+            }).join('');
+            more.style.display = rows.length > 10 ? '' : 'none';
+            more.querySelector('button').textContent = tgs.taAll ? 'Show top 10' : `Show all ${rows.length} names`;
         }
 
         // Origin of the calls: local repeaters/hotspots, OpenBridge trunks, outbound links
@@ -6949,7 +7004,7 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const maxShare = Math.max(...rows.map(r => r.share)) || 1;
             tb.innerHTML = list.map(r => {
                 const tt = r.top_talker;
-                const talker = tt ? `${escapeHtml(tt.callsign || String(tt.id))} <span style="color:var(--text-dim)">· ${tgsFmtDur(tt.duration, true)}</span>` : '–';
+                const talker = tt ? `${tt.alias ? `${escapeHtml(tt.alias)} <span class="ta-tag">TA</span>` : escapeHtml(tt.callsign || String(tt.id))} <span style="color:var(--text-dim)">· ${tgsFmtDur(tt.duration, true)}</span>` : '–';
                 const last = r.last ? new Date(r.last * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
                 const ob = r.obp_share >= 0.05 ? `<span class="obp-badge" title="Share of the airtime that came in over OpenBridge">↔ ${Math.round(r.obp_share * 100)} %</span>` : '';
                 return `<tr><td><span class="tgs-tg"><i style="background:${tgsColor(r.tg)}"></i>${r.tg}</span>${r.name ? ` <span style="color:var(--text-dim)">${escapeHtml(r.name)}</span>` : ''}${ob}</td>`
@@ -7071,7 +7126,12 @@ PROTO_VER: ${fd ? 5 : 1}`;
             const origins = { repeater: { calls: Math.round(sum(table.map(t => t.calls)) * 0.58), duration: Math.round(total * 0.6) },
                               openbridge: { calls: Math.round(sum(table.map(t => t.calls)) * 0.42), duration: Math.round(total * 0.4) },
                               outbound: { calls: 0, duration: 0 } };
-            return { range, bucket: hourly ? 'hour' : 'day', buckets, series, talkgroups: table, origins,
+            const aliasNames = ['XL0DIG Nachtschicht', 'DL1ABC Hans', 'W0DEF Dave Topeka', 'DB0NAC Relais', 'DO5ALF Alfred'];
+            table.forEach((t, k) => { if (k % 2 === 0 && t.top_talker) t.top_talker.alias = aliasNames[k % aliasNames.length]; });
+            const talker_aliases = aliasNames.map((a, k) => ({ alias: a, calls: Math.round((hourly ? 40 : 260) / (k + 1)),
+                duration: Math.round((hourly ? 900 : 6200) / (k + 1.3)), last: now.getTime() / 1000 - k * 410 - 30,
+                ids: [2620000 + k], callsigns: [a.split(' ')[0]], talkgroups: [262, 91, 2624].slice(0, 1 + (k % 3)) }));
+            return { range, bucket: hourly ? 'hour' : 'day', buckets, series, talkgroups: table, origins, talker_aliases,
                      totals: { calls: sum(table.map(t => t.calls)), duration: total, talkgroups: table.length, users: hourly ? 47 : 186 } };
         }
 

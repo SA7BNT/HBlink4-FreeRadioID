@@ -68,15 +68,20 @@ class TGStats:
             if "origin" not in cols:   # where the call came in: repeater | openbridge | outbound
                 self._a._db.execute("ALTER TABLE tg_calls ADD COLUMN origin TEXT NOT NULL DEFAULT ''")
                 self._a._db.commit()
+            if "talker_alias" not in cols:   # DMR Talker Alias sent with the call (empty = none)
+                self._a._db.execute("ALTER TABLE tg_calls ADD COLUMN talker_alias TEXT NOT NULL DEFAULT ''")
+                self._a._db.commit()
 
     # ------------------------------------------------------------ writing
     def record(self, tg: int, duration: float, *, slot: Optional[int] = None, src_id: Optional[int] = None,
-               is_data: bool = False, source: str = "", ts: Optional[float] = None, origin: str = "") -> None:
+               is_data: bool = False, source: str = "", ts: Optional[float] = None, origin: str = "",
+               talker_alias: Optional[str] = None) -> None:
         if not tg:
             return
-        self._a._x("INSERT INTO tg_calls (ts, tg, slot, src_id, duration, is_data, source, origin) VALUES (?,?,?,?,?,?,?,?)",
+        self._a._x("INSERT INTO tg_calls (ts, tg, slot, src_id, duration, is_data, source, origin, talker_alias) "
+                   "VALUES (?,?,?,?,?,?,?,?,?)",
                    (float(ts or time.time()), int(tg), slot, src_id, max(0.0, float(duration or 0)),
-                    1 if is_data else 0, source or "", origin or ""))
+                    1 if is_data else 0, source or "", origin or "", (talker_alias or "").strip()[:40]))
 
     def tag_origin(self, source: str, origin: str) -> None:
         """Older rows were stored without origin: mark those of a known trunk/link once it reports in."""
@@ -114,8 +119,8 @@ class TGStats:
         names = names or {}
         start, starts, kind = self.buckets(rng, now)
         t0 = start.timestamp()
-        rows = self._a._q("SELECT ts, tg, src_id, duration, source, origin FROM tg_calls WHERE ts >= ? AND is_data = 0 ORDER BY ts",
-                          (t0,))
+        rows = self._a._q("SELECT ts, tg, src_id, duration, source, origin, talker_alias FROM tg_calls "
+                          "WHERE ts >= ? AND is_data = 0 ORDER BY ts", (t0,))
         edges = [s.timestamp() for s in starts]
 
         def bucket_of(ts: float) -> int:
@@ -132,6 +137,8 @@ class TGStats:
         per_bucket: Dict[int, List[List[float]]] = {}   # tg -> [[calls, dur] per bucket]
         all_users = set()
         origins = {o: {"calls": 0, "duration": 0.0} for o in ORIGINS}
+        aliases: Dict[str, Dict[str, Any]] = {}     # Talker Alias ranking (separate from IDs)
+        last_alias: Dict[int, str] = {}             # last alias seen per radio ID
         n = len(starts)
         for r in rows:
             tg, dur, src, ts = int(r["tg"]), float(r["duration"] or 0), r["src_id"], float(r["ts"])
@@ -149,6 +156,18 @@ class TGStats:
                 t["users"].add(src)
                 all_users.add(src)
                 t["talkers"][src] = t["talkers"].get(src, 0.0) + dur
+            ta = (r["talker_alias"] or "").strip()
+            if ta:
+                a = aliases.setdefault(ta.upper(), {"alias": ta, "calls": 0, "duration": 0.0, "ids": set(),
+                                                    "tgs": set(), "last": 0.0})
+                a["calls"] += 1
+                a["duration"] += dur
+                a["tgs"].add(tg)
+                if src:
+                    a["ids"].add(src)
+                    last_alias[src] = ta
+                if ts >= a["last"]:
+                    a["alias"], a["last"] = ta, ts
             b = per_bucket.setdefault(tg, [[0, 0.0] for _ in range(n)])[bucket_of(ts)]
             b[0] += 1
             b[1] += dur
@@ -163,7 +182,8 @@ class TGStats:
                 "calls": t["calls"], "duration": round(t["duration"], 1), "users": len(t["users"]),
                 "last": t["last"], "share": round(t["duration"] / total_dur, 4) if total_dur else 0,
                 "obp_share": round(t["obp"] / t["duration"], 3) if t["duration"] else 0,
-                "top_talker": ({"id": top_id, "callsign": callsign(top_id) or "", "duration": round(top_dur, 1)}
+                "top_talker": ({"id": top_id, "callsign": callsign(top_id) or "", "duration": round(top_dur, 1),
+                                "alias": last_alias.get(top_id, "")}
                                if top_id else None),
             })
 
@@ -189,4 +209,10 @@ class TGStats:
             "talkgroups": table,
             "series": series,
             "origins": {o: {"calls": v["calls"], "duration": round(v["duration"], 1)} for o, v in origins.items()},
+            "talker_aliases": [
+                {"alias": a["alias"], "calls": a["calls"], "duration": round(a["duration"], 1), "last": a["last"],
+                 "ids": sorted(a["ids"])[:5], "callsigns": [c for c in (callsign(i) for i in sorted(a["ids"])[:5]) if c],
+                 "talkgroups": sorted(a["tgs"])[:8]}
+                for a in sorted(aliases.values(), key=lambda a: (-a["duration"], -a["calls"]))[:MAX_TABLE]],
+            "alias_totals": {"aliases": len(aliases), "calls": sum(a["calls"] for a in aliases.values())},
         }

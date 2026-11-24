@@ -203,6 +203,9 @@ class StreamState:
     obp_hops: int = 0
     obp_source_server: int = 0
 
+    # DMR Talker Alias of this transmission (embedded LC FLCO 4–7 or DMRA), as far as received
+    talker_alias: Optional[str] = None
+
     # DMR Link Control for outbound rewrites under translation.
     #
     # lc_base: the 9-byte LC (3B opts + 3B dst + 3B src) captured once at

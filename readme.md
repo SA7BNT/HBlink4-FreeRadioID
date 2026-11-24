@@ -77,11 +77,11 @@ Das Installationsskript führt durch alle Einstellungen. Jede Frage hat eine Vor
 
 <table>
 <tr>
-<td width="50%"><img src="docs/images/on-air.png" alt="ON AIR"><br><b>ON AIR</b>: Die Station, die gerade spricht, steht oben und leuchtet grün.</td>
+<td width="50%"><img src="docs/images/on-air.png" alt="ON AIR"><br><b>ON AIR</b>: Die Station, die gerade spricht, steht oben und leuchtet grün – mit dem <b>Talker Alias</b> aus dem Funkgerät statt des Datenbank-Namens (<a href="docs/de/dashboard.md#-talker-alias--der-name-aus-dem-funkgerät">mehr</a>).</td>
 <td width="50%"><img src="docs/images/station-detail-desktop.png" alt="Detailansicht"><br><b>Detailansicht</b> mit Avatar, FreeRadioID-Profil, Talkgroups und Funkdaten.</td>
 </tr>
 <tr>
-<td><img src="docs/images/tg-stats.png" alt="Talkgroup-Statistik"><br><b>Tab 📈 Statistics</b>: Top-Talkgroups, Verlauf pro Stunde oder Tag, Tabelle mit aktivster Station.</td>
+<td><img src="docs/images/tg-stats.png" alt="Talkgroup-Statistik"><br><b>Tab 📈 Statistics</b>: Top-Talkgroups, Verlauf pro Stunde oder Tag, Tabelle mit aktivster Station und eigener Rangliste der <b>Talker Alias</b>.</td>
 <td><img src="docs/images/config-tab.png" alt="Configuration"><br><b>Tab 🛠️ Configuration</b>: alles zum Verbinden, mit N8schicht-Logo und Kopier-Knöpfen – auch, wie Funkgeräte ihre Position per DAPRS senden.</td>
 </tr>
 <tr>
