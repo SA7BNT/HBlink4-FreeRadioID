@@ -40,13 +40,16 @@ Dashboard-Login oder das Anlegen neuer DMR-, APRS- und Superadmin-Einstellungen 
 2. `sudo /opt/HBlink4/scripts/setup.sh` starten und **Vorhandenes HBlink4-Backup wiederherstellen?**
    mit `j` beantworten. Den vollständigen Pfad zur Sicherung eingeben.
 3. Das Setup installiert bei Bedarf die Grundpakete und prüft anschließend das ganze Archiv:
-   Dateipfade, Prüfsummen, Datenbanken, Größenlimits und Python-Version. Quelle und Ziel benötigen
-   dieselbe Python-Haupt-/Nebenversion. Bei einer frischen Installation das Dienstkonto auswählen.
+   Dateipfade, Prüfsummen, Datenbanken, Größenlimits und Python-Metadaten. Quelle und Ziel benötigen
+   Python ab 3.9; unterschiedliche Unterversionen werden unterstützt, sofern Code und gespeicherte
+   Anwendungspakete kompatibel sind. Bei einer frischen Installation das Dienstkonto auswählen.
 4. Datum, Version, Zielverzeichnis und Quellkonto in der Vorschau prüfen. Erst **RESTORE** bestätigt
    die Änderungen an der Zielinstallation. Enter bricht ab. Bis hier werden weder Konfigurationen
    und Daten ersetzt noch Dienste umgestellt; eventuell angeforderte Grundpakete können bereits installiert sein.
 5. Das Setup bereitet auf einem frischen Ziel die Python-Umgebung und zunächst gestoppte Dienste vor,
-   installiert den Wiederherstellungshelfer und wartet auf dessen Ergebnis. Nach Erfolg laufen beide Dienste
+   installiert den Wiederherstellungshelfer und wartet auf dessen Ergebnis. Bei abweichendem Python
+   prüft der Helfer Code und gespeicherte Anwendungspakete vor dem Stoppen oder Ersetzen vorhandener Dienste.
+   Installationswerkzeuge wie pip werden für die Ziel-Python-Version vorbereitet. Nach Erfolg laufen beide Dienste
    mit den Einstellungen und Konten aus dem Backup und sind für den Systemstart aktiviert.
 
 Bereits eingerichtete Dienste im selben Installationsverzeichnis behalten ihr Dienstkonto und

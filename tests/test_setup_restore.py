@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -54,6 +55,20 @@ class TestSetupRestore(BackupFixture):
         self.assertIn("source", "\n".join(self.messages))
         self.assertFalse(any("Passwort" in str(c) for c in self.job.ask.call_args_list))
         self.assertEqual(self.job.run.call_count, 1)  # install helper; worker enables units itself
+
+    def test_other_python_minor_reaches_confirmation_and_worker(self):
+        source = '3.11.9' if sys.version_info[:2] != (3, 11) else '3.12.1'
+        def change_python(name, content):
+            if name == 'manifest.json':
+                value = json.loads(content); value['python'] = source
+                return json.dumps(value).encode()
+            return content
+        self.rewrite(change_python)
+        self.job.prepare_fresh = Mock(side_effect=self.prepare_stub)
+        with patch.object(backup, '_host_config', return_value=self.cfg):
+            self.assertTrue(self.job.execute())
+        self.job.enqueue.assert_called_once()
+        self.assertIn('Code und gespeicherte Paketversionen', '\n'.join(self.messages))
 
     def test_cancel_does_not_prepare_or_change_target(self):
         self.job.ask = Mock(side_effect=[self.user, ""])
