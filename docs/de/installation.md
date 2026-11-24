@@ -29,7 +29,7 @@ Jede Frage zeigt eine Vorgabe in `[Klammern]`; mit **Enter** übernimmst du sie.
 
 ### Vorhandenes Backup beim Initial Setup einspielen
 
-Ein Backup ab Version 1.4.0 lässt sich direkt beim Einrichten übernehmen. Ein vorheriger
+Ein mit der vollständigen HBlink4-Backup-Funktion erstelltes Archiv lässt sich direkt beim Einrichten übernehmen. Ein vorheriger
 Dashboard-Login oder das Anlegen neuer DMR-, APRS- und Superadmin-Einstellungen entfällt.
 
 1. Dieses Repository auf dem Zielserver unter einem rootgeschützten Verzeichnis bereitstellen,

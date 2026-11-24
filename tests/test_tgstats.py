@@ -23,6 +23,20 @@ class TestTGStats(unittest.TestCase):
     def at(self, hours_ago):
         return self.now - hours_ago * 3600
 
+    def test_talker_alias_ranking(self):
+        self.st.record(262, 30, src_id=1, ts=self.at(0.2), talker_alias="DL1A Hans")
+        self.st.record(91, 20, src_id=1, ts=self.at(0.4), talker_alias="dl1a hans")   # same name, other case
+        self.st.record(262, 60, src_id=2, ts=self.at(0.5), talker_alias="DB0XYZ Relais")
+        self.st.record(262, 10, src_id=3, ts=self.at(0.6))                            # no alias
+        d = self.st.summary("today", {}, lambda i: {1: "DL1A"}.get(i, ""), now=self.now)
+        ta = d["talker_aliases"]
+        self.assertEqual([a["alias"] for a in ta], ["DB0XYZ Relais", "DL1A Hans"])   # by airtime
+        self.assertEqual((ta[1]["calls"], ta[1]["duration"], ta[1]["ids"], ta[1]["callsigns"], ta[1]["talkgroups"]),
+                         (2, 50.0, [1], ["DL1A"], [91, 262]))
+        self.assertEqual(d["alias_totals"], {"aliases": 2, "calls": 3})
+        top = next(t for t in d["talkgroups"] if t["tg"] == 262)["top_talker"]
+        self.assertEqual((top["id"], top["alias"]), (2, "DB0XYZ Relais"))
+
     def test_summary_per_tg_and_hour(self):
         self.st.record(262, 30, src_id=1, ts=self.at(0.2))     # 15:18
         self.st.record(262, 10, src_id=2, ts=self.at(0.3))

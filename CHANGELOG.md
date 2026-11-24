@@ -32,16 +32,32 @@ Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 - Frische Ziele bekommen Python-Umgebung, zunächst gestoppte Dienste und den vorhandenen Wiederherstellungshelfer automatisch eingerichtet. HTTPS übernimmt bei Bedarf die certbot-Voraussetzung.
 - Vorhandene Installationen behalten ihr Dienstkonto und die automatische Rücknahme; ein fehlgeschlagener Erstaufbau bleibt gestoppt und deaktiviert. Der Wiederherstellungsdienst läuft unabhängig von der Setup-Konsole.
 
-## [1.4.0] – 2026-11-23
-
 ### 💾 Vollständige Backups und Wiederherstellung
 
 - Neuer Menüpunkt **Admin → Backup** für den Superadmin: vollständiges Archiv erstellen, herunterladen und vor der Wiederherstellung prüfen.
 - Enthalten sind Programmcode, lokale Änderungen, Git-Versionsstand, Konfigurationen, Benutzer und Zugangsdaten, SQLite-Datenbanken einschließlich WAL-Inhalten, APRS-Daten, Statistiken, Bilder, Zertifikate und eigene Dateien. Python-Paketversionen und installierte systemd-Dienste werden dokumentiert.
-- Wiederherstellung auf einer vorbereiteten Linux/systemd-Installation mit gleicher Python-Haupt-/Nebenversion. Installationspfade werden angepasst; Zielserver-Dienstkonto und systemd-Einrichtung bleiben erhalten. Die Python-Umgebung wird mit den gesicherten Paketversionen neu erstellt.
+- Wiederherstellung auf einer vorbereiteten Linux/systemd-Installation mit Python ab 3.9 und Kompatibilitätsprüfung bei abweichender Unterversion. Installationspfade werden angepasst; Zielserver-Dienstkonto und systemd-Einrichtung bleiben erhalten. Die Python-Umgebung wird mit den gesicherten Anwendungspaketversionen neu erstellt.
 - Separater, einmalig installierter Diensthelfer stoppt beide Dienste, erstellt ein automatisches Wiederherstellungsbackup und startet die geklonte Installation. Fehler beim Einspielen oder Dienststart führen zur Rücknahme einschließlich der ursprünglichen Python-Umgebung.
 - Archivprüfung mit SHA-256, Größenlimits, SQLite-Prüfung und Schutz vor fremden Dateipfaden, Links und doppelten Einträgen. Wiederherstellen erfordert Archivvorschau, erneute Passwortbestätigung und `RESTORE`; importierte Sitzungen werden beendet.
 - Anleitung: [Backup und Klonen](docs/de/backup.md). Betriebssystem, Firewall, DNS und externe Dienste sind nicht Bestandteil eines HBlink4-Klons.
+
+## [1.4.0] – 2026-11-24
+
+### 📻 Talker Alias
+- HBlink4 liest den **DMR Talker Alias** aus (den Namen, den das Funkgerät mitsendet, z. B. „DL1ABC Hans“). Quellen sind der Sprachrahmen (Embedded LC, FLCO 4–7) und **DMRA**-Pakete von MMDVMHost/DMRGateway. Unterstützt werden alle vier Formate (7-Bit, ISO-8859-1, UTF-8, UTF-16) bis 31 Zeichen.
+- Das gilt für alle Eingänge: Repeater/Hotspots, Outbound-Links und OpenBridge. Der Alias erscheint schon nach dem ersten Block (etwa 1 s) und vervollständigt sich während des Gesprächs. Jede neue Übertragung beginnt leer.
+- Neues Ereignis `talker_alias` zum Dashboard; `stream_end` trägt den Alias mit. Im Log steht jeder vollständige Alias einmal mit `📻`.
+- Bisher wurden DMRA-Pakete nur bestätigt; jetzt werden sie ausgewertet. Format: Quell-ID, Blocktyp, 7 Datenbytes.
+
+### 🎙️ Dashboard
+- **Der Talker Alias ersetzt den Namen** aus der Rufzeichen-Datenbank: in Last Heard, in den Slots der Repeater-/Hotspot-Karten, in der Slot-Detailansicht und bei OpenBridge/Outbound. Er ist mit **TA** markiert; der Tooltip zeigt das Rufzeichen aus der Datenbank.
+- **📈 Statistics:** neue Rangliste **📻 Talker Alias**, getrennt von den DMR-IDs: Gespräche, Sprechzeit, sendende IDs/Rufzeichen, Talkgroups, letztes Gespräch. Gleiche Namen in anderer Schreibweise werden zusammengefasst. In der Talkgroup-Tabelle zeigt *Most active* den TA der aktivsten Station.
+- Die Datenbank bekommt die Spalte `talker_alias` in `tg_calls` (wird beim Start automatisch ergänzt, alte Gespräche bleiben leer).
+- Demo (`?demo`) mit Talker-Alias-Beispielen.
+
+### 🧪 Tests
+- `tests/test_talker_alias.py`: 7-Bit, Latin-1 mit Umlauten, 4 Blöcke mit Teilergebnis, DMRA-Blöcke, neue Übertragung setzt zurück, Müll wird ignoriert (Vektoren aus einem unabhängigen MMDVMHost-Port).
+- `tests/test_tgstats.py`: Rangliste und Zusammenfassen gleicher Namen. Ende-zu-Ende geprüft mit echtem Sprachstrom von N8 Crosslink: erst „DL1ABC“, dann vollständig „DL1ABC Hans“.
 
 ## [1.3.0] – 2026-11-22
 

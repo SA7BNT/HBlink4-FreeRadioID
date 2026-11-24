@@ -61,6 +61,7 @@ from .utils import (
 )
 from . import obp_freedmr as fdmr
 from .daprs import DaprsDecoder
+from .talker_alias import TalkerAliasTracker
 from .config import load_config as load_config_func, parse_outbound_connections as parse_outbound_func, parse_openbridge_connections as parse_openbridge_func
 from .protocol import (
     parse_dmr_packet, is_dmr_terminator, validate_packet_length,
@@ -186,6 +187,7 @@ class HBProtocol(asyncio.DatagramProtocol):
 
         # DAPRS: GPS positions from radios (embedded GPS LC, GPS data calls) -> dashboard APRS
         self._daprs = DaprsDecoder(CONFIG.get('daprs', {}))
+        self._ta = TalkerAliasTracker()       # DMR Talker Alias (embedded LC / DMRA)
         self._daprs_on = self._daprs.enabled
         
         # No conversion caching - simple int.from_bytes() is fast enough
@@ -864,6 +866,12 @@ class HBProtocol(asyncio.DatagramProtocol):
             # Update existing stream
             current_stream.last_seen = current_time
             current_stream.packet_count += 1
+
+        _ta_stream = outbound_state.get_slot_stream(_slot)
+        if _ta_stream is not None and _frame_type == 0:
+            self._ta_burst(('outbound', outbound_state.config.name, _slot), _ta_stream, data[15] & 0x0F,
+                           data[20:53], {'connection_type': 'outbound',
+                                         'connection_name': outbound_state.config.name, 'slot': _slot})
         
         # Handle terminator
         if _is_terminator and current_stream:
@@ -1411,6 +1419,8 @@ class HBProtocol(asyncio.DatagramProtocol):
             'is_assumed': stream.is_assumed,
             'is_data': emit_is_data,
         }
+        if stream.talker_alias:
+            event_data['talker_alias'] = stream.talker_alias
         
         if connection_type == 'repeater':
             event_data['repeater_id'] = int(connection_id) if isinstance(connection_id, str) else connection_id
@@ -3545,33 +3555,54 @@ class HBProtocol(asyncio.DatagramProtocol):
 
     def _handle_talker_alias(self, repeater_id: bytes, data: bytes, addr: PeerAddress) -> None:
         """
-        Handle DMRA message - Talker Alias information from repeater.
-        This provides DMR Talker Alias data blocks (typically callsign/name).
-        
-        Format is DMR Talker Alias protocol - we acknowledge but don't process yet.
-        Future enhancement: parse and display talker alias in dashboard.
+        DMRA – Talker Alias block from a repeater/hotspot (MMDVMHost/DMRGateway format):
+        source id (3) + block type (1: 0 = header, 1–3 = blocks) + 7 data bytes.
+        The block belongs to the stream of that source on this repeater.
         """
         repeater = self._validate_repeater(repeater_id, addr)
         if not repeater:
             return
-        
         try:
-            # Talker alias data is variable length, typically contains:
-            # - Header (format, length)
-            # - Text blocks (7-bit encoded callsign/name)
-            # For now, just acknowledge receipt
-            LOGGER.debug(f'📻 Talker Alias from {rid_to_int(repeater_id)} ({repeater.get_callsign_str()})')
-            
-            # TODO: Future enhancement - parse talker alias blocks and emit to dashboard
-            # Talker alias format: https://github.com/g4klx/MMDVMHost/wiki/Talker-Alias
-            
-            # Send ACK to confirm receipt
+            if len(data) >= 11:
+                src = data[0:3]
+                block = data[3]
+                for slot in (1, 2):
+                    st = repeater.get_slot_stream(slot)
+                    if st is not None and st.rf_src == src and not st.is_assumed and not st.ended:
+                        res = self._ta.feed_dmra(('repeater', repeater_id, slot), st.stream_id, block, data[4:11])
+                        if res:
+                            self._ta_apply(st, res, {'repeater_id': rid_to_int(repeater_id), 'slot': slot})
+                        break
+            LOGGER.debug(f'📻 Talker Alias (DMRA) from {rid_to_int(repeater_id)} ({repeater.get_callsign_str()})')
             self._send_packet(b''.join([RPTACK, repeater_id]), addr)
-            
         except Exception as e:
             LOGGER.error(f'Error processing DMRA from {rid_to_int(repeater_id)}: {e}')
             # Still send ACK to avoid retries
             self._send_packet(b''.join([RPTACK, repeater_id]), addr)
+
+    def _ta_burst(self, key: tuple, stream: StreamState, vseq: int, payload: bytes, ident: dict) -> None:
+        """Voice burst → Talker Alias tracker; emits 'talker_alias' when the alias changes."""
+        try:
+            res = self._ta.feed_burst(key, stream.stream_id, vseq, payload)
+        except Exception as e:  # never let alias decoding disturb the voice path
+            LOGGER.debug(f'Talker Alias decode error: {e}')
+            return
+        if res:
+            self._ta_apply(stream, res, ident)
+
+    def _ta_apply(self, stream: StreamState, res: tuple, ident: dict) -> None:
+        alias, complete = res
+        stream.talker_alias = alias
+        self._events.emit('talker_alias', {
+            **ident,
+            'src_id': int.from_bytes(stream.rf_src, 'big'),
+            'dst_id': int.from_bytes(stream.dst_id, 'big'),
+            'stream_id': stream.stream_id.hex(),
+            'talker_alias': alias,
+            'complete': complete,
+        })
+        if complete:
+            LOGGER.info(f'📻 Talker Alias src={int.from_bytes(stream.rf_src, "big")}: "{alias}"')
 
     def _handle_ping(self, repeater_id: bytes, addr: PeerAddress) -> None:
         """Handle ping (RPTPING/RPTP) from the repeater as a keepalive."""
@@ -4074,6 +4105,9 @@ class HBProtocol(asyncio.DatagramProtocol):
 
         # Get the current stream for this slot (after _handle_stream_packet has updated it)
         current_stream = repeater.get_slot_stream(_slot)
+        if current_stream is not None and _frame_type == 0 and current_stream.call_type != 'data':
+            self._ta_burst(('repeater', repeater_id, _slot), current_stream, _dtype_vseq, _payload,
+                           {'repeater_id': rid_to_int(repeater_id), 'slot': _slot})
 
         # Data streams are tracked (so fast-terminator/contention logic stays
         # quiet) and emitted to the dashboard, but never forwarded. Drop here
@@ -4614,6 +4648,10 @@ class HBProtocol(asyncio.DatagramProtocol):
         else:
             stream.last_seen = now
             stream.packet_count += 1
+
+        if frame_type == 0:
+            self._ta_burst(('openbridge', obp_name, stream_id), stream, dmrd[15] & 0x0F, dmrd[20:53],
+                           {'connection_type': 'openbridge', 'connection_name': obp_name, 'slot': local_ts})
 
         # Forward through the shared path (per-target rewrite, reflection guard,
         # and OBP-target framing all live there — one routing path for all sources).

@@ -240,6 +240,27 @@ Klappst du **Last Heard** über den Pfeil zu, siehst du nur die laufenden Gespr�
 
 Ein Klick auf **Radio ID** oder **Callsign** öffnet die [Stationsinfo](#stationsinfo-zu-jeder-dmr-id).
 
+## 📻 Talker Alias – der Name aus dem Funkgerät
+
+Viele Funkgeräte senden beim Sprechen ihren **Talker Alias** mit – meist „Rufzeichen Name“, z. B. `DL1ABC Hans`. HBlink4 liest ihn jetzt aus und zeigt ihn **anstelle des Namens aus der Rufzeichen-Datenbank** an, markiert mit **TA**:
+
+<p align="center"><img src="../images/talker-alias-last-heard.png" alt="Talker Alias in Last Heard und in den Slots" width="95%"></p>
+
+| Wo | Was passiert |
+|---|---|
+| **Last Heard** | der Talker Alias steht statt des Rufzeichens, dahinter **TA**; mit der Maus darauf steht das Rufzeichen aus der Datenbank |
+| **Slots der Repeater/Hotspots** (Karte und Detail) | Spalte *Callsign* bzw. Zeile des Slots zeigt den Talker Alias |
+| **OpenBridge / Outbound** | auch bei Gesprächen, die über Trunks und Links hereinkommen |
+| **📈 Statistics** | eigene Rangliste **📻 Talker Alias** und bei jeder Talkgroup der TA der aktivsten Station (siehe unten) |
+
+**Woher er kommt:** im Sprachrahmen (*Embedded LC*, Blöcke FLCO 4–7, alle zwei Superframes) und als eigenes HomeBrew-Paket **DMRA** (MMDVMHost/DMRGateway). Unterstützt werden alle vier Formate (7-Bit, ISO-8859-1 mit Umlauten, UTF-8, UTF-16), bis 31 Zeichen. Er baut sich während des Gesprächs auf: der erste Block erscheint nach etwa einer Sekunde, der vollständige Text, sobald alle Blöcke da sind. Jede neue Übertragung beginnt leer – ein alter Alias bleibt nicht an einer anderen Station hängen.
+
+**Statistik:** Jedes Gespräch speichert den zuletzt empfangenen Talker Alias mit (neue Spalte `talker_alias` in `tg_calls`, ältere Gespräche bleiben leer). Die Rangliste **📻 Talker Alias** zählt **getrennt von den DMR-IDs**: Gespräche, Sprechzeit, welche IDs/Rufzeichen diesen Namen gesendet haben, Talkgroups und letztes Gespräch. Gleiche Namen in unterschiedlicher Groß-/Kleinschreibung werden zusammengefasst.
+
+<p align="center"><img src="../images/tg-stats-talker-alias.png" alt="Rangliste Talker Alias" width="95%"></p>
+
+Im Server-Log erscheint jeder vollständige Alias einmal: `📻 Talker Alias src=2621234: "DL1ABC Hans"`.
+
 ## Stationsinfo zu jeder DMR-ID
 
 <p align="center">
