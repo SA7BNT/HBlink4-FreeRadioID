@@ -35,6 +35,7 @@ In dieser Anleitung stehen Platzhalter: `aprs.example.org`, `map.example.org` f�
 - [Uplink & Downlink: APRS-IS, CB-APRS oder manuell](#uplink--downlink-aprs-is-cb-aprs-oder-manuell)
 - [Eigene Domains mit Let's Encrypt](#eigene-domains-mit-lets-encrypt)
 - [Adminbereich 📡 APRS](#adminbereich--aprs)
+- [Im HobbyRadioPortal](#im-hobbyradioportal)
 - [Alle Einstellungen](#alle-einstellungen)
 - [Speicherung und Datenschutz](#speicherung-und-datenschutz)
 - [Fehlersuche](#fehlersuche)
@@ -226,6 +227,12 @@ Ohne HTTPS ist die Karte unter jeder Domain per HTTP auf dem Web-Port des Dashbo
 | 🌐 **Domains** | bis zu drei Domains mit HTTPS, Titel, Untertitel, Logo |
 
 Alle Änderungen landen im **📜 Log** des Adminbereichs.
+
+## Im HobbyRadioPortal
+
+Alles aus diesem Kapitel lässt sich auch im [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal) einstellen
+(*Admin → 🛰️ APRS & DAPRS*), dort mit Karte und Radar als Live-Seite. Dafür einen **API-Token** anlegen (*Adminbereich →
+Sessions → Portal-Zugang*) und im Portal beim Plugin APRS eintragen. Details: [Betrieb → Im HobbyRadioPortal](betrieb.md#im-hobbyradioportal).
 
 ## Alle Einstellungen
 

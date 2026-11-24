@@ -48,6 +48,22 @@ Backup, Wiederherstellung und AutoBackup ([Backup](backup.md), [AutoBackup](auto
 
 Sitzungs-Cookie `HttpOnly`, `SameSite=Strict`, über HTTPS `Secure`; jede schreibende Anfrage braucht den Header `X-Dashboard` (CSRF-Schutz); fünf Fehlversuche sperren 15 Minuten. IP-Adressen sehen nur Admins.
 
+## API-Token für das HobbyRadioPortal
+
+Seit 1.7.0 kann das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal) die APRS- und DAPRS-Einstellungen
+dieses Dashboards verwalten. Dafür legt ein Admin unter *Adminbereich → Sessions → Portal-Zugang* einen **API-Token** an
+(oder auf dem Server: `sudo -u hblink .venv/bin/python -m dashboard.auth api-token create HobbyRadioPortal --db dashboard/data/dashboard.db`).
+
+- Der Token (`hb4p_…`, 256 Bit Zufall) wird **nur einmal angezeigt**; gespeichert ist nur sein SHA-256.
+- Er wird als `Authorization: Bearer …` geschickt und wirkt mit der Rolle **Admin**, nie Superadmin.
+- Er erreicht **nur**: alle öffentlichen `/api/`-Daten, `/api/admin/settings` (lesen, ändern, zurücksetzen), `/api/admin/aprs…`
+  (Status, Clients trennen, Neustart, Objekte, Passcode) und `/api/admin/audit`.
+- **Nie**: Benutzer, Sitzungen, Token, Backups, Anmeldung/Passwort, Updates, Neustarts – und die Einstellungen
+  *Dashboard access*, *HTTPS & web* und *Updates* sind für Token gesperrt.
+- Der CSRF-Schutz (`X-Dashboard: 1`) gilt auch für Token.
+- Jede Änderung steht im Protokoll als `api:<Name> (<Portal-Benutzer>)` – du siehst also auch, wer im Portal geklickt hat.
+- Zuletzt benutzt und letzte IP stehen in der Liste; **Beenden** widerruft sofort. Auf dem Server: `… dashboard.auth api-token list | revoke ID`.
+
 ## Reverse-Proxy davor (empfohlen)
 
 Das Dashboard kann HTTPS mit Let's Encrypt selbst. Läuft auf dem Server ohnehin ein Webserver, ist ein **Reverse-Proxy** davor die sauberste Lösung: Zertifikate, Header und Protokolle an einer Stelle. Das Dashboard lauscht dann nur lokal (Adminbereich → Settings → HTTPS & web: HTTPS **aus**, Listen address `127.0.0.1`).

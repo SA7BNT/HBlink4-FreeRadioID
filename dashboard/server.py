@@ -1205,9 +1205,28 @@ def _client_ip(conn) -> str:
     return conn.client.host if conn.client else ""
 
 
+# What an API token (HobbyRadioPortal) may reach: reading everything public, the settings and the APRS
+# administration. Never users, sessions, tokens, backups, updates or restarts.
+API_TOKEN_PATHS = ("/api/admin/settings", "/api/admin/aprs", "/api/admin/audit")
+# Settings an API token may never change (access, HTTPS, updates)
+API_TOKEN_LOCKED_SECTIONS = ("access", "https", "update")
+
+
+def _token_path_ok(path: str) -> bool:
+    if path.startswith("/api/admin/"):
+        return any(path == p or path.startswith(p + "/") for p in API_TOKEN_PATHS)
+    return path.startswith("/api/") and not path.startswith("/api/auth/")
+
+
 def current_user(conn) -> Optional[dict]:
-    """User of a Request or WebSocket from its session cookie (or None)."""
-    return state.auth.session_user(conn.cookies.get(SESSION_COOKIE))
+    """User of a Request or WebSocket from its session cookie, or of an API token (or None)."""
+    user = state.auth.session_user(conn.cookies.get(SESSION_COOKIE))
+    if user:
+        return user
+    auth = conn.headers.get("authorization") or ""
+    if auth[:7].lower() == "bearer " and _token_path_ok(conn.url.path):
+        return state.auth.token_user(auth[7:].strip(), _client_ip(conn), conn.headers.get("x-portal-user", ""))
+    return None
 
 
 def is_admin(user: Optional[dict]) -> bool:
@@ -1394,6 +1413,32 @@ async def admin_revoke_session(session_id: str, request: Request):
     actor = _require_admin(request)
     state.auth.revoke_session(session_id)
     state.auth.audit("session_revoked", actor["username"], session_id, _client_ip(request))
+    return {"ok": True}
+
+
+def _require_human_admin(request: Request) -> dict:
+    user = _require_admin(request)
+    if user.get("api"):
+        raise _HTTPError(403, "Not with an API token.")
+    return user
+
+
+@app.get("/api/admin/api-tokens")
+async def admin_api_tokens(request: Request):
+    _require_human_admin(request)
+    return {"tokens": state.auth.list_api_tokens(), "paths": list(API_TOKEN_PATHS)}
+
+
+@app.post("/api/admin/api-tokens")
+async def admin_create_api_token(request: Request, body: dict = Body(...)):
+    actor = _require_human_admin(request)
+    return {"token": state.auth.create_api_token(str(body.get("name") or ""), actor["username"], _client_ip(request))}
+
+
+@app.delete("/api/admin/api-tokens/{token_id}")
+async def admin_revoke_api_token(token_id: int, request: Request):
+    actor = _require_human_admin(request)
+    state.auth.revoke_api_token(token_id, actor["username"], _client_ip(request))
     return {"ok": True}
 
 
@@ -1609,6 +1654,8 @@ async def admin_save_settings(request: Request, body: dict = Body(...)):
     changes = body.get("changes") or {}
     if not isinstance(changes, dict):
         raise _HTTPError(400, "changes must be an object")
+    if actor.get("api") and any(FIELD_BY_KEY[k].section in API_TOKEN_LOCKED_SECTIONS for k in changes if k in FIELD_BY_KEY):
+        raise _HTTPError(403, "Access, HTTPS and update settings cannot be changed with an API token.")
     try:
         changed = state.settings.update(dashboard_config, changes, actor["username"])
     except SettingsError as e:
@@ -1715,6 +1762,8 @@ async def import_apply(request: Request, body: dict = Body(...)):
 async def admin_reset_settings(request: Request, body: dict = Body(...)):
     actor = _require_admin(request)
     section = str(body.get("section") or "")
+    if actor.get("api") and section in API_TOKEN_LOCKED_SECTIONS:
+        raise _HTTPError(403, "Access, HTTPS and update settings cannot be changed with an API token.")
     before = {k: _copy.deepcopy(_get_cfg(k)) for k in FIELD_BY_KEY}
     try:
         state.settings.reset_section(dashboard_config, _file_config, section, actor["username"])

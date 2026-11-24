@@ -4,6 +4,34 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.7.0] – 2026-11-24
+
+**Portal-Zugang: API-Token für das HobbyRadioPortal – APRS und DAPRS lassen sich jetzt dort verwalten.**
+
+### 🔌 API-Token
+- Neu im Adminbereich unter **🔑 Sessions → 🔌 Portal-Zugang (API-Token)**: Token anlegen (Name), **einmal anzeigen und kopieren**,
+  Liste mit den letzten vier Zeichen, angelegt von/wann, zuletzt benutzt, letzte IP, **Beenden** (widerrufen). Höchstens 20 Token.
+- Token `hb4p_…` mit 256 Bit Zufall; gespeichert wird nur der SHA-256 (neue Tabelle `api_tokens` in `dashboard.db`, kommt mit ins Backup).
+- Anmeldung per `Authorization: Bearer …`. Ein Token handelt mit der Rolle **Admin** (nie Superadmin) und erreicht **nur**
+  öffentliche `/api/`-Daten, `/api/admin/settings`, `/api/admin/aprs…` und `/api/admin/audit`. Gesperrt: Benutzer, Sitzungen,
+  Token, Backups, Anmeldung/Passwort, Updates, Neustarts sowie die Einstellungsbereiche *Dashboard access*, *HTTPS & web* und *Updates*.
+- CSRF-Schutz (`X-Dashboard: 1`) gilt weiter. Im Protokoll steht der Token als `api:<Name> (<Portal-Benutzer>)` (Kopfzeile `X-Portal-User`).
+- Kommandozeile: `python -m dashboard.auth api-token create NAME | list | revoke ID [--db PFAD]` – z. B. für Installer.
+- Neue Endpunkte (nur für angemeldete Admins, nicht für Token): `GET/POST /api/admin/api-tokens`, `DELETE /api/admin/api-tokens/{id}`.
+
+### 🛰️ Wofür
+- Das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal) 0.5.0 bringt damit den kompletten Tab **📡 APRS** ins
+  Portal: APRS-Server, Uplink & Downlink (APRS-IS, CB-APRS, manuell), **DAPRS** (Erkennen im DMR-Server und Weitergabe an APRS,
+  SSID/Symbol/Kommentar je ID), Repeater-/Hotspot-Objekte, Karte, APRS-Domains, verbundene Clients, Neustart, Passcode.
+
+### 🧪 Tests
+- `tests/test_api_tokens.py`: anlegen/benutzen/widerrufen, ungültige Namen, erlaubte und verbotene Pfade, gesperrte Einstellungen,
+  Protokolleintrag mit Portal-Benutzer, CSRF auch mit Token, ohne Token bei privatem Dashboard 401.
+
+### 📖 Doku
+- [Adminbereich → Sessions](docs/de/adminbereich.md#-sessions--log--system) mit neuem Screenshot, [Sicherheit → API-Token](docs/de/sicherheit.md#api-token-für-das-hobbyradioportal),
+  [Betrieb → Im HobbyRadioPortal](docs/de/betrieb.md#im-hobbyradioportal), [APRS → Im HobbyRadioPortal](docs/de/aprs.md#im-hobbyradioportal).
+
 ## [1.6.2] – 2026-11-24
 
 ### 🔌 Für das HobbyRadioPortal
