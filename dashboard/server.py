@@ -53,7 +53,7 @@ from .aprs.packet import passcode as _aprs_passcode, valid_call as _aprs_valid_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.6.1", **_sec.FASTAPI_KWARGS)
+app = FastAPI(title="DMR Die N8schicht Dashboard", version="1.6.2", **_sec.FASTAPI_KWARGS)
 
 # Load dashboard configuration
 def load_config() -> dict:
@@ -2363,6 +2363,12 @@ async def get_outbounds(request: Request):
 async def get_streams(request: Request):
     """Get all active streams"""
     return view_for(current_user(request), {"streams": list(state.streams.values())})
+
+
+@app.get("/api/last-heard")
+async def get_last_heard(request: Request):
+    """Last heard stations – the same list the dashboard shows (used by HobbyRadioPortal, plugin "dmr")."""
+    return view_for(current_user(request), {"last_heard": state.last_heard})
 
 
 @app.get("/api/events")

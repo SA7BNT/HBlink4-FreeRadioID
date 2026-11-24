@@ -190,3 +190,10 @@ class TestConnectedSystemsCards:
 
     def test_obp_click_uses_data_attribute(self):
         assert "obpOpen(this.closest(\\'.conn-card\\').dataset.obp)" in self.html
+
+
+class TestLastHeardEndpoint:
+    def test_route_exists_and_is_redacted(self):
+        src = (Path(__file__).resolve().parents[1] / "dashboard" / "server.py").read_text(encoding="utf-8")
+        i = src.index('@app.get("/api/last-heard")')
+        assert "view_for(current_user(request)" in src[i:i + 400]

@@ -4,6 +4,15 @@ Alle Versionen von **HBlink4-FreeRadioID** (DMR Die N8schicht), die neueste oben
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen entstehen, steht in [docs/de/versionen.md](docs/de/versionen.md).
 
+## [1.6.2] – 2026-11-24
+
+### 🔌 Für das HobbyRadioPortal
+- Neuer Endpunkt **`GET /api/last-heard`**: dieselbe Liste wie *Last Heard* im Dashboard (Rufzeichen, DMR-ID, Talkgroup, Zeitschlitz,
+  Quelle, FRID, aktiv), bisher nur über den WebSocket zu haben. Wie alle Live-Daten gehen IP-Adressen nur an Admins (`view_for`).
+  Das Plugin `dmr` im [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal) füllt damit „Zuletzt gehört“.
+- Doku: [Betrieb → Im HobbyRadioPortal](docs/de/betrieb.md#im-hobbyradioportal) listet alle Schnittstellen, die das Portal liest.
+- Test: der Endpunkt gibt die Liste nur über `view_for` heraus.
+
 ## [1.6.1] – 2026-11-24
 
 **Live-Ansicht aufgeräumt: „🔌 Verbundene Systeme“ – ein gemeinsames Raster, eine schlanke Karte für alles**

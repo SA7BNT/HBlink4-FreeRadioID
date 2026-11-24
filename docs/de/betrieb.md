@@ -152,6 +152,14 @@ Warum das so eng ist:
 - **Rechte:** Das Dashboard läuft als normaler Benutzer ohne Root. Mit Weg B darf es höchstens die beiden Dienste neu starten.
 - **Abschalten:** Wer Updates nur auf der Konsole will, stellt *Who may press “Update now”* auf **Nobody**. Der Hinweis bleibt, installiert wird dann nur von Hand.
 
+## Im HobbyRadioPortal
+
+Das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal) zeigt DMR und APRS als Plugins (`dmr`, `aprs`).
+Es liest dafür nur die öffentlichen Schnittstellen dieses Dashboards: `/api/version`, `/api/repeaters`, `/api/streams`,
+`/api/stats`, `/api/openbridge`, `/api/outbounds`, **`/api/last-heard`** (seit 1.6.2: dieselbe Liste wie *Last Heard* im
+Dashboard, IP-Adressen nur für Admins), `/api/aprs/status` und `/api/aprs/stations`. Im Portal unter
+*Admin → Dienste & Plugins* die Adresse eintragen (meist `http://127.0.0.1:8080/`).
+
 ## Sicherung
 
 Alles Wichtige steckt in drei Dateien:
